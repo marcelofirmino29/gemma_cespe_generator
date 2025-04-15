@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.so
+
+# Virtual environment
+venv/
+env/
+*.env
+.envrc
+
+# Django stuff:
+*.log
+local_settings.py # Se você usar um arquivo separado para configs locais
+db.sqlite3       # Se você usa o banco de dados padrão
+db.sqlite3-journal
+media/           # Normalmente não versionamos arquivos de mídia enviados por usuários
+static_root/     # Pasta para onde 'collectstatic' copia arquivos
+staticfiles/     # Pasta padrão do Django 5+ para 'collectstatic'
+
+# Secrets - MUITO IMPORTANTE!
+# Se o seu settings.py contém a GOOGLE_API_KEY diretamente, ADICIONE-O AQUI!
+# Exemplo: config/settings.py
+# OU, se você usa um arquivo .env para carregar a chave, certifique-se que
+# .env esteja listado acima (já está como *.env)
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
