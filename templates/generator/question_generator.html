@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{# Adiciona o atributo data-bs-theme dinamicamente com JS depois #}
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -6,41 +7,157 @@
     <title>Gerador de Questões Cespe (C/E) - Gemini/Gemma</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
-        body { padding-top: 20px; background-color: #f8f9fa; }
-        .container { max-width: 900px; }
-        .question-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; background-color: #fff; }
-        .question-item p { margin-bottom: 0.75rem; } /* Ajuste de margem */
-        .form-check-inline { margin-right: 1rem; } /* Espaçamento entre C/E */
-        .spinner-border { display: none; /* Escondido inicialmente */ }
-        button:disabled { cursor: not-allowed; }
-        small.form-text { color: #6c757d; }
+        /* Estilos padrão (Light Mode) - Usando variáveis Bootstrap sempre que possível */
+        :root { /* Define variáveis customizadas se precisar, mas prefira as do BS */
+          --custom-correct-color: green;
+          --custom-incorrect-color: red;
+        }
+
+        body {
+             padding-top: 20px;
+             /* Bootstrap lida com background e cor de texto com data-bs-theme */
+        }
+        .container {
+            max-width: 900px;
+        }
+        .question-item {
+             /* Usa variáveis BS para background e borda */
+             background-color: var(--bs-body-bg);
+             border: 1px solid var(--bs-border-color);
+             padding: 15px;
+             margin-bottom: 15px;
+             border-radius: 5px;
+        }
+        .question-item p {
+            margin-bottom: 0.75rem;
+             /* Cor de texto é herdada ou definida por var(--bs-body-color) */
+        }
+        .form-check-inline {
+            margin-right: 1rem;
+        }
+        .spinner-border {
+            display: none; /* Escondido inicialmente */
+        }
+        button:disabled {
+             cursor: not-allowed;
+             /* Bootstrap cuida do estilo de botão desabilitado */
+        }
+        small.form-text {
+             color: var(--bs-secondary-color); /* Usa variável BS */
+        }
         .form-container {
-            background-color: #ffffff;
+            background-color: var(--bs-tertiary-bg); /* Usa variável BS */
             padding: 2rem;
             border-radius: 0.5rem;
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             margin-bottom: 2rem;
         }
-         h1, h2 { color: #343a40; }
-         .alert { margin-top: 1rem; }
+         h1, h2 {
+            color: var(--bs-heading-color); /* Usa variável BS */
+         }
+         .alert {
+             margin-top: 1rem;
+             /* Bootstrap cuida das cores do alerta */
+         }
          /* Estilos para resultados */
-         .correct-answer { color: green; font-weight: bold; }
-         .incorrect-answer { color: red; font-weight: bold; }
-         .feedback { font-style: italic; font-size: 0.9em; margin-top: 5px; }
+         .correct-answer {
+             color: var(--custom-correct-color); /* Usa variável customizada */
+             font-weight: bold;
+         }
+         .incorrect-answer {
+             color: var(--custom-incorrect-color); /* Usa variável customizada */
+             font-weight: bold;
+         }
+         .feedback {
+             font-style: italic;
+             font-size: 0.9em;
+             margin-top: 5px;
+             color: var(--bs-body-color);
+         }
          /* Estilos adicionais para o resumo de performance */
-         .performance-summary { border: 1px solid #ccc; }
-         .performance-summary h4 { color: #495057; }
-         .performance-summary .table { margin-bottom: 0.5rem !important; }
-         .performance-summary .alert { font-size: 0.95em; }
+         .performance-summary {
+             border: 1px solid var(--bs-border-color); /* Usa variável BS */
+             background-color: var(--bs-secondary-bg); /* Fundo levemente diferente */
+         }
+         .performance-summary h4 {
+             color: var(--bs-emphasis-color); /* Usa variável BS */
+         }
+         .performance-summary .table {
+             margin-bottom: 0.5rem !important;
+             /* Cores da tabela são tratadas pelo BS */
+         }
+         .performance-summary .alert {
+             font-size: 0.95em;
+             /* Cores do alerta são tratadas pelo BS */
+         }
+
+        /* --- NOVO: Ajustes específicos para Dark Mode --- */
+        [data-bs-theme="dark"] {
+          --custom-correct-color: var(--bs-success-text-emphasis); /* Ajusta para cor de sucesso do tema escuro */
+          --custom-incorrect-color: var(--bs-danger-text-emphasis); /* Ajusta para cor de perigo do tema escuro */
+
+          .form-container {
+             /* Sombra sutil para modo escuro */
+             box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+          }
+          /* Ajuste opcional se alguma cor não ficou boa automaticamente */
+          /* Ex:
+          .meu-elemento-muito-custom {
+              background-color: #444;
+              color: #ccc;
+          }
+          */
+        }
+        /* --- FIM Dark Mode --- */
+
+        /* Estilo para o botão flutuante do tema */
+        .bd-mode-toggle { z-index: 1500; } /* Garante que fique acima de outros elementos */
 
     </style>
 </head>
 <body>
+    {# --- NOVO: Símbolos SVG para Ícones do Seletor de Tema --- #}
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+      <symbol id="check2" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></symbol>
+      <symbol id="circle-half" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/></symbol>
+      <symbol id="moon-stars-fill" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/><path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.734 1.734 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.734 1.734 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.734 1.734 0 0 0 1.097-1.097l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L13.863.1z"/></symbol>
+      <symbol id="sun-fill" viewBox="0 0 16 16"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/></symbol>
+    </svg>
+    {# --- FIM: Símbolos SVG --- #}
+
+    {# --- NOVO: Seletor de Tema Dropdown --- #}
+    <div class="position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
+        <div class="dropdown dropup"> {# Usando dropup para abrir para cima #}
+            <button class="btn btn-secondary dropdown-toggle d-flex align-items-center"
+                    id="bd-theme" type="button" aria-expanded="false"
+                    data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
+                <svg class="bi me-2 theme-icon-active" width="1em" height="1em"><use href="#circle-half"></use></svg>
+                <span class="d-lg-none ms-2" id="bd-theme-text">Tema</span> {# Texto para telas pequenas #}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text">
+                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
+                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#sun-fill"></use></svg>Claro
+                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
+                    </button></li>
+                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
+                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#moon-stars-fill"></use></svg>Escuro
+                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
+                    </button></li>
+                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" aria-pressed="false"> {# Começa sem 'active' aqui, JS definirá #}
+                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#circle-half"></use></svg>Automático
+                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
+                    </button></li>
+            </ul>
+        </div>
+    </div>
+    {# --- FIM: Seletor de Tema --- #}
+
+
     <div class="container">
-        <header class="text-center mb-4">
+        {# ... (header, form de geração, exibição de erros, etc como antes) ... #}
+         <header class="text-center mb-4">
             <h1>Gerador de Questões Estilo Cebraspe (Certo/Errado)</h1>
             <p class="lead">Use a IA Gemini/Gemma para criar itens de julgamento sobre um tópico.</p>
-            {# Verifica se local_time existe antes de exibir #}
             {% if local_time %}<p><small>Executando em: Boa Vista/RR (Horário Local {{ local_time }})</small></p>{% endif %}
         </header>
 
@@ -51,45 +168,36 @@
             </div>
         {% endif %}
 
-        {# Formulário para GERAR as questões #}
         <div class="form-container">
-            {# !! Assume que a URL para gerar questões se chama 'generate_questions' no urls.py !! #}
             <form method="post" id="generator-form" action="{% url 'generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
                 {% csrf_token %}
-
-                <div class="mb-3">
+                 <div class="mb-3">
                     <label for="{{ form.topic.id_for_label }}" class="form-label">{{ form.topic.label }}</label>
-                    {{ form.topic }} {# Renderiza o widget Textarea #}
+                    {{ form.topic }}
                     {% if form.topic.help_text %}<small class="form-text text-muted">{{ form.topic.help_text }}</small>{% endif %}
-                    {# Mostra erros específicos do campo Tópico #}
                     {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
                 </div>
-
-                <div class="row mb-3"> {# Agrupa num_questions e difficulty_level lado a lado em telas maiores #}
-                    <div class="col-md-4"> {# Coluna para Número de Questões #}
+                 <div class="row mb-3">
+                    <div class="col-md-4">
                         <label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>
-                        {{ form.num_questions }} {# Renderiza o widget NumberInput #}
+                        {{ form.num_questions }}
                          {% if form.num_questions.help_text %}<small class="form-text text-muted">{{ form.num_questions.help_text }}</small>{% endif %}
                          {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
                     </div>
-                     <div class="col-md-8"> {# Coluna para Nível de Dificuldade #}
+                     <div class="col-md-8">
                         <label for="{{ form.difficulty_level.id_for_label }}" class="form-label">{{ form.difficulty_level.label }}</label>
-                        {{ form.difficulty_level }} {# Renderiza o widget Select #}
+                        {{ form.difficulty_level }}
                         {% if form.difficulty_level.help_text %}<small class="form-text text-muted">{{ form.difficulty_level.help_text }}</small>{% endif %}
                         {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
                     </div>
                 </div>
-
-
-                {# Botão para gerar questões #}
-                <button type="submit" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
+                 <button type="submit" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span>
                     <span id="button-text">Gerar Questões</span>
                 </button>
             </form>
         </div>
 
-        {# Exibe a mensagem de erro GERAL #}
         {% if error_message and service_initialized and not form.errors %}
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
                 <strong>Atenção:</strong> {{ error_message }}
@@ -100,18 +208,14 @@
         {# Bloco para exibir as questões geradas e o formulário de respostas #}
         {% if questions %}
             <div class="results-container mt-4">
-                <h2>Itens Gerados para Julgamento:</h2>
-
-                {# Formulário para ENVIAR as respostas do usuário #}
-                <form method="post" action="{% url 'validate_answers' %}">
+                 <h2>Itens Gerados para Julgamento:</h2>
+                 <form method="post" action="{% url 'validate_answers' %}">
                     {% csrf_token %}
-
                     {% for item in questions %}
                         <div class="question-item">
                             <p><strong>Item {{ forloop.counter }}:</strong></p>
                             <p>{{ item.afirmacao|linebreaksbr }}</p>
-
-                            <div class="mb-2">
+                             <div class="mb-2">
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="resposta_{{ forloop.counter0 }}" id="certo_{{ forloop.counter0 }}" value="C" required>
                                     <label class="form-check-label" for="certo_{{ forloop.counter0 }}">Certo</label>
@@ -124,107 +228,65 @@
                              <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}">
                              <input type="hidden" name="afirmacao_{{ forloop.counter0 }}" value="{{ item.afirmacao }}">
                              <input type="hidden" name="gabarito_{{ forloop.counter0 }}" value="{{ item.gabarito|default:'?' }}">
+                             <input type="hidden" name="justificativa_{{ forloop.counter0 }}" value="{{ item.justificativa|default:'Justificativa não fornecida.' }}">
                         </div>
-                        {% if not forloop.last %}<hr class="my-3">{% endif %} {# Linha separadora mais sutil #}
+                        {% if not forloop.last %}<hr class="my-3">{% endif %}
                     {% empty %}
-                         <div class="alert alert-info" role="alert">
-                           Nenhuma questão foi retornada ou processada. Tente gerar novamente.
-                         </div>
+                         <div class="alert alert-info" role="alert">Nenhuma questão foi retornada.</div>
                     {% endfor %}
-
-                    {# Botão de submit para validar respostas (só aparece se houver questões) #}
-                    {% if questions %}
+                     {% if questions %}
                        <button type="submit" class="btn btn-success mt-3">Verificar Respostas</button>
                     {% endif %}
-                </form> {# Fim do formulário de respostas #}
-
-            </div> {# Fim do results-container #}
+                </form>
+             </div>
         {% endif %}
 
-
          {# --- SEÇÃO DE RESULTADOS DA VALIDAÇÃO --- #}
-         {# Mostra os resultados individuais E o resumo do desempenho #}
          {% if results %}
              <div class="results-validation mt-4">
                  <h2>Resultado da Verificação:</h2>
-
-                 {# Loop para resultados individuais #}
                  {% for result in results %}
                      <div class="question-item {% if result.correct %}border-success{% else %}border-danger{% endif %}">
                          <p><strong>Item {{ forloop.counter }}:</strong></p>
                          <p>{{ result.afirmacao|linebreaksbr }}</p>
-                         <p>Sua Resposta:
-                             <span class="{% if result.correct %}correct-answer{% else %}incorrect-answer{% endif %}">
-                                 {% if result.user_answer == 'C' %}Certo{% elif result.user_answer == 'E' %}Errado{% else %}{{ result.user_answer|default:"Não respondido" }}{% endif %}
-                             </span>
-                         </p>
+                         <p>Sua Resposta: <span class="{% if result.correct %}correct-answer{% else %}incorrect-answer{% endif %}">{% if result.user_answer == 'C' %}Certo{% elif result.user_answer == 'E' %}Errado{% else %}{{ result.user_answer|default:"Não respondido" }}{% endif %}</span></p>
                          <p class="feedback">
-                             {% if result.correct %}
-                                 <span class="correct-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.354 10.354l-2-2a.5.5 0 0 0-.708.708L7.293 11.5l3.5-3.5a.5.5 0 0 0-.708-.708l-3 3z"/></svg> Você acertou!</span>
-                             {% else %}
-                                 <span class="incorrect-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg> Você errou.</span>
-                             {% endif %}
+                             {% if result.correct %}<span class="correct-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.354 10.354l-2-2a.5.5 0 0 0-.708.708L7.293 11.5l3.5-3.5a.5.5 0 0 0-.708-.708l-3 3z"/></svg> Você acertou!</span>
+                             {% else %}<span class="incorrect-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg> Você errou.</span>{% endif %}
                              Gabarito: {% if result.gabarito == 'C' %}Certo{% elif result.gabarito == 'E' %}Errado{% else %}{{ result.gabarito|default:"?" }}{% endif %}
                          </p>
+                          {% if result.justificativa %}
+                         <div class="justification mt-2 pt-2 border-top">
+                             <p class="mb-1"><strong>Justificativa:</strong></p>
+                             <p class="text-muted small mb-0">{{ result.justificativa|linebreaksbr }}</p>
+                         </div>
+                         {% endif %}
                      </div>
                  {% endfor %}
-                 {# --- Fim do Loop de Resultados Individuais --- #}
 
-
-                 {# ========== INÍCIO: Exibição do Resumo do Desempenho ========== #}
-                 {% if performance %} {# Verifica se a view enviou os dados de performance #}
+                 {% if performance %}
                  <div class="performance-summary mt-4 p-3 bg-light border rounded">
                      <h4 class="mb-3">Resumo do Desempenho (Estilo Cebraspe)</h4>
-                     <table class="table table-sm table-borderless mb-2" style="max-width: 350px;"> {# Aumentei um pouco a largura #}
+                     <table class="table table-sm table-borderless mb-2" style="max-width: 350px;">
                          <tbody>
-                             <tr>
-                                 <td>Total de Itens Respondidos:</td>
-                                 <td class="text-end"><strong>{{ performance.total }}</strong></td>
-                             </tr>
-                             <tr>
-                                 <td>Acertos:</td>
-                                 <td class="text-end"><strong class="correct-answer">{{ performance.correct }}</strong>&nbsp;(+{{ performance.correct }})</td>
-                             </tr>
-                             <tr>
-                                 <td>Erros:</td>
-                                 <td class="text-end"><strong class="incorrect-answer">{{ performance.incorrect }}</strong>&nbsp;(-{{ performance.incorrect }})</td>
-                             </tr>
-                             <tr>
-                                 <td class="border-top pt-2"><strong>Pontuação Líquida:</strong></td>
-                                 <td class="text-end border-top pt-2">
-                                     <strong style="font-size: 1.1em;">
-                                         {% if performance.score > 0 %}+{% endif %}{{ performance.score }}
-                                     </strong>
-                                      / {{ performance.total }} {# Mostra score sobre total #}
-                                 </td>
-                             </tr>
-                              <tr>
-                                 <td>Aproveitamento Bruto:</td>
-                                 {# Exibe a porcentagem calculada na view #}
-                                 <td class="text-end"><strong>{{ performance.percentage }}%</strong></td>
-                             </tr>
+                             <tr><td>Total de Itens Respondidos:</td><td class="text-end"><strong>{{ performance.total }}</strong></td></tr>
+                             <tr><td>Acertos:</td><td class="text-end"><strong class="correct-answer">{{ performance.correct }}</strong>&nbsp;(+{{ performance.correct }})</td></tr>
+                             <tr><td>Erros:</td><td class="text-end"><strong class="incorrect-answer">{{ performance.incorrect }}</strong>&nbsp;(-{{ performance.incorrect }})</td></tr>
+                             <tr><td class="border-top pt-2"><strong>Pontuação Líquida:</strong></td><td class="text-end border-top pt-2"><strong style="font-size: 1.1em;">{% if performance.score > 0 %}+{% endif %}{{ performance.score }}</strong> / {{ performance.total }}</td></tr>
+                              <tr><td>Aproveitamento Bruto:</td><td class="text-end"><strong>{{ performance.percentage }}%</strong></td></tr>
                          </tbody>
                      </table>
-
-                     {# Mensagem de Feedback Opcional Baseada na Pontuação #}
-                     {% if performance.total > 0 %}
-                          {% if performance.score == performance.total %}
-                              <p class="alert alert-success mt-2 py-2 mb-0">Excelente! Você gabaritou! ({{ performance.percentage }}% de acertos)</p>
-                          {% elif performance.more_than_half %} {# Usa a flag calculada na view #}
-                               <p class="alert alert-info mt-2 py-2 mb-0">Ótimo desempenho! Pontuação líquida bem positiva. ({{ performance.percentage }}% de acertos)</p>
-                          {% elif performance.score > 0 %}
-                               <p class="alert alert-secondary mt-2 py-2 mb-0">Bom trabalho! Sua pontuação líquida foi positiva. ({{ performance.percentage }}% de acertos)</p>
-                          {% elif performance.score == 0 %}
-                               <p class="alert alert-warning mt-2 py-2 mb-0">Sua pontuação líquida foi zero. Atenção aos erros! ({{ performance.percentage }}% de acertos)</p>
-                          {% else %}
-                              <p class="alert alert-danger mt-2 py-2 mb-0">Sua pontuação líquida foi negativa. Revise os erros! ({{ performance.percentage }}% de acertos)</p>
-                          {% endif %}
+                      {% if performance.total > 0 %}
+                          {% if performance.score == performance.total %}<p class="alert alert-success mt-2 py-2 mb-0">Excelente! Gabaritou! ({{ performance.percentage }}% acertos)</p>
+                          {% elif performance.more_than_half %}<p class="alert alert-info mt-2 py-2 mb-0">Ótimo! Pontuação bem positiva. ({{ performance.percentage }}% acertos)</p>
+                          {% elif performance.score > 0 %}<p class="alert alert-secondary mt-2 py-2 mb-0">Bom! Pontuação positiva. ({{ performance.percentage }}% acertos)</p>
+                          {% elif performance.score == 0 %}<p class="alert alert-warning mt-2 py-2 mb-0">Neutro. Pontuação líquida zero. ({{ performance.percentage }}% acertos)</p>
+                          {% else %}<p class="alert alert-danger mt-2 py-2 mb-0">Atenção! Pontuação negativa. ({{ performance.percentage }}% acertos)</p>{% endif %}
                      {% endif %}
                  </div>
                  {% endif %}
-                 {# ========== FIM: Exibição do Resumo do Desempenho ========== #}
 
-             </div> {# Fim do .results-validation #}
+             </div>
          {% endif %}
          {# --- FIM DA SEÇÃO DE RESULTADOS --- #}
 
@@ -239,8 +301,7 @@
         const submitButton = document.getElementById('submit-button');
         const loadingSpinner = document.getElementById('loading-spinner');
         const buttonText = document.getElementById('button-text');
-        // Converte a variável Django para booleano JS
-        const serviceInitialized = {{ service_initialized|yesno:"true,false" }};
+        const serviceInitialized = {{ service_initialized|yesno:"true,false" }}; // Converte Django bool para JS
 
          if (!serviceInitialized && submitButton) {
              submitButton.disabled = true;
@@ -248,26 +309,99 @@
 
         if (form && submitButton && loadingSpinner && buttonText) {
             form.addEventListener('submit', function(event) {
-                // Verifica a validação nativa do HTML5 antes de mostrar o spinner
-                if (form.checkValidity()) {
+                if (form.checkValidity()) { // Usa validação HTML5 do navegador
                      submitButton.disabled = true;
-                     loadingSpinner.style.display = 'inline-block'; // Mostra o spinner
-                     buttonText.textContent = ' Gerando...'; // Muda o texto
+                     loadingSpinner.style.display = 'inline-block';
+                     buttonText.textContent = ' Gerando...';
                 } else {
-                     console.log("Validação HTML5 do formulário de geração falhou.");
+                     console.log("Formulário de geração inválido (HTML5).");
+                     // Previne o spinner se o form não for válido no HTML5
+                     event.preventDefault(); // Impede o envio se inválido
                 }
             });
         }
 
-        // Para reabilitar o botão ao voltar pelo histórico do navegador
         window.addEventListener('pageshow', function (event) {
             if (event.persisted && submitButton && serviceInitialized) {
                  submitButton.disabled = false;
-                 loadingSpinner.style.display = 'none'; // Esconde o spinner
-                 buttonText.textContent = 'Gerar Questões'; // Restaura o texto
+                 loadingSpinner.style.display = 'none';
+                 buttonText.textContent = 'Gerar Questões';
             }
         });
     </script>
+
+    {# --- NOVO: Script para Lógica do Dark Mode (Bootstrap 5.3) --- #}
+    <script>
+      /*!
+       * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
+       * Copyright 2011-2024 The Bootstrap Authors
+       * Licensed under the Creative Commons Attribution 3.0 Unported License.
+       */
+      (() => {
+        'use strict'
+        const getStoredTheme = () => localStorage.getItem('theme')
+        const setStoredTheme = theme => localStorage.setItem('theme', theme)
+        const getPreferredTheme = () => {
+          const storedTheme = getStoredTheme()
+          if (storedTheme) { return storedTheme }
+          return 'auto' // Default to auto
+        }
+        const setTheme = theme => {
+          if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-bs-theme', 'dark')
+          } else if (theme === 'auto'){
+             document.documentElement.setAttribute('data-bs-theme', 'light')
+          } else {
+            document.documentElement.setAttribute('data-bs-theme', theme)
+          }
+        }
+        setTheme(getPreferredTheme()) // Apply theme on load
+
+        const showActiveTheme = (theme, focus = false) => {
+          const themeSwitcher = document.querySelector('#bd-theme')
+          if (!themeSwitcher) { return }
+          const activeThemeIcon = document.querySelector('.theme-icon-active use')
+          const btnToActivate = document.querySelector(`[data-bs-theme-value="${theme}"]`)
+          // Check if btnToActivate exists before accessing properties
+          if (!btnToActivate) { return }
+          const svgOfActiveBtn = btnToActivate.querySelector('svg.theme-icon use').getAttribute('href')
+
+          document.querySelectorAll('[data-bs-theme-value]').forEach(element => {
+            element.classList.remove('active'); element.setAttribute('aria-pressed', 'false')
+            const checkIcon = element.querySelector('svg.bi.ms-auto.d-none')
+            if(checkIcon) { checkIcon.classList.add('d-none') } // Hide checkmark safely
+          })
+
+          btnToActivate.classList.add('active'); btnToActivate.setAttribute('aria-pressed', 'true')
+          const checkIconActive = btnToActivate.querySelector('svg.bi.ms-auto.d-none')
+          if(checkIconActive) { checkIconActive.classList.remove('d-none') } // Show checkmark safely
+
+          activeThemeIcon.setAttribute('href', svgOfActiveBtn)
+          const themeSwitcherLabel = `Theme (${btnToActivate.dataset.bsThemeValue})` // Simpler label
+          themeSwitcher.setAttribute('aria-label', themeSwitcherLabel)
+          if (focus) { themeSwitcher.focus() }
+        }
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+          const storedTheme = getStoredTheme()
+          if (storedTheme !== 'light' && storedTheme !== 'dark') {
+            setTheme(getPreferredTheme()) // Update if theme is 'auto'
+          }
+        })
+
+        window.addEventListener('DOMContentLoaded', () => {
+          showActiveTheme(getPreferredTheme()) // Set dropdown state on load
+          document.querySelectorAll('[data-bs-theme-value]')
+            .forEach(toggle => {
+              toggle.addEventListener('click', () => {
+                const theme = toggle.getAttribute('data-bs-theme-value')
+                setStoredTheme(theme); setTheme(theme); showActiveTheme(theme, true)
+              })
+            })
+        })
+      })()
+    </script>
+    {# --- FIM: Script Dark Mode --- #}
 
 </body>
 </html>
