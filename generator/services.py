@@ -1,8 +1,9 @@
-# generator/services.py - VERSÃO ALTERADA PARA GERAR Afirmação/Gabarito C/E
+# generator/services.py
 
 import logging
 from django.conf import settings
 import google.generativeai as genai
+# Corrigido para importar HarmBlockThreshold corretamente
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from .exceptions import ConfigurationError, AIServiceError, AIResponseError, ParsingError
 
@@ -23,25 +24,30 @@ class QuestionGenerationService:
 
             # --- Configuração de Geração ---
             self.generation_config = genai.types.GenerationConfig(
-                temperature=settings.AI_GENERATION_TEMPERATURE
+                # Usando getattr para segurança caso a setting não exista
+                temperature=getattr(settings, 'AI_GENERATION_TEMPERATURE', 0.7) # Exemplo de default
                 # Adicione outros parâmetros de Geração aqui se necessário
             )
 
             # --- Inicialização do Modelo ---
+            model_name = getattr(settings, 'AI_MODEL_NAME', None)
+            if not model_name:
+                raise ConfigurationError("AI_MODEL_NAME não definida nas configurações do Django.")
+
             self.model = genai.GenerativeModel(
-                 settings.AI_MODEL_NAME,
-                 # Passe generation_config aqui se desejar usá-lo sempre
-                 # generation_config=self.generation_config
+                 model_name,
+                 # generation_config=self.generation_config # Pode ser passado aqui ou na chamada
             )
-            logger.info(f"Modelo Generative AI '{settings.AI_MODEL_NAME}' inicializado (Init do Service).")
+            logger.info(f"Modelo Generative AI '{model_name}' inicializado (Init do Service).")
 
             # --- Carrega e Converte Configurações de Segurança ---
             self._load_and_convert_safety_settings() # Carrega do settings.py
 
         except AttributeError as e:
-             # Pega erro se faltar GOOGLE_API_KEY, AI_MODEL_NAME, etc no settings.py
-             raise ConfigurationError(f"Configuração ausente em settings.py: {e}")
-        except ConfigurationError as e: # Pega o raise explícito de 'if not api_key:'
+             # Pega erro se faltar uma setting OBRIGATÓRIA como API key ou model name
+             missing_setting = str(e).split("'")[-2] # Tenta extrair o nome da setting
+             raise ConfigurationError(f"Configuração obrigatória ausente em settings.py: '{missing_setting}'")
+        except ConfigurationError as e: # Pega os raises explícitos
              raise e
         except Exception as e:
             # Pega outros erros potenciais durante a configuração do genai
@@ -70,13 +76,23 @@ class QuestionGenerationService:
                 category_str = setting.get("category")
                 threshold_str = setting.get("threshold")
 
+                # Verifica se as chaves existem
+                if category_str is None or threshold_str is None:
+                    logger.warning(f"Dicionário incompleto em GOOGLE_AI_SAFETY_SETTINGS (falta 'category' ou 'threshold'): {setting}")
+                    continue
+
                 category_enum = category_map.get(category_str)
                 threshold_enum = threshold_map.get(threshold_str)
 
                 if category_enum is None:
-                     raise ConfigurationError(f"Valor inválido para 'category' em GOOGLE_AI_SAFETY_SETTINGS: '{category_str}'")
+                     # Log e continua para o próximo, em vez de falhar tudo
+                     logger.error(f"Valor inválido para 'category' em GOOGLE_AI_SAFETY_SETTINGS: '{category_str}'. Pulando esta configuração.")
+                     continue
+                     # raise ConfigurationError(f"Valor inválido para 'category' em GOOGLE_AI_SAFETY_SETTINGS: '{category_str}'")
                 if threshold_enum is None:
-                     raise ConfigurationError(f"Valor inválido para 'threshold' em GOOGLE_AI_SAFETY_SETTINGS: '{threshold_str}'")
+                     logger.error(f"Valor inválido para 'threshold' em GOOGLE_AI_SAFETY_SETTINGS: '{threshold_str}'. Pulando esta configuração.")
+                     continue
+                     # raise ConfigurationError(f"Valor inválido para 'threshold' em GOOGLE_AI_SAFETY_SETTINGS: '{threshold_str}'")
 
                 converted_settings.append({
                     "category": category_enum,
@@ -85,66 +101,96 @@ class QuestionGenerationService:
 
             if converted_settings: # Só atribui se converteu pelo menos um
                  self.safety_settings = converted_settings
-                 logger.info(f"Configurações de segurança carregadas e convertidas de settings.py: {self.safety_settings}")
+                 logger.info(f"Configurações de segurança carregadas e convertidas de settings.py: {len(converted_settings)} regras.")
+                 logger.debug(f"Detalhe Safety Settings: {self.safety_settings}")
             else:
                  logger.warning("Nenhuma configuração de segurança válida encontrada após processar GOOGLE_AI_SAFETY_SETTINGS.")
                  self.safety_settings = None # Usa padrões da API
 
         except Exception as e:
-             logger.error(f"Erro ao processar GOOGLE_AI_SAFETY_SETTINGS: {e}", exc_info=True)
-             # É mais seguro levantar um erro aqui do que usar padrões inesperados
+             logger.error(f"Erro inesperado ao processar GOOGLE_AI_SAFETY_SETTINGS: {e}", exc_info=True)
+             # Levanta erro para alertar sobre falha na configuração de segurança
              raise ConfigurationError(f"Erro ao processar GOOGLE_AI_SAFETY_SETTINGS: {e}")
 
     # --- MÉTODO generate_questions ALTERADO ---
-    def generate_questions(self, topic, num_questions):
+    # Adicionado 'difficulty_level' como parâmetro
+    def generate_questions(self, topic, num_questions, difficulty_level='medio'):
         """Gera afirmações estilo C/E com gabarito usando a API do Google AI."""
         if not self.model:
             raise ConfigurationError("Serviço de IA não inicializado corretamente.")
 
-        # NOVO PROMPT - Pede afirmações C/E e gabarito no formato especificado
-        # Pede um separador "---" para ajudar o parsing
+        # --- MODIFICADO: Prompt inclui difficulty_level ---
+        # Instruções mais claras sobre o formato e a dificuldade.
         prompt = (
-            f"Gere {num_questions} afirmações sobre o tópico principal: '{topic}'. "
-            f"Cada afirmação deve ser no estilo CERTO/ERRADO (como as da banca Cespe/Cebraspe), "
-            f"sendo claramente verdadeira (Certo) ou falsa (Errado). "
-            f"Para cada afirmação, forneça o gabarito (C ou E). "
-            f"Use o formato EXATO abaixo para cada item, separando os itens com '---':\n"
-            f"Afirmação: [O texto da afirmação aqui]\n"
+            f"**Instrução Principal:** Gere {num_questions} itens para julgamento (estilo Certo/Errado - Cespe/Cebraspe) "
+            f"sobre o tópico principal: '{topic}'.\n"
+            f"**Nível de Dificuldade:** O nível de dificuldade desejado para os itens é '{difficulty_level}'.\n"
+            f"**Formato OBRIGATÓRIO de Saída:**\n"
+            f"Para CADA item gerado, use EXATAMENTE o formato abaixo. Separe cada item completo (Afirmação + Gabarito) com três hifens ('---').\n\n"
+            f"Afirmação: [Texto da afirmação aqui. Deve ser claramente Certa ou Errada.]\n"
+            f"Gabarito: [Use apenas 'C' para Certo ou 'E' para Errado]\n"
+            f"---\n"
+            f"Afirmação: [Texto da segunda afirmação...]\n"
             f"Gabarito: [C ou E]\n"
             f"---"
+            f"\n(Continue o padrão para os {num_questions} itens solicitados)"
         )
+        # --- FIM MODIFICAÇÃO ---
 
         # Usa as safety_settings carregadas do settings.py (armazenadas em self.safety_settings)
-        logger.info(f"SERVICE CALL (C/E): Usando safety_settings carregadas: {self.safety_settings}")
+        if self.safety_settings:
+            logger.info(f"SERVICE CALL (C/E): Usando {len(self.safety_settings)} regras de segurança carregadas.")
+            logger.debug(f"Detalhe Safety Settings para chamada: {self.safety_settings}")
+        else:
+            logger.info("SERVICE CALL (C/E): Usando configurações de segurança padrão da API.")
 
         try:
-            logger.info(f"Enviando requisição (C/E) para API (Modelo: {settings.AI_MODEL_NAME}, Tópico: {topic[:50]}...)")
+            # --- MODIFICADO: Log inclui difficulty_level ---
+            logger.info(f"Enviando requisição (C/E) para API (Modelo: {self.model._model_name}, Tópico: {topic[:50]}..., Dificuldade: {difficulty_level})")
+            # --- FIM MODIFICAÇÃO ---
+
             response = self.model.generate_content(
                 prompt,
                 generation_config=self.generation_config, # Passa config de geração (temp, etc)
-                safety_settings=self.safety_settings # <<< USA AS CONFIGS CARREGADAS DO __init__
+                safety_settings=self.safety_settings # Passa as configs de segurança (pode ser None)
             )
 
-            # Verifica se a resposta foi bloqueada
-            if not response.candidates:
-                 block_reason = "Razão não especificada"
-                 block_reason_message = ""
+            # --- Verificação de Bloqueio (Melhorada) ---
+            # Acessa o primeiro candidato se existir
+            first_candidate = response.candidates[0] if response.candidates else None
+
+            if first_candidate and first_candidate.finish_reason.name == 'SAFETY':
+                 # Tenta obter detalhes do bloqueio a partir do primeiro candidato ou do prompt_feedback
+                 block_reason = "SAFETY" # finish_reason indica bloqueio
+                 block_reason_message = "A resposta foi bloqueada devido às configurações de segurança."
                  ratings_message = ""
-                 # Tenta obter detalhes do bloqueio se disponíveis
-                 if response.prompt_feedback:
-                      if response.prompt_feedback.block_reason:
-                           block_reason = response.prompt_feedback.block_reason.name
-                           block_reason_message = response.prompt_feedback.block_reason_message or ""
-                      ratings_message = str(response.prompt_feedback.safety_ratings)
 
-                 logger.warning(f"Resposta da IA bloqueada (C/E). Razão: {block_reason}. Mensagem: '{block_reason_message}'. Ratings: {ratings_message}")
-                 # Lança um erro específico que a view pode tratar
-                 raise AIResponseError(f"A geração foi bloqueada pela API (Razão: {block_reason}). {block_reason_message}")
+                 # Tenta obter ratings do candidato (mais comum para bloqueio de *resposta*)
+                 if first_candidate.safety_ratings:
+                      ratings_message = ", ".join([f"{r.category.name}: {r.probability.name}" for r in first_candidate.safety_ratings])
 
-            # Se não foi bloqueado, processa o texto
-            generated_text = response.text
+                 # Tenta obter feedback do prompt (mais comum para bloqueio de *prompt*)
+                 elif response.prompt_feedback and response.prompt_feedback.block_reason:
+                      block_reason = response.prompt_feedback.block_reason.name
+                      block_reason_message = response.prompt_feedback.block_reason_message or block_reason_message
+                      if response.prompt_feedback.safety_ratings:
+                           ratings_message = ", ".join([f"{r.category.name}: {r.probability.name}" for r in response.prompt_feedback.safety_ratings])
+
+                 logger.warning(f"Resposta da IA bloqueada (C/E). Razão: {block_reason}. Detalhes: '{block_reason_message}'. Ratings: [{ratings_message}]")
+                 raise AIResponseError(f"A geração foi bloqueada pela API ({block_reason}). Ajuste as configurações de segurança ou o prompt.")
+
+            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
+                 # Caso estranho: Sem candidato, sem conteúdo ou sem 'parts'
+                 finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"
+                 logger.warning(f"Resposta da IA vazia ou inválida (C/E). Finish Reason: {finish_reason}. Resposta completa: {response}")
+                 raise AIResponseError(f"A IA retornou uma resposta vazia ou inválida (Finish Reason: {finish_reason}).")
+            # --- Fim Verificação de Bloqueio ---
+
+
+            # Se não foi bloqueado, processa o texto da primeira parte do primeiro candidato
+            generated_text = first_candidate.content.parts[0].text
             # Chama o método de parsing interno (que agora extrai afirmação e gabarito)
-            parsed_questions = self._parse_questions(generated_text) # Chama o NOVO parser abaixo
+            parsed_questions = self._parse_questions(generated_text) # Chama o parser abaixo
             return parsed_questions
 
         except AIResponseError as e:
@@ -153,15 +199,15 @@ class QuestionGenerationService:
         except Exception as e:
             # Pega outros erros da API ou de comunicação
             logger.error(f"Erro na chamada da API Google AI (C/E): {e}", exc_info=True)
-            # Verifica se o erro genérico menciona segurança/bloqueio
-            if "safety" in str(e).lower() or "blocked" in str(e).lower():
-                 raise AIResponseError(f"A geração foi bloqueada pela API (C/E - erro geral): {e}")
-            else: # Senão, assume erro de comunicação/serviço
+            # Simplifica a verificação de erro de segurança/bloqueio
+            if "safety" in str(e).lower() or "blocked" in str(e).lower() or "API key" in str(e):
+                 raise AIResponseError(f"Erro relacionado à API ou segurança (C/E): {e}")
+            else: # Assume erro de comunicação/serviço genérico
                  raise AIServiceError(f"Erro na comunicação com a API Google AI (C/E): {e}")
-    # --- FIM DO MÉTODO generate_questions ALTERADO ---
+    # --- FIM DO MÉTODO generate_questions ---
 
 
-    # --- MÉTODO _parse_questions ALTERADO ---
+    # --- MÉTODO _parse_questions (sem alterações necessárias aqui) ---
     def _parse_questions(self, text: str) -> list:
         """
         Faz o parsing do texto bruto da IA para extrair uma lista de dicionários
@@ -189,6 +235,7 @@ class QuestionGenerationService:
                     continue
 
                 # Normaliza possíveis variações no início da linha e verifica
+                # Usando startswith para maior robustez
                 if cleaned_line.upper().startswith("AFIRMAÇÃO:"):
                     # Se já tínhamos um item completo, salva antes de começar o novo
                     if current_affirmation is not None and current_gabarito is not None:
@@ -202,6 +249,7 @@ class QuestionGenerationService:
                 elif cleaned_line.upper().startswith("GABARITO:") and current_affirmation is not None:
                     # Só processa gabarito se temos uma afirmação esperando por ele
                     gabarito_text = cleaned_line[len("Gabarito:"):].strip().upper()
+                    # Permite apenas C ou E
                     if gabarito_text in ['C', 'E']:
                         current_gabarito = gabarito_text
                         logger.debug(f"Linha {line_num+1}: Gabarito '{current_gabarito}' encontrado para afirmação atual.")
@@ -224,8 +272,10 @@ class QuestionGenerationService:
                 elif current_affirmation is not None and current_gabarito is None:
                     # Considera continuação da afirmação (multi-linhas)
                     # Só adiciona se não for uma linha que deveria ser Gabarito mas foi inválida
+                    # Adiciona espaço antes para juntar palavras corretamente
                     current_affirmation += " " + cleaned_line
                     logger.debug(f"Linha {line_num+1}: Adicionada à afirmação multi-linha: '{cleaned_line}'")
+
                 elif cleaned_line: # Linha não vazia que não se encaixa em nenhum padrão esperado
                      logger.warning(f"Linha {line_num+1}: Texto inesperado ignorado durante parsing C/E: '{cleaned_line}'")
 
@@ -237,14 +287,16 @@ class QuestionGenerationService:
 
         except Exception as e:
             logger.error(f"Erro durante o parsing C/E do texto: {e}\nTexto Parcialmente Processado: {structured_questions}\nTexto Original: {text}", exc_info=True)
-            # Retorna o que conseguiu processar em caso de erro no meio
-            return structured_questions
+            # É melhor lançar um erro específico de parsing para a view tratar
+            raise ParsingError(f"Erro ao processar a estrutura da resposta da IA: {e}")
+            # return structured_questions # Evitar retornar lista parcial em caso de erro grave
 
-        logger.info(f"Resultado ESTRUTURADO FINAL (Afirmação/Gabarito) - {len(structured_questions)} itens: {structured_questions}")
+        logger.info(f"Resultado ESTRUTURADO FINAL (Afirmação/Gabarito) - {len(structured_questions)} itens")
         if not structured_questions and text:
              logger.warning(f"Não foi possível fazer o parsing C/E de nenhum item formatado do texto: '{text[:200]}...'")
+             # Lança erro se o texto não era vazio mas nada foi parseado
+             raise ParsingError("A resposta da IA não continha itens no formato esperado (Afirmação/Gabarito).")
+
 
         return structured_questions
-    # --- FIM DO MÉTODO _parse_questions ALTERADO ---
-
-# Nenhum código solto deve existir depois do fim da classe QuestionGenerationService neste arquivo.
+    # --- FIM DO MÉTODO _parse_questions ---

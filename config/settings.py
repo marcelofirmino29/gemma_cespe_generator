@@ -27,7 +27,7 @@ ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split('
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") # Busca a variável chamada GOOGLE_API_KEY
 AI_MODEL_NAME = 'gemini-1.5-flash-latest' # Ou outro modelo Gemma/Gemini disponível
 AI_GENERATION_TEMPERATURE = 0.7 # Ajuste conforme necessário
-AI_MAX_QUESTIONS_PER_REQUEST = 5 # Reduzido para testes iniciais mais rápidos
+AI_MAX_QUESTIONS_PER_REQUEST = 150 # Reduzido para testes iniciais mais rápidos
 
 # === INÍCIO DA ADIÇÃO ===
 # Configurações de Segurança para a API Google AI (Usando Strings)

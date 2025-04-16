@@ -27,6 +27,12 @@
          .correct-answer { color: green; font-weight: bold; }
          .incorrect-answer { color: red; font-weight: bold; }
          .feedback { font-style: italic; font-size: 0.9em; margin-top: 5px; }
+         /* Estilos adicionais para o resumo de performance */
+         .performance-summary { border: 1px solid #ccc; }
+         .performance-summary h4 { color: #495057; }
+         .performance-summary .table { margin-bottom: 0.5rem !important; }
+         .performance-summary .alert { font-size: 0.95em; }
+
     </style>
 </head>
 <body>
@@ -34,7 +40,8 @@
         <header class="text-center mb-4">
             <h1>Gerador de Questões Estilo Cebraspe (Certo/Errado)</h1>
             <p class="lead">Use a IA Gemini/Gemma para criar itens de julgamento sobre um tópico.</p>
-            <p><small>Executando em: Boa Vista/RR (Horário Local {{ local_time }})</small></p> {# Exemplo: Adicionar hora local na view se desejar #}
+            {# Verifica se local_time existe antes de exibir #}
+            {% if local_time %}<p><small>Executando em: Boa Vista/RR (Horário Local {{ local_time }})</small></p>{% endif %}
         </header>
 
         {% if not service_initialized %}
@@ -54,48 +61,56 @@
                     <label for="{{ form.topic.id_for_label }}" class="form-label">{{ form.topic.label }}</label>
                     {{ form.topic }} {# Renderiza o widget Textarea #}
                     {% if form.topic.help_text %}<small class="form-text text-muted">{{ form.topic.help_text }}</small>{% endif %}
+                    {# Mostra erros específicos do campo Tópico #}
                     {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
                 </div>
 
-                <div class="mb-3">
-                    <label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>
-                    {{ form.num_questions }} {# Renderiza o widget NumberInput #}
-                     {% if form.num_questions.help_text %}<small class="form-text text-muted">{{ form.num_questions.help_text }}</small>{% endif %}
-                     {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
+                <div class="row mb-3"> {# Agrupa num_questions e difficulty_level lado a lado em telas maiores #}
+                    <div class="col-md-4"> {# Coluna para Número de Questões #}
+                        <label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>
+                        {{ form.num_questions }} {# Renderiza o widget NumberInput #}
+                         {% if form.num_questions.help_text %}<small class="form-text text-muted">{{ form.num_questions.help_text }}</small>{% endif %}
+                         {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
+                    </div>
+                     <div class="col-md-8"> {# Coluna para Nível de Dificuldade #}
+                        <label for="{{ form.difficulty_level.id_for_label }}" class="form-label">{{ form.difficulty_level.label }}</label>
+                        {{ form.difficulty_level }} {# Renderiza o widget Select #}
+                        {% if form.difficulty_level.help_text %}<small class="form-text text-muted">{{ form.difficulty_level.help_text }}</small>{% endif %}
+                        {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
+                    </div>
                 </div>
 
-                {# Botão para gerar questões (action="generate") #}
-                <button type="submit" name="action" value="generate" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
+
+                {# Botão para gerar questões #}
+                <button type="submit" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span>
                     <span id="button-text">Gerar Questões</span>
                 </button>
             </form>
         </div>
 
-        {% if error_message and service_initialized %} {# Só mostra erro geral se não for o de inicialização #}
+        {# Exibe a mensagem de erro GERAL #}
+        {% if error_message and service_initialized and not form.errors %}
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
                 <strong>Atenção:</strong> {{ error_message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endif %}
 
-        {# Formulário e Exibição das Questões Geradas #}
+        {# Bloco para exibir as questões geradas e o formulário de respostas #}
         {% if questions %}
             <div class="results-container mt-4">
                 <h2>Itens Gerados para Julgamento:</h2>
 
-                {# Novo formulário para ENVIAR as respostas do usuário #}
-                 {# !! Assume que a URL para validar se chama 'validate_answers' no urls.py !! #}
+                {# Formulário para ENVIAR as respostas do usuário #}
                 <form method="post" action="{% url 'validate_answers' %}">
                     {% csrf_token %}
 
                     {% for item in questions %}
                         <div class="question-item">
                             <p><strong>Item {{ forloop.counter }}:</strong></p>
-                            {# Exibe a afirmação gerada pela IA #}
                             <p>{{ item.afirmacao|linebreaksbr }}</p>
 
-                            {# Adiciona os botões de rádio Certo/Errado #}
                             <div class="mb-2">
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="resposta_{{ forloop.counter0 }}" id="certo_{{ forloop.counter0 }}" value="C" required>
@@ -106,22 +121,20 @@
                                     <label class="form-check-label" for="errado_{{ forloop.counter0 }}">Errado</label>
                                 </div>
                             </div>
-                             {# Campos ocultos para facilitar a validação na view #}
                              <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}">
                              <input type="hidden" name="afirmacao_{{ forloop.counter0 }}" value="{{ item.afirmacao }}">
-                             <input type="hidden" name="gabarito_{{ forloop.counter0 }}" value="{{ item.gabarito }}">
+                             <input type="hidden" name="gabarito_{{ forloop.counter0 }}" value="{{ item.gabarito|default:'?' }}">
                         </div>
-                        {% if not forloop.last %}<hr>{% endif %}
+                        {% if not forloop.last %}<hr class="my-3">{% endif %} {# Linha separadora mais sutil #}
                     {% empty %}
                          <div class="alert alert-info" role="alert">
                            Nenhuma questão foi retornada ou processada. Tente gerar novamente.
                          </div>
                     {% endfor %}
 
-                    {# Adiciona o botão de submit SÓ SE houver questões #}
+                    {# Botão de submit para validar respostas (só aparece se houver questões) #}
                     {% if questions %}
-                       {# Botão para verificar respostas (action="validate") #}
-                       <button type="submit" name="action" value="validate" class="btn btn-success mt-3">Verificar Respostas</button>
+                       <button type="submit" class="btn btn-success mt-3">Verificar Respostas</button>
                     {% endif %}
                 </form> {# Fim do formulário de respostas #}
 
@@ -129,57 +142,104 @@
         {% endif %}
 
 
-         {# --- SEÇÃO DE RESULTADOS CORRIGIDA --- #}
-         {# Área para exibir resultados da validação (será preenchida pela view depois) #}
+         {# --- SEÇÃO DE RESULTADOS DA VALIDAÇÃO --- #}
+         {# Mostra os resultados individuais E o resumo do desempenho #}
          {% if results %}
              <div class="results-validation mt-4">
                  <h2>Resultado da Verificação:</h2>
+
+                 {# Loop para resultados individuais #}
                  {% for result in results %}
-                     {# Adiciona classe de borda verde/vermelha baseado no acerto #}
                      <div class="question-item {% if result.correct %}border-success{% else %}border-danger{% endif %}">
                          <p><strong>Item {{ forloop.counter }}:</strong></p>
-                         <p>{{ result.afirmacao|linebreaksbr }}</p> {# Afirmação original #}
+                         <p>{{ result.afirmacao|linebreaksbr }}</p>
                          <p>Sua Resposta:
-                             {# Adiciona classe de cor na resposta do usuário #}
                              <span class="{% if result.correct %}correct-answer{% else %}incorrect-answer{% endif %}">
-                                 {# Usa if para exibir Certo/Errado baseado no valor 'C'/'E' #}
-                                 {% if result.user_answer == 'C' %}
-                                     Certo
-                                 {% elif result.user_answer == 'E' %}
-                                     Errado
-                                 {% else %}
-                                     {{ result.user_answer|default:"Não respondido" }} {# Se não for C/E #}
-                                 {% endif %}
+                                 {% if result.user_answer == 'C' %}Certo{% elif result.user_answer == 'E' %}Errado{% else %}{{ result.user_answer|default:"Não respondido" }}{% endif %}
                              </span>
                          </p>
                          <p class="feedback">
                              {% if result.correct %}
-                                 <span class="correct-answer">Você acertou!</span>
+                                 <span class="correct-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.354 10.354l-2-2a.5.5 0 0 0-.708.708L7.293 11.5l3.5-3.5a.5.5 0 0 0-.708-.708l-3 3z"/></svg> Você acertou!</span>
                              {% else %}
-                                 <span class="incorrect-answer">Você errou.</span>
+                                 <span class="incorrect-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg> Você errou.</span>
                              {% endif %}
-                             {# Exibe o gabarito usando if #}
-                             Gabarito: {% if result.gabarito == 'C' %}Certo{% elif result.gabarito == 'E' %}Errado{% else %}{{ result.gabarito }}{% endif %}
+                             Gabarito: {% if result.gabarito == 'C' %}Certo{% elif result.gabarito == 'E' %}Errado{% else %}{{ result.gabarito|default:"?" }}{% endif %}
                          </p>
                      </div>
                  {% endfor %}
-                 {# Aqui você poderia adicionar um placar total, se desejar #}
-                 {# Ex: <p><strong>Placar: X acertos de Y questões.</strong></p> #}
-             </div>
+                 {# --- Fim do Loop de Resultados Individuais --- #}
+
+
+                 {# ========== INÍCIO: Exibição do Resumo do Desempenho ========== #}
+                 {% if performance %} {# Verifica se a view enviou os dados de performance #}
+                 <div class="performance-summary mt-4 p-3 bg-light border rounded">
+                     <h4 class="mb-3">Resumo do Desempenho (Estilo Cebraspe)</h4>
+                     <table class="table table-sm table-borderless mb-2" style="max-width: 350px;"> {# Aumentei um pouco a largura #}
+                         <tbody>
+                             <tr>
+                                 <td>Total de Itens Respondidos:</td>
+                                 <td class="text-end"><strong>{{ performance.total }}</strong></td>
+                             </tr>
+                             <tr>
+                                 <td>Acertos:</td>
+                                 <td class="text-end"><strong class="correct-answer">{{ performance.correct }}</strong>&nbsp;(+{{ performance.correct }})</td>
+                             </tr>
+                             <tr>
+                                 <td>Erros:</td>
+                                 <td class="text-end"><strong class="incorrect-answer">{{ performance.incorrect }}</strong>&nbsp;(-{{ performance.incorrect }})</td>
+                             </tr>
+                             <tr>
+                                 <td class="border-top pt-2"><strong>Pontuação Líquida:</strong></td>
+                                 <td class="text-end border-top pt-2">
+                                     <strong style="font-size: 1.1em;">
+                                         {% if performance.score > 0 %}+{% endif %}{{ performance.score }}
+                                     </strong>
+                                      / {{ performance.total }} {# Mostra score sobre total #}
+                                 </td>
+                             </tr>
+                              <tr>
+                                 <td>Aproveitamento Bruto:</td>
+                                 {# Exibe a porcentagem calculada na view #}
+                                 <td class="text-end"><strong>{{ performance.percentage }}%</strong></td>
+                             </tr>
+                         </tbody>
+                     </table>
+
+                     {# Mensagem de Feedback Opcional Baseada na Pontuação #}
+                     {% if performance.total > 0 %}
+                          {% if performance.score == performance.total %}
+                              <p class="alert alert-success mt-2 py-2 mb-0">Excelente! Você gabaritou! ({{ performance.percentage }}% de acertos)</p>
+                          {% elif performance.more_than_half %} {# Usa a flag calculada na view #}
+                               <p class="alert alert-info mt-2 py-2 mb-0">Ótimo desempenho! Pontuação líquida bem positiva. ({{ performance.percentage }}% de acertos)</p>
+                          {% elif performance.score > 0 %}
+                               <p class="alert alert-secondary mt-2 py-2 mb-0">Bom trabalho! Sua pontuação líquida foi positiva. ({{ performance.percentage }}% de acertos)</p>
+                          {% elif performance.score == 0 %}
+                               <p class="alert alert-warning mt-2 py-2 mb-0">Sua pontuação líquida foi zero. Atenção aos erros! ({{ performance.percentage }}% de acertos)</p>
+                          {% else %}
+                              <p class="alert alert-danger mt-2 py-2 mb-0">Sua pontuação líquida foi negativa. Revise os erros! ({{ performance.percentage }}% de acertos)</p>
+                          {% endif %}
+                     {% endif %}
+                 </div>
+                 {% endif %}
+                 {# ========== FIM: Exibição do Resumo do Desempenho ========== #}
+
+             </div> {# Fim do .results-validation #}
          {% endif %}
-         {# --- FIM DA SEÇÃO DE RESULTADOS CORRIGIDA --- #}
+         {# --- FIM DA SEÇÃO DE RESULTADOS --- #}
 
 
     </div> {# Fim do .container #}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    {# Script de loading (pode ser mantido ou melhorado depois) #}
+    {# Script de loading (mantido como estava) #}
     <script>
         const form = document.getElementById('generator-form');
         const submitButton = document.getElementById('submit-button');
         const loadingSpinner = document.getElementById('loading-spinner');
         const buttonText = document.getElementById('button-text');
+        // Converte a variável Django para booleano JS
         const serviceInitialized = {{ service_initialized|yesno:"true,false" }};
 
          if (!serviceInitialized && submitButton) {
@@ -188,25 +248,23 @@
 
         if (form && submitButton && loadingSpinner && buttonText) {
             form.addEventListener('submit', function(event) {
+                // Verifica a validação nativa do HTML5 antes de mostrar o spinner
                 if (form.checkValidity()) {
-                    // Verifica se o botão clicado foi o de gerar (se houver outros submits)
-                    const action = event.submitter ? event.submitter.value : 'generate';
-                    if (action === 'generate') {
-                         submitButton.disabled = true;
-                         loadingSpinner.style.display = 'inline-block';
-                         buttonText.textContent = ' Gerando...';
-                    }
+                     submitButton.disabled = true;
+                     loadingSpinner.style.display = 'inline-block'; // Mostra o spinner
+                     buttonText.textContent = ' Gerando...'; // Muda o texto
                 } else {
                      console.log("Validação HTML5 do formulário de geração falhou.");
                 }
             });
         }
 
+        // Para reabilitar o botão ao voltar pelo histórico do navegador
         window.addEventListener('pageshow', function (event) {
             if (event.persisted && submitButton && serviceInitialized) {
                  submitButton.disabled = false;
-                 loadingSpinner.style.display = 'none';
-                 buttonText.textContent = 'Gerar Questões';
+                 loadingSpinner.style.display = 'none'; // Esconde o spinner
+                 buttonText.textContent = 'Gerar Questões'; // Restaura o texto
             }
         });
     </script>
