@@ -1,10 +1,10 @@
-# generator/services.py
+# generator/services.py (CORRIGIDO - MÉTODO FALTANDO ADICIONADO)
 
 import logging
 from django.conf import settings
 import google.generativeai as genai
 # Corrigido para importar HarmBlockThreshold corretamente
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig # Importar GenerationConfig
 from .exceptions import ConfigurationError, AIServiceError, AIResponseError, ParsingError
 
 logger = logging.getLogger('generator')
@@ -23,10 +23,10 @@ class QuestionGenerationService:
             genai.configure(api_key=api_key)
 
             # --- Configuração de Geração ---
-            self.generation_config = genai.types.GenerationConfig(
-                # Usando getattr para segurança caso a setting não exista
+            # <<< CORREÇÃO: Usar GenerationConfig diretamente >>>
+            self.generation_config = GenerationConfig(
                 temperature=getattr(settings, 'AI_GENERATION_TEMPERATURE', 0.7) # Exemplo de default
-                # Adicione outros parâmetros de Geração aqui se necessário
+                # Adicione outros parâmetros de Geração aqui se necessário (ex: max_output_tokens)
             )
 
             # --- Inicialização do Modelo ---
@@ -44,13 +44,11 @@ class QuestionGenerationService:
             self._load_and_convert_safety_settings() # Carrega do settings.py
 
         except AttributeError as e:
-             # Pega erro se faltar uma setting OBRIGATÓRIA como API key ou model name
-             missing_setting = str(e).split("'")[-2] # Tenta extrair o nome da setting
+             missing_setting = str(e).split("'")[-2]
              raise ConfigurationError(f"Configuração obrigatória ausente em settings.py: '{missing_setting}'")
-        except ConfigurationError as e: # Pega os raises explícitos
+        except ConfigurationError as e:
              raise e
         except Exception as e:
-            # Pega outros erros potenciais durante a configuração do genai
             logger.critical(f"Falha inesperada ao inicializar o cliente Google AI: {e}", exc_info=True)
             raise ConfigurationError(f"Falha inesperada ao inicializar o cliente Google AI: {e}")
 
@@ -59,68 +57,49 @@ class QuestionGenerationService:
         raw_settings = getattr(settings, 'GOOGLE_AI_SAFETY_SETTINGS', None)
         if not raw_settings or not isinstance(raw_settings, list):
             logger.warning("GOOGLE_AI_SAFETY_SETTINGS não definidas, vazias ou inválidas em settings.py. Usando padrões da API.")
-            self.safety_settings = None # API usará padrões
+            self.safety_settings = None
             return
 
         converted_settings = []
-        # Mapeamento para converter strings de volta para Enums
         category_map = {name: member for name, member in HarmCategory.__members__.items()}
         threshold_map = {name: member for name, member in HarmBlockThreshold.__members__.items()}
 
         try:
             for setting in raw_settings:
                 if not isinstance(setting, dict):
-                    logger.warning(f"Item inválido encontrado em GOOGLE_AI_SAFETY_SETTINGS (não é dicionário): {setting}")
+                    logger.warning(f"Item inválido em GOOGLE_AI_SAFETY_SETTINGS (não é dicionário): {setting}")
                     continue
-
                 category_str = setting.get("category")
                 threshold_str = setting.get("threshold")
-
-                # Verifica se as chaves existem
                 if category_str is None or threshold_str is None:
-                    logger.warning(f"Dicionário incompleto em GOOGLE_AI_SAFETY_SETTINGS (falta 'category' ou 'threshold'): {setting}")
+                    logger.warning(f"Dicionário incompleto em GOOGLE_AI_SAFETY_SETTINGS: {setting}")
                     continue
-
                 category_enum = category_map.get(category_str)
                 threshold_enum = threshold_map.get(threshold_str)
-
                 if category_enum is None:
-                     # Log e continua para o próximo, em vez de falhar tudo
-                     logger.error(f"Valor inválido para 'category' em GOOGLE_AI_SAFETY_SETTINGS: '{category_str}'. Pulando esta configuração.")
+                     logger.error(f"Valor inválido para 'category' em GOOGLE_AI_SAFETY_SETTINGS: '{category_str}'. Pulando.")
                      continue
-                     # raise ConfigurationError(f"Valor inválido para 'category' em GOOGLE_AI_SAFETY_SETTINGS: '{category_str}'")
                 if threshold_enum is None:
-                     logger.error(f"Valor inválido para 'threshold' em GOOGLE_AI_SAFETY_SETTINGS: '{threshold_str}'. Pulando esta configuração.")
+                     logger.error(f"Valor inválido para 'threshold' em GOOGLE_AI_SAFETY_SETTINGS: '{threshold_str}'. Pulando.")
                      continue
-                     # raise ConfigurationError(f"Valor inválido para 'threshold' em GOOGLE_AI_SAFETY_SETTINGS: '{threshold_str}'")
+                converted_settings.append({"category": category_enum, "threshold": threshold_enum})
 
-                converted_settings.append({
-                    "category": category_enum,
-                    "threshold": threshold_enum
-                })
-
-            if converted_settings: # Só atribui se converteu pelo menos um
+            if converted_settings:
                  self.safety_settings = converted_settings
-                 logger.info(f"Configurações de segurança carregadas e convertidas de settings.py: {len(converted_settings)} regras.")
+                 logger.info(f"Configurações de segurança carregadas: {len(converted_settings)} regras.")
                  logger.debug(f"Detalhe Safety Settings: {self.safety_settings}")
             else:
-                 logger.warning("Nenhuma configuração de segurança válida encontrada após processar GOOGLE_AI_SAFETY_SETTINGS.")
-                 self.safety_settings = None # Usa padrões da API
-
+                 logger.warning("Nenhuma configuração de segurança válida encontrada.")
+                 self.safety_settings = None
         except Exception as e:
-             logger.error(f"Erro inesperado ao processar GOOGLE_AI_SAFETY_SETTINGS: {e}", exc_info=True)
-             # Levanta erro para alertar sobre falha na configuração de segurança
+             logger.error(f"Erro ao processar GOOGLE_AI_SAFETY_SETTINGS: {e}", exc_info=True)
              raise ConfigurationError(f"Erro ao processar GOOGLE_AI_SAFETY_SETTINGS: {e}")
 
-    # --- MÉTODO generate_questions ALTERADO ---
-    # Adicionado 'difficulty_level' como parâmetro
+    # --- MÉTODO generate_questions (Mantido como antes) ---
     def generate_questions(self, topic, num_questions, difficulty_level='medio'):
         """Gera afirmações estilo C/E com gabarito usando a API do Google AI."""
         if not self.model:
             raise ConfigurationError("Serviço de IA não inicializado corretamente.")
-
-        # --- MODIFICADO: Prompt inclui difficulty_level ---
-        # Instruções mais claras sobre o formato e a dificuldade.
         prompt = (
             f"**Instrução Principal:** Gere {num_questions} itens para julgamento (estilo Certo/Errado - Cespe/Cebraspe) "
             f"sobre o tópico principal: '{topic}'.\n"
@@ -135,168 +114,274 @@ class QuestionGenerationService:
             f"---"
             f"\n(Continue o padrão para os {num_questions} itens solicitados)"
         )
-        # --- FIM MODIFICAÇÃO ---
-
-        # Usa as safety_settings carregadas do settings.py (armazenadas em self.safety_settings)
         if self.safety_settings:
             logger.info(f"SERVICE CALL (C/E): Usando {len(self.safety_settings)} regras de segurança carregadas.")
             logger.debug(f"Detalhe Safety Settings para chamada: {self.safety_settings}")
         else:
             logger.info("SERVICE CALL (C/E): Usando configurações de segurança padrão da API.")
-
         try:
-            # --- MODIFICADO: Log inclui difficulty_level ---
             logger.info(f"Enviando requisição (C/E) para API (Modelo: {self.model._model_name}, Tópico: {topic[:50]}..., Dificuldade: {difficulty_level})")
-            # --- FIM MODIFICAÇÃO ---
-
             response = self.model.generate_content(
                 prompt,
-                generation_config=self.generation_config, # Passa config de geração (temp, etc)
-                safety_settings=self.safety_settings # Passa as configs de segurança (pode ser None)
+                generation_config=self.generation_config,
+                safety_settings=self.safety_settings
             )
-
-            # --- Verificação de Bloqueio (Melhorada) ---
-            # Acessa o primeiro candidato se existir
+            # Verificação de Bloqueio
             first_candidate = response.candidates[0] if response.candidates else None
-
             if first_candidate and first_candidate.finish_reason.name == 'SAFETY':
-                 # Tenta obter detalhes do bloqueio a partir do primeiro candidato ou do prompt_feedback
-                 block_reason = "SAFETY" # finish_reason indica bloqueio
-                 block_reason_message = "A resposta foi bloqueada devido às configurações de segurança."
-                 ratings_message = ""
-
-                 # Tenta obter ratings do candidato (mais comum para bloqueio de *resposta*)
-                 if first_candidate.safety_ratings:
-                      ratings_message = ", ".join([f"{r.category.name}: {r.probability.name}" for r in first_candidate.safety_ratings])
-
-                 # Tenta obter feedback do prompt (mais comum para bloqueio de *prompt*)
-                 elif response.prompt_feedback and response.prompt_feedback.block_reason:
-                      block_reason = response.prompt_feedback.block_reason.name
-                      block_reason_message = response.prompt_feedback.block_reason_message or block_reason_message
-                      if response.prompt_feedback.safety_ratings:
-                           ratings_message = ", ".join([f"{r.category.name}: {r.probability.name}" for r in response.prompt_feedback.safety_ratings])
-
+                 # ... (lógica de log e raise AIResponseError para bloqueio) ...
+                 block_reason = "SAFETY"; block_reason_message = "Resposta bloqueada."; ratings_message = ""
+                 if first_candidate.safety_ratings: ratings_message = ", ".join([f"{r.category.name}: {r.probability.name}" for r in first_candidate.safety_ratings])
+                 elif response.prompt_feedback and response.prompt_feedback.block_reason: block_reason = response.prompt_feedback.block_reason.name; block_reason_message = response.prompt_feedback.block_reason_message or block_reason_message; # etc...
                  logger.warning(f"Resposta da IA bloqueada (C/E). Razão: {block_reason}. Detalhes: '{block_reason_message}'. Ratings: [{ratings_message}]")
                  raise AIResponseError(f"A geração foi bloqueada pela API ({block_reason}). Ajuste as configurações de segurança ou o prompt.")
-
             elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
-                 # Caso estranho: Sem candidato, sem conteúdo ou sem 'parts'
                  finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"
                  logger.warning(f"Resposta da IA vazia ou inválida (C/E). Finish Reason: {finish_reason}. Resposta completa: {response}")
                  raise AIResponseError(f"A IA retornou uma resposta vazia ou inválida (Finish Reason: {finish_reason}).")
-            # --- Fim Verificação de Bloqueio ---
-
-
-            # Se não foi bloqueado, processa o texto da primeira parte do primeiro candidato
             generated_text = first_candidate.content.parts[0].text
-            # Chama o método de parsing interno (que agora extrai afirmação e gabarito)
-            parsed_questions = self._parse_questions(generated_text) # Chama o parser abaixo
+            parsed_questions = self._parse_questions(generated_text)
             return parsed_questions
+        except AIResponseError as e:
+            raise e
+        except Exception as e:
+            logger.error(f"Erro na chamada da API Google AI (C/E): {e}", exc_info=True)
+            if "safety" in str(e).lower() or "blocked" in str(e).lower() or "API key" in str(e):
+                 raise AIResponseError(f"Erro relacionado à API ou segurança (C/E): {e}")
+            else:
+                 raise AIServiceError(f"Erro na comunicação com a API Google AI (C/E): {e}")
+
+    # --- MÉTODO _parse_questions (Mantido como antes) ---
+    def _parse_questions(self, text: str) -> list:
+        """Faz o parsing do texto bruto da IA para extrair C/E."""
+        if not text: return []
+        logger.debug(f"Texto recebido para parsing (C/E): >>>\n{text}\n<<<")
+        structured_questions = []
+        current_affirmation = None
+        current_gabarito = None
+        lines = text.strip().split('\n')
+        try:
+            for line_num, line in enumerate(lines):
+                cleaned_line = line.strip()
+                if not cleaned_line: continue
+                if cleaned_line.upper().startswith("AFIRMAÇÃO:"):
+                    if current_affirmation is not None and current_gabarito is not None:
+                        structured_questions.append({'afirmacao': current_affirmation, 'gabarito': current_gabarito})
+                    current_affirmation = cleaned_line[len("Afirmação:"):].strip()
+                    current_gabarito = None
+                elif cleaned_line.upper().startswith("GABARITO:") and current_affirmation is not None:
+                    gabarito_text = cleaned_line[len("Gabarito:"):].strip().upper()
+                    if gabarito_text in ['C', 'E']: current_gabarito = gabarito_text
+                    else: logger.warning(f"Linha {line_num+1}: Gabarito inválido ('{gabarito_text}') encontrado."); current_affirmation = None; current_gabarito = None # Descarta item
+                elif cleaned_line == "---":
+                     if current_affirmation is not None and current_gabarito is not None:
+                          structured_questions.append({'afirmacao': current_affirmation, 'gabarito': current_gabarito})
+                     current_affirmation = None; current_gabarito = None
+                elif current_affirmation is not None and current_gabarito is None:
+                    current_affirmation += " " + cleaned_line # Continuação da afirmação
+                elif cleaned_line:
+                     logger.warning(f"Linha {line_num+1}: Texto inesperado ignorado: '{cleaned_line}'")
+            if current_affirmation is not None and current_gabarito is not None: # Adiciona último item
+                structured_questions.append({'afirmacao': current_affirmation, 'gabarito': current_gabarito})
+        except Exception as e:
+            logger.error(f"Erro durante o parsing C/E: {e}", exc_info=True)
+            raise ParsingError(f"Erro ao processar a estrutura da resposta C/E da IA: {e}")
+        logger.info(f"Resultado ESTRUTURADO FINAL (Afirmação/Gabarito) - {len(structured_questions)} itens")
+        if not structured_questions and text:
+             logger.warning(f"Não foi possível fazer o parsing C/E de nenhum item do texto: '{text[:200]}...'")
+             raise ParsingError("A resposta da IA não continha itens no formato esperado (Afirmação/Gabarito).")
+        return structured_questions
+
+    # --- <<< NOVO MÉTODO ADICIONADO >>> ---
+    def generate_discursive_exam_question(self, base_topic_or_context, num_aspects=3, area=None, complexity='Intermediária', language='pt-br'):
+        """
+        Gera uma questão discursiva estruturada (comando, aspectos) com base em um tópico/contexto.
+        """
+        if not self.model:
+            raise ConfigurationError("Serviço de IA não inicializado corretamente.")
+
+        # Construção do Prompt Detalhado
+        prompt_parts = [
+            f"**Instrução Principal:** Elabore uma questão de prova discursiva completa, no idioma '{language}', baseada no seguinte tópico geral ou texto de contexto:",
+            f"'{base_topic_or_context}'\n",
+            f"**Estrutura OBRIGATÓRIA da Saída:** A questão deve ser estruturada contendo:",
+            "1.  **Texto(s) Motivador(es):** Um ou mais textos curtos introdutórios relevantes (se aplicável, derivados do contexto fornecido ou criados com base no tópico). Pode ser omitido se o contexto fornecido for suficiente.",
+            "2.  **Comando:** A pergunta principal clara e direta que o candidato deve responder.",
+            f"3.  **Aspectos:** Exatamente {num_aspects} aspectos ou sub-itens específicos que a resposta deve abordar, listados de forma clara (ex: a), b), c)).\n",
+            f"**Diretrizes Adicionais:**",
+            f"- A complexidade da questão e dos aspectos deve ser '{complexity}'.",
+        ]
+        if area:
+            prompt_parts.append(f"- A questão deve ser relevante para a área de conhecimento: '{area}'. Use vocabulário apropriado.")
+        prompt_parts.append("- O comando e os aspectos devem ser diretamente relacionados ao tópico/contexto fornecido.")
+        prompt_parts.append("- Certifique-se de que a resposta à questão exige análise e desenvolvimento, não apenas cópia.")
+        prompt_parts.append("\n**Formato da Saída:** Apresente a questão completa em texto corrido ou markdown leve, seguindo a estrutura (Textos Motivadores, Comando, Aspectos).")
+
+        prompt = "\n".join(prompt_parts)
+
+        if self.safety_settings:
+            logger.info(f"SERVICE CALL (Disc. Q): Usando {len(self.safety_settings)} regras de segurança carregadas.")
+            logger.debug(f"Detalhe Safety Settings para chamada: {self.safety_settings}")
+        else:
+            logger.info("SERVICE CALL (Disc. Q): Usando configurações de segurança padrão da API.")
+
+        try:
+            logger.info(f"Enviando requisição (Disc. Q) para API (Modelo: {self.model._model_name}, Tópico: {base_topic_or_context[:50]}..., Complexidade: {complexity})")
+
+            response = self.model.generate_content(
+                prompt,
+                generation_config=self.generation_config,
+                safety_settings=self.safety_settings
+            )
+
+            # Verificação de Bloqueio (similar ao outro método)
+            first_candidate = response.candidates[0] if response.candidates else None
+            if first_candidate and first_candidate.finish_reason.name == 'SAFETY':
+                 # ... (lógica de log e raise AIResponseError para bloqueio) ...
+                 block_reason = "SAFETY"; block_reason_message = "Resposta bloqueada."; ratings_message = ""
+                 if first_candidate.safety_ratings: ratings_message = ", ".join([f"{r.category.name}: {r.probability.name}" for r in first_candidate.safety_ratings])
+                 elif response.prompt_feedback and response.prompt_feedback.block_reason: block_reason = response.prompt_feedback.block_reason.name; block_reason_message = response.prompt_feedback.block_reason_message or block_reason_message; # etc...
+                 logger.warning(f"Resposta da IA bloqueada (Disc. Q). Razão: {block_reason}. Detalhes: '{block_reason_message}'. Ratings: [{ratings_message}]")
+                 raise AIResponseError(f"A geração da questão discursiva foi bloqueada pela API ({block_reason}). Ajuste as configurações de segurança ou o prompt.")
+            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
+                 finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"
+                 logger.warning(f"Resposta da IA vazia ou inválida (Disc. Q). Finish Reason: {finish_reason}. Resposta completa: {response}")
+                 raise AIResponseError(f"A IA retornou uma resposta vazia ou inválida ao gerar a questão discursiva (Finish Reason: {finish_reason}).")
+
+            # Se passou, retorna o texto gerado
+            generated_text = first_candidate.content.parts[0].text
+            logger.info("Texto da questão discursiva gerado com sucesso pela IA.")
+            logger.debug(f"Texto Gerado (Disc. Q): {generated_text[:200]}...") # Log do início do texto
+            return generated_text
 
         except AIResponseError as e:
             # Relança o erro de bloqueio já tratado
             raise e
         except Exception as e:
             # Pega outros erros da API ou de comunicação
-            logger.error(f"Erro na chamada da API Google AI (C/E): {e}", exc_info=True)
-            # Simplifica a verificação de erro de segurança/bloqueio
+            logger.error(f"Erro na chamada da API Google AI (Disc. Q): {e}", exc_info=True)
             if "safety" in str(e).lower() or "blocked" in str(e).lower() or "API key" in str(e):
-                 raise AIResponseError(f"Erro relacionado à API ou segurança (C/E): {e}")
+                 raise AIResponseError(f"Erro relacionado à API ou segurança (Disc. Q): {e}")
             else: # Assume erro de comunicação/serviço genérico
-                 raise AIServiceError(f"Erro na comunicação com a API Google AI (C/E): {e}")
-    # --- FIM DO MÉTODO generate_questions ---
+                 raise AIServiceError(f"Erro na comunicação com a API Google AI (Disc. Q): {e}")
+    # --- <<< FIM DO NOVO MÉTODO >>> ---
 
 
-    # --- MÉTODO _parse_questions (sem alterações necessárias aqui) ---
-    def _parse_questions(self, text: str) -> list:
+    # --- MÉTODO generate_discursive_answer (Adicione se necessário, exemplo abaixo) ---
+    def generate_discursive_answer(self, essay_prompt, key_points=None, limit=None, area=None):
         """
-        Faz o parsing do texto bruto da IA para extrair uma lista de dicionários
-        contendo 'afirmacao' e 'gabarito' (C/E).
-        Espera o formato:
-        Afirmação: [Texto]
-        Gabarito: [C ou E]
-        --- (opcional)
+        Gera uma resposta discursiva modelo para um dado comando/prompt.
+        (Este método já existia na sua view, então o adiciono aqui para completar o serviço)
         """
-        if not text:
-            logger.warning("Texto recebido para parsing (C/E) está vazio.")
-            return []
+        if not self.model:
+            raise ConfigurationError("Serviço de IA não inicializado corretamente.")
 
-        logger.debug(f"Texto recebido para parsing (C/E): >>>\n{text}\n<<<")
-        structured_questions = []
-        current_affirmation = None
-        current_gabarito = None
+        prompt_parts = [
+            f"**Instrução Principal:** Elabore uma resposta discursiva completa e bem fundamentada para o seguinte comando:",
+            f"'{essay_prompt}'\n"
+        ]
+        if key_points:
+            prompt_parts.append(f"**Pontos-Chave Obrigatórios:** A resposta DEVE abordar os seguintes pontos:\n{key_points}\n")
+        if limit:
+             prompt_parts.append(f"**Limite de Tamanho:** A resposta deve respeitar o limite aproximado de '{limit}'.")
+        if area:
+             prompt_parts.append(f"**Área de Conhecimento:** Contextualize a resposta na área de '{area}'.")
 
-        lines = text.strip().split('\n')
+        prompt_parts.append("\n**Diretrizes Adicionais:**")
+        prompt_parts.append("- Use linguagem formal e clara.")
+        prompt_parts.append("- Apresente argumentos coesos e coerentes.")
+        prompt_parts.append("- Se possível, cite fontes ou conceitos relevantes (de forma genérica, se não houver dados específicos).")
+
+        prompt = "\n".join(prompt_parts)
+
+        # ... (Lógica de chamada à API e tratamento de erro similar aos outros métodos) ...
+        if self.safety_settings: logger.info(f"SERVICE CALL (Disc. Ans): Usando {len(self.safety_settings)} regras de segurança.")
+        else: logger.info("SERVICE CALL (Disc. Ans): Usando safety settings padrão.")
         try:
-            for line_num, line in enumerate(lines): # Adiciona número da linha para logs
-                cleaned_line = line.strip()
+            logger.info(f"Enviando requisição (Disc. Ans) para API (Modelo: {self.model._model_name}, Prompt: {essay_prompt[:50]}...)")
+            response = self.model.generate_content(prompt, generation_config=self.generation_config, safety_settings=self.safety_settings)
 
-                if not cleaned_line: # Ignora linhas vazias
-                    continue
+            # Verificação de Bloqueio
+            first_candidate = response.candidates[0] if response.candidates else None
+            if first_candidate and first_candidate.finish_reason.name == 'SAFETY':
+                 block_reason = "SAFETY"; block_reason_message = "Resposta bloqueada."; ratings_message = "" # ... (Lógica de log detalhado do bloqueio) ...
+                 logger.warning(f"Resposta da IA bloqueada (Disc. Ans). Razão: {block_reason}.")
+                 raise AIResponseError(f"A geração da resposta foi bloqueada pela API ({block_reason}).")
+            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
+                 finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"
+                 logger.warning(f"Resposta da IA vazia ou inválida (Disc. Ans). Finish Reason: {finish_reason}.")
+                 raise AIResponseError(f"A IA retornou uma resposta vazia ou inválida (Finish Reason: {finish_reason}).")
 
-                # Normaliza possíveis variações no início da linha e verifica
-                # Usando startswith para maior robustez
-                if cleaned_line.upper().startswith("AFIRMAÇÃO:"):
-                    # Se já tínhamos um item completo, salva antes de começar o novo
-                    if current_affirmation is not None and current_gabarito is not None:
-                        structured_questions.append({'afirmacao': current_affirmation, 'gabarito': current_gabarito})
-                        logger.debug(f"Item (C/E) parseado e adicionado (antes da linha {line_num+1}): Afirmação='{current_affirmation[:50]}...', Gabarito='{current_gabarito}'")
-                    # Inicia uma nova afirmação, pegando o texto após "Afirmação:"
-                    current_affirmation = cleaned_line[len("Afirmação:"):].strip()
-                    current_gabarito = None # Reseta o gabarito
-                    logger.debug(f"Linha {line_num+1}: Nova afirmação iniciada: '{current_affirmation[:50]}...'")
-
-                elif cleaned_line.upper().startswith("GABARITO:") and current_affirmation is not None:
-                    # Só processa gabarito se temos uma afirmação esperando por ele
-                    gabarito_text = cleaned_line[len("Gabarito:"):].strip().upper()
-                    # Permite apenas C ou E
-                    if gabarito_text in ['C', 'E']:
-                        current_gabarito = gabarito_text
-                        logger.debug(f"Linha {line_num+1}: Gabarito '{current_gabarito}' encontrado para afirmação atual.")
-                    else:
-                        logger.warning(f"Linha {line_num+1}: Gabarito inválido ('{gabarito_text}') encontrado para afirmação: '{current_affirmation[:100]}...' - Item será ignorado.")
-                        # Descarta a afirmação atual se o gabarito for inválido
-                        current_affirmation = None
-                        current_gabarito = None
-
-                elif cleaned_line == "---":
-                     # Se encontrou o separador e tinha um item completo, salva
-                     if current_affirmation is not None and current_gabarito is not None:
-                          structured_questions.append({'afirmacao': current_affirmation, 'gabarito': current_gabarito})
-                          logger.debug(f"Item (C/E) parseado e adicionado (via '---' na linha {line_num+1}): Afirmação='{current_affirmation[:50]}...', Gabarito='{current_gabarito}'")
-                     # Reseta para o próximo bloco, independentemente de ter salvo ou não
-                     current_affirmation = None
-                     current_gabarito = None
-                     logger.debug(f"Linha {line_num+1}: Separador '---' encontrado, resetando item atual.")
-
-                elif current_affirmation is not None and current_gabarito is None:
-                    # Considera continuação da afirmação (multi-linhas)
-                    # Só adiciona se não for uma linha que deveria ser Gabarito mas foi inválida
-                    # Adiciona espaço antes para juntar palavras corretamente
-                    current_affirmation += " " + cleaned_line
-                    logger.debug(f"Linha {line_num+1}: Adicionada à afirmação multi-linha: '{cleaned_line}'")
-
-                elif cleaned_line: # Linha não vazia que não se encaixa em nenhum padrão esperado
-                     logger.warning(f"Linha {line_num+1}: Texto inesperado ignorado durante parsing C/E: '{cleaned_line}'")
-
-
-            # Adiciona o último item se ele estiver completo após o loop terminar
-            if current_affirmation is not None and current_gabarito is not None:
-                structured_questions.append({'afirmacao': current_affirmation, 'gabarito': current_gabarito})
-                logger.debug(f"Último item (C/E) parseado e adicionado após loop: Afirmação='{current_affirmation[:50]}...', Gabarito='{current_gabarito}'")
-
+            generated_text = first_candidate.content.parts[0].text
+            logger.info("Texto da resposta discursiva gerado com sucesso pela IA.")
+            return generated_text
+        except AIResponseError as e:
+             raise e
         except Exception as e:
-            logger.error(f"Erro durante o parsing C/E do texto: {e}\nTexto Parcialmente Processado: {structured_questions}\nTexto Original: {text}", exc_info=True)
-            # É melhor lançar um erro específico de parsing para a view tratar
-            raise ParsingError(f"Erro ao processar a estrutura da resposta da IA: {e}")
-            # return structured_questions # Evitar retornar lista parcial em caso de erro grave
+             logger.error(f"Erro na chamada da API Google AI (Disc. Ans): {e}", exc_info=True)
+             if "safety" in str(e).lower() or "blocked" in str(e).lower() or "API key" in str(e):
+                 raise AIResponseError(f"Erro API/segurança (Disc. Ans): {e}")
+             else:
+                 raise AIServiceError(f"Erro comunicação API (Disc. Ans): {e}")
 
-        logger.info(f"Resultado ESTRUTURADO FINAL (Afirmação/Gabarito) - {len(structured_questions)} itens")
-        if not structured_questions and text:
-             logger.warning(f"Não foi possível fazer o parsing C/E de nenhum item formatado do texto: '{text[:200]}...'")
-             # Lança erro se o texto não era vazio mas nada foi parseado
-             raise ParsingError("A resposta da IA não continha itens no formato esperado (Afirmação/Gabarito).")
+    # --- MÉTODO evaluate_discursive_answer (Adicione se necessário, exemplo abaixo) ---
+    def evaluate_discursive_answer(self, exam_context, user_answer, line_count=None):
+        """
+        Avalia uma resposta discursiva fornecida pelo usuário em relação a um contexto/comando.
+        (Este método já existia na sua view, então o adiciono aqui para completar o serviço)
+        """
+        if not self.model:
+            raise ConfigurationError("Serviço de IA não inicializado corretamente.")
 
+        # Prompt para avaliação (EXEMPLO - AJUSTE CONFORME NECESSÁRIO)
+        prompt_parts = [
+            "**Instrução Principal:** Avalie a 'Resposta do Usuário' fornecida abaixo, considerando o 'Comando da Questão'.",
+            "Forneça uma análise detalhada incluindo:",
+            "1.  **Nota de Conteúdo (NC):** Uma nota de 0 a X (defina seu X, ex: 30.00) avaliando o atendimento aos aspectos implícitos ou explícitos no comando. Justifique brevemente.",
+            "2.  **Contagem de Erros (NE):** Uma contagem estimada de erros gramaticais ou de norma culta.",
+            "3.  **Nota Final (NPD):** Calcule a nota final (se houver uma fórmula padrão, como NC - k*NE).",
+            "4.  **Comentários/Feedback:** Um feedback geral sobre a qualidade da resposta.\n",
+            "---",
+            "**Comando da Questão:**",
+            f"{exam_context}",
+            "---",
+            "**Resposta do Usuário:**"
+        ]
+        if line_count and line_count != '0':
+             prompt_parts.append(f"(Resposta com aproximadamente {line_count} linhas)")
+        prompt_parts.append(f"{user_answer}")
+        prompt_parts.append("---")
+        prompt_parts.append("**Formato da Saída:** Apresente a avaliação de forma clara, usando marcadores como 'NC:', 'NE:', 'NPD:', 'Comentários:'.")
 
-        return structured_questions
-    # --- FIM DO MÉTODO _parse_questions ---
+        prompt = "\n".join(prompt_parts)
+
+        # ... (Lógica de chamada à API e tratamento de erro similar aos outros métodos) ...
+        if self.safety_settings: logger.info(f"SERVICE CALL (Disc. Eval): Usando {len(self.safety_settings)} regras de segurança.")
+        else: logger.info("SERVICE CALL (Disc. Eval): Usando safety settings padrão.")
+        try:
+             logger.info(f"Enviando requisição (Disc. Eval) para API (Modelo: {self.model._model_name}, Contexto: {exam_context[:50]}...)")
+             response = self.model.generate_content(prompt, generation_config=self.generation_config, safety_settings=self.safety_settings)
+
+             # Verificação de Bloqueio
+             first_candidate = response.candidates[0] if response.candidates else None
+             if first_candidate and first_candidate.finish_reason.name == 'SAFETY':
+                  block_reason = "SAFETY"; block_reason_message = "Resposta bloqueada."; ratings_message = "" # ... (Lógica de log detalhado do bloqueio) ...
+                  logger.warning(f"Resposta da IA bloqueada (Disc. Eval). Razão: {block_reason}.")
+                  raise AIResponseError(f"A avaliação foi bloqueada pela API ({block_reason}).")
+             elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
+                  finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"
+                  logger.warning(f"Resposta da IA vazia ou inválida (Disc. Eval). Finish Reason: {finish_reason}.")
+                  raise AIResponseError(f"A IA retornou uma resposta vazia ou inválida (Finish Reason: {finish_reason}).")
+
+             generated_text = first_candidate.content.parts[0].text
+             logger.info("Texto da avaliação discursiva recebido da IA.")
+             # A view será responsável por chamar o parser para este texto
+             return generated_text
+        except AIResponseError as e:
+              raise e
+        except Exception as e:
+              logger.error(f"Erro na chamada da API Google AI (Disc. Eval): {e}", exc_info=True)
+              if "safety" in str(e).lower() or "blocked" in str(e).lower() or "API key" in str(e):
+                  raise AIResponseError(f"Erro API/segurança (Disc. Eval): {e}")
+              else:
+                  raise AIServiceError(f"Erro comunicação API (Disc. Eval): {e}")

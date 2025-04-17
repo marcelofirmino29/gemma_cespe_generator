@@ -1,15 +1,22 @@
-# generator/forms.py
+# generator/forms.py (CORRIGIDO)
 from django import forms
 from django.conf import settings
+from django.core.exceptions import ValidationError # Garanta que está importado no topo do forms.py
 
+# --- Constantes de Choices (Opcional: definir aqui para reutilização) ---
+AREA_CHOICES = [
+    ('', '---------'), ('Direito', 'Direito'), ('Administração', 'Administração'),
+    ('Economia', 'Economia'), ('Atualidades', 'Atualidades'), ('Sociologia', 'Sociologia'),
+    ('Políticas Públicas', 'Políticas Públicas'), ('Português', 'Português (Teoria)'), # Adicionado de DiscursiveAnswerForm
+    ('Outra', 'Outra'),
+]
+
+# --- Formulário Gerador C/E ---
 class QuestionGeneratorForm(forms.Form):
-    # --- Definir as opções de dificuldade ---
     DIFFICULTY_CHOICES = [
-        # ('', '---------'), # Removido para tornar a seleção obrigatória sem opção vazia
         ('facil', 'Fácil'),
         ('medio', 'Médio'),
         ('dificil', 'Difícil'),
-        # Adicione mais níveis se necessário
     ]
 
     topic = forms.CharField(
@@ -34,56 +41,156 @@ class QuestionGeneratorForm(forms.Form):
         })
     )
 
-    # --- Adicionado o campo de nível de dificuldade ---
     difficulty_level = forms.ChoiceField(
         label="Nível de Dificuldade",
         choices=DIFFICULTY_CHOICES,
-        required=True, # Dificuldade é obrigatória
-        initial='medio',  # Define 'Médio' como padrão
+        required=True,
+        initial='medio',
         widget=forms.Select(attrs={
-            'class': 'form-control',
-            'style': 'max-width: 200px;' # Ajuste o estilo se necessário
+            'class': 'form-select', # Mudado para form-select para consistência Bootstrap
+            'style': 'max-width: 200px;'
         }),
         help_text="Selecione a dificuldade desejada para as questões."
     )
-    # --- Fim da adição ---
 
     def __init__(self, *args, **kwargs):
-        # Obtém o limite das kwargs ou das settings
-        max_questions_limit = kwargs.pop('max_questions', settings.AI_MAX_QUESTIONS_PER_REQUEST)
+        max_questions_limit = kwargs.pop('max_questions', getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 5)) # Use getattr para segurança
         super().__init__(*args, **kwargs)
-
-        # Define o max_value e o atributo 'max' do widget para num_questions
         self.fields['num_questions'].max_value = max_questions_limit
         self.fields['num_questions'].widget.attrs['max'] = max_questions_limit
         self.fields['num_questions'].help_text = f"Gere entre 1 e {max_questions_limit} questões por vez."
 
     def clean_topic(self):
         topic = self.cleaned_data.get('topic', '').strip()
-
-        # --- CORRIGIDO: Validar mínimo de 10 caracteres para consistência com a mensagem ---
         if len(topic) < 10:
             raise forms.ValidationError("Descreva o tópico com mais detalhes (mínimo 10 caracteres).")
-        # --- FIM CORREÇÃO ---
-
-        # # Tópicos genéricos demais que causam problemas frequentes (mantido comentado)
-        # generic_topics = ['redes de computadores', 'direito', 'filosofia', 'história']
-        # if topic.lower() in generic_topics:
-        #     raise forms.ValidationError("Tente ser mais específico. Por exemplo, em vez de 'redes de computadores', use 'Modelo OSI' ou 'Protocolos TCP/IP'.")
-
+        # Validação de tópicos genéricos (opcional) mantida comentada
+        # ...
         return topic
 
     def clean_num_questions(self):
         num = self.cleaned_data.get('num_questions')
-        # --- MELHORADO: Obter max_limit diretamente do campo como definido no __init__ ---
         max_limit = self.fields['num_questions'].max_value
-        # --- FIM MELHORIA ---
-
-        if num is not None and num > max_limit:
-            # A mensagem de erro usa o f-string corretamente
-            raise forms.ValidationError(f"O número máximo de questões permitido é {max_limit}.")
-
+        if num is not None: # Validação de max_value já é feita pelo IntegerField, mas podemos reforçar
+             if num > max_limit:
+                 raise forms.ValidationError(f"O número máximo de questões permitido é {max_limit}.")
+             if num < self.fields['num_questions'].min_value: # Valida mínimo também explicitamente
+                  raise forms.ValidationError(f"O número mínimo de questões permitido é {self.fields['num_questions'].min_value}.")
+        # Se num is None, a validação 'required=True' já deve ter falhado antes
         return num
 
-    # Não é necessário um clean_difficulty_level se a única validação
-    # for garantir que a escolha está entre as opções válidas (o ChoiceField já faz isso).
+# --- Formulário para Gerar a PERGUNTA/EXAME Discursivo (MERGIDO E CORRIGIDO) ---
+class DiscursiveExamForm(forms.Form):
+    # Usando AREA_CHOICES definido no início do arquivo
+    COMPLEXITY_CHOICES = [
+        ('Intermediária', 'Intermediária'),
+        ('Simples', 'Simples'),
+        ('Complexa', 'Complexa'),
+    ]
+    LANGUAGE_CHOICES = [
+        ('pt-br', 'Português (Brasil)'),
+        ('en', 'Inglês'),
+        # Adicione outros idiomas se desejar
+    ]
+
+    base_topic_or_context = forms.CharField(
+        label="Tópico Geral ou Contexto Base",
+        widget=forms.Textarea(attrs={
+            'rows': 8,
+            'placeholder': 'Forneça o tema geral (ex: Responsabilidade Civil do Estado, Reforma Tributária) ou cole um texto base (ex: um artigo de lei, uma notícia) a partir do qual a prova discursiva será elaborada...',
+            'class': 'form-control'
+        }),
+        required=True,
+        help_text="Este será o insumo para a IA criar os textos motivadores, o comando e os aspectos da questão."
+    )
+
+    num_aspects = forms.IntegerField(
+        label="Nº de Aspectos a Cobrar",
+        min_value=1,
+        max_value=5, # Limite razoável
+        initial=3,
+        required=False, # Opcional, default tratado na view/serviço
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'style': 'max-width: 120px;'}),
+        help_text="Quantos sub-itens a resposta deve abordar (Padrão: 3)."
+    )
+
+    area = forms.ChoiceField(
+        label="Área de Conhecimento (Opcional)",
+        choices=AREA_CHOICES, # Reutilizando choices definidos acima
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 250px;'}),
+        help_text="Ajuda a IA a definir o vocabulário e o tipo de texto motivador."
+    )
+
+    complexity = forms.ChoiceField(
+        label="Complexidade da Questão (Opcional)",
+        choices=COMPLEXITY_CHOICES,
+        required=False,
+        initial='Intermediária',
+        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 200px;'}),
+        help_text="Define a profundidade esperada da questão e dos aspectos."
+    )
+
+    # <<< CAMPO ADICIONADO DA SEGUNDA DEFINIÇÃO >>>
+    language = forms.ChoiceField(
+        label="Idioma da Questão",
+        choices=LANGUAGE_CHOICES,
+        required=False, # Tornar opcional, default será pt-br na view/serviço
+        initial='pt-br',
+        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 200px;'}),
+        help_text="Selecione o idioma desejado para a questão gerada."
+    )
+    # <<< FIM DA ADIÇÃO >>>
+
+    def clean_base_topic_or_context(self):
+        text = self.cleaned_data.get('base_topic_or_context', '').strip()
+        if len(text) < 20: # Validação mínima mantida
+            raise ValidationError("Forneça um tópico ou contexto com mais detalhes (mínimo 20 caracteres).")
+        return text
+
+# --- Formulário para Geração de Resposta Discursiva Modelo ---
+class DiscursiveAnswerForm(forms.Form):
+    # Usando AREA_CHOICES definido no início do arquivo
+    essay_prompt = forms.CharField(
+        label="Comando da Questão Discursiva",
+        widget=forms.Textarea(attrs={
+            'rows': 5,
+            'placeholder': 'Insira aqui o enunciado completo da questão discursiva...',
+            'class': 'form-control'
+        }),
+        required=True,
+        help_text="Seja o mais claro possível no comando da questão."
+    )
+
+    key_points = forms.CharField(
+        label="Pontos-chave a Abordar (Opcional)",
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Liste aqui tópicos ou argumentos que a resposta DEVE conter (um por linha)...',
+            'class': 'form-control'
+        }),
+        required=False,
+        help_text="Ajuda a direcionar a IA para incluir informações específicas."
+    )
+
+    limit = forms.CharField(
+        label="Limite de Tamanho (Opcional)",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 30 linhas', 'style': 'max-width: 200px;'}),
+        help_text="Informe o limite da prova (ex: 30 linhas, 500 palavras)."
+    )
+
+    area = forms.ChoiceField(
+        label="Área de Conhecimento (Opcional)",
+        choices=AREA_CHOICES, # Reutilizando choices definidos acima
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 250px;'}),
+        help_text="Ajuda a IA a contextualizar a resposta e o vocabulário."
+    )
+
+    def clean_essay_prompt(self):
+        prompt = self.cleaned_data.get('essay_prompt', '').strip()
+        if len(prompt) < 15: # Validação mínima mantida
+            raise ValidationError("O comando da questão parece muito curto (mínimo 15 caracteres).")
+        return prompt

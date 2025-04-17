@@ -1,0 +1,116 @@
+{% extends 'generator/base.html' %} {# <<< PASSO 1: Herda do base.html #}
+{% load static %} {# Pode ser necessário se usar static dentro do bloco #}
+
+{% block title %}Resultado da Avaliação - Gerador IA{% endblock title %} {# <<< Opcional: Título específico #}
+
+{% block extra_head %} {# <<< Opcional: Bloco para CSS específico desta página, se necessário #}
+    <style>
+        /* Estilos específicos para esta página podem ir aqui,
+           mas os estilos básicos já vêm do base.html */
+        .results-section { margin-bottom: 1.5rem; padding: 1.5rem; background-color: var(--bs-tertiary-bg); border-radius: 0.5rem; border: 1px solid var(--bs-border-color); }
+        pre { white-space: pre-wrap; word-wrap: break-word; background-color: var(--bs-body-bg); padding: 1rem; border: 1px solid var(--bs-border-color); border-radius: 0.25rem; max-height: 400px; overflow-y: auto; font-family: var(--bs-font-monospace); font-size: 0.875em; }
+        .evaluation-box { background-color: var(--bs-secondary-bg); border: 1px solid var(--bs-border-color-translucent); }
+        .score-highlight { font-weight: bold; color: var(--bs-primary); }
+        [data-bs-theme="dark"] .results-section { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
+        [data-bs-theme="dark"] pre { background-color: #2b3035; }
+        [data-bs-theme="dark"] .evaluation-box { background-color: var(--bs-tertiary-bg); }
+        /* Removi estilos duplicados que já estariam no base.html ou CSS global */
+    </style>
+{% endblock extra_head %}
+
+
+{% block content %} {# <<< PASSO 2: Todo o conteúdo específico da página vai dentro deste bloco #}
+    {# Header específico da página (Título e Breadcrumb) #}
+    <div class="text-center mb-4">
+        <h1>Avaliação da Resposta Discursiva (Beta)</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-center">
+            {# O link 'Início' já está no header do base.html, mas pode manter aqui se preferir #}
+            <li class="breadcrumb-item"><a href="{% url 'landing_page' %}">Início</a></li>
+            {# Verifica se o nome da URL está correto #}
+            <li class="breadcrumb-item"><a href="{% url 'generate_discursive_exam' %}">Gerar Questão Discursiva</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Resultado Avaliação</li>
+          </ol>
+        </nav>
+        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
+    </div>
+
+    {# Exibição de Erro #}
+    {% if evaluation_error %}
+        <div class="alert alert-danger"><strong>Erro na Avaliação:</strong> {{ evaluation_error }}</div>
+    {% endif %}
+
+    {# Exibição do Contexto e Resposta Submetidos #}
+    {% if submitted_exam_context or submitted_user_answer %}
+        {% if submitted_exam_context %}
+        <div class="results-section">
+            <h3>Questão Avaliada (Contexto Fornecido)</h3>
+            <pre><code>{{ submitted_exam_context }}</code></pre> {# Removido |linebreaksbr de pre #}
+        </div>
+        {% endif %}
+        {% if submitted_user_answer %}
+        <div class="results-section">
+            <h3>Sua Resposta (Submetida)</h3>
+            <pre><code>{{ submitted_user_answer }}</code></pre> {# Removido |linebreaksbr de pre #}
+        </div>
+        {% endif %}
+    {% elif not evaluation_error %}
+         <div class="alert alert-info">Dados da questão ou resposta não encontrados para exibição.</div>
+    {% endif %}
+
+    {# --- Exibe os RESULTADOS DA AVALIAÇÃO --- #}
+    {% if parsed_scores or evaluation_result_text %}
+        {# Se o PARSING funcionou #}
+        {% if parsed_scores %}
+            <div class="results-section evaluation-box p-4">
+                <h3 class="text-primary mb-3">Avaliação Detalhada da IA (Estimativa)</h3>
+                <div class="row">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <p><strong>Nota de Conteúdo (NC Estimada):</strong> <span class="score-highlight">{{ parsed_scores.NC|default:"N/A" }}</span> / ??</p>
+                        <p><strong>Contagem Estimada de Erros (NE):</strong> <span class="score-highlight">{{ parsed_scores.NE|default:"N/A" }}</span></p>
+                        <p><strong>Nota Final Estimada (NPD):</strong> <span class="score-highlight">{{ parsed_scores.NPD|default:"N/A" }}</span></p>
+                    </div>
+                     <div class="col-md-6">
+                        {% if parsed_scores.Comentários %}
+                            <p class="mb-1"><strong>Comentários/Justificativas do Parsing:</strong></p>
+                            {# Use linebreaksbr se Comentários for texto plano sem <p> ou <br> #}
+                            <p class="text-muted small">{{ parsed_scores.Comentários|linebreaksbr }}</p>
+                        {% else %}
+                            <p class="text-muted small">Nenhum comentário adicional extraído pelo parsing.</p>
+                        {% endif %}
+                        {# Removido comentário de template que estava visível #}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Exibe o TEXTO BRUTO se ele existir #}
+        {% if evaluation_result_text %}
+             <div class="results-section evaluation-box p-4 mt-3">
+                 <h3 class="text-secondary mb-3">Resultado Bruto da IA</h3>
+                 {% if parsed_scores and not evaluation_error %}
+                     <p class="small text-muted">Abaixo o texto completo retornado pela IA.</p>
+                 {% elif not parsed_scores and not evaluation_error %}
+                      <div class="alert alert-warning small">Não foi possível extrair as notas detalhadas do texto abaixo. Exibindo resultado bruto.</div>
+                 {% endif %}
+                 <pre><code>{{ evaluation_result_text }}</code></pre> {# Removido |linebreaksbr de pre #}
+             </div>
+        {% endif %}
+
+    {# Se não há erro, nem scores, nem texto bruto #}
+    {% elif not evaluation_error and not submitted_exam_context and not submitted_user_answer %}
+        <div class="alert alert-secondary">Nenhuma avaliação para exibir.</div>
+    {% endif %}
+
+    {# Botões de Navegação #}
+     <div class="mt-4 text-center">
+         {# Verifica nome da URL #}
+         <a href="{% url 'generate_discursive_exam' %}" class="btn btn-secondary">Tentar Avaliar Outra Resposta</a>
+         <a href="{% url 'landing_page' %}" class="btn btn-outline-secondary">Voltar ao Início</a>
+    </div>
+
+{% endblock content %} {# <<< Fim do Bloco de Conteúdo Específico #}
+
+{% block extra_js %}
+{# Bloco para JS específico desta página, se necessário #}
+{% endblock extra_js %}

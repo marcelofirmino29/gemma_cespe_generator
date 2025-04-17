@@ -1,0 +1,50 @@
+{% extends 'generator/base.html' %} {# <<< Diz que este template herda do base.html #}
+{% load static %} {# Load static é geralmente herdado, mas pode ser repetido se necessário #}
+
+{% block title %}Página Inicial - Gerador IA{% endblock title %} {# <<< Opcional: Define um título específico para esta página #}
+
+{% block content %} {# <<< Início do Bloco de Conteúdo Específico #}
+    <div class="text-center mb-5"> {# Título da Página Landing #}
+        <h1 class="display-5">Bem-vindo ao Gerador IA</h1>
+        <p class="lead text-muted">Selecione um modo de geração abaixo.</p>
+         {# Mensagem de erro de inicialização do serviço, se houver #}
+         {% if error_message %}
+             <div class="alert alert-danger small mt-3">{{ error_message }}</div>
+         {% endif %}
+    </div>
+
+    {# Conteúdo dos cards que você forneceu #}
+    <div class="row justify-content-center g-4 mb-5"> {# Adicionado margem inferior mb-5 #}
+
+        {# Card para Gerador C/E #}
+        <div class="col-lg-4 col-md-6"> {# Ajustado para 3 colunas em telas grandes, 2 em médias #}
+            <div class="card h-100 mode-card shadow-sm {% if not service_initialized %}opacity-50{% endif %}">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="card-title h4"><i class="bi bi-check2-square me-2 text-primary"></i>Gerador C/E por Tópico</h2> {# Ícone adicionado #}
+                    <p class="card-text text-muted small">Crie questões de Certo ou Errado (estilo Cebraspe) a partir de um tópico específico e nível de dificuldade.</p>
+                    <div class="mt-auto"> {# Alinha botão no fundo #}
+                        <a href="{% url 'generate_questions' %}" class="btn btn-primary stretched-link {% if not service_initialized %}disabled{% endif %}"> {# Botão primário #}
+                            <i class="bi bi-arrow-right-circle me-1"></i> Acessar Gerador C/E
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Card para Gerador de Questão Discursiva #}
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 mode-card shadow-sm {% if not service_initialized %}opacity-50{% endif %}">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="card-title h4"><i class="bi bi-file-earmark-plus-fill me-2 text-info"></i>Gerador de Questão Discursiva</h2> {# Ícone adicionado #}
+                    <p class="card-text text-muted small">Forneça um tema ou contexto e a IA criará uma questão discursiva completa, com textos, comando e aspectos.</p>
+                    <div class="mt-auto"> {# Alinha botão no fundo #}
+                        <a href="{% url 'generate_discursive_exam' %}" class="btn btn-info stretched-link {% if not service_initialized %}disabled{% endif %}"> {# Botão info mantido #}
+                            <i class="bi bi-arrow-right-circle me-1"></i> Acessar Gerador de Questão
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> {# Fim da row #}
+{% endblock content %} {# <<< Fim do Bloco de Conteúdo Específico #}

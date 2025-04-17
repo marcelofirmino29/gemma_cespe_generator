@@ -80,17 +80,20 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls' # Aponta para o urls.py principal em config/
 
+# Em config/settings.py
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates'], # Correção anterior para encontrar seus templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request', # Necessário (Warning W411)
+                'django.contrib.auth.context_processors.auth',   # Necessário (Error E402)
+                'django.contrib.messages.context_processors.messages', # Necessário (Error E404)
+                # Você pode ter outros context processors customizados aqui também
             ],
         },
     },

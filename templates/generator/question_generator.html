@@ -1,307 +1,219 @@
-<!DOCTYPE html>
-{# Adiciona o atributo data-bs-theme dinamicamente com JS depois #}
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Questões Cespe (C/E) - Gemini/Gemma</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+{% extends 'generator/base.html' %} {# <<< PASSO 1: Herda do base.html #}
+{% load static %}
+
+{% block title %}Gerador C/E - Gerador IA{% endblock title %} {# <<< Opcional: Título específico #}
+
+{% block extra_head %} {# <<< Bloco para CSS específico desta página #}
     <style>
-        /* Estilos padrão (Light Mode) - Usando variáveis Bootstrap sempre que possível */
-        :root { /* Define variáveis customizadas se precisar, mas prefira as do BS */
-          --custom-correct-color: green;
-          --custom-incorrect-color: red;
-        }
-
-        body {
-             padding-top: 20px;
-             /* Bootstrap lida com background e cor de texto com data-bs-theme */
-        }
-        .container {
-            max-width: 900px;
-        }
+        /* Estilos específicos para a página C/E */
         .question-item {
-             /* Usa variáveis BS para background e borda */
-             background-color: var(--bs-body-bg);
-             border: 1px solid var(--bs-border-color);
-             padding: 15px;
-             margin-bottom: 15px;
-             border-radius: 5px;
+             background-color: var(--bs-body-bg); border: 1px solid var(--bs-border-color);
+             padding: 15px; margin-bottom: 15px; border-radius: 5px;
         }
-        .question-item p {
-            margin-bottom: 0.75rem;
-             /* Cor de texto é herdada ou definida por var(--bs-body-color) */
-        }
-        .form-check-inline {
-            margin-right: 1rem;
-        }
-        .spinner-border {
-            display: none; /* Escondido inicialmente */
-        }
-        button:disabled {
-             cursor: not-allowed;
-             /* Bootstrap cuida do estilo de botão desabilitado */
-        }
-        small.form-text {
-             color: var(--bs-secondary-color); /* Usa variável BS */
-        }
+        .question-item p { margin-bottom: 0.75rem; }
+        .form-check-inline { margin-right: 1rem; }
+        .spinner-border { display: none; }
+        button:disabled { cursor: not-allowed; }
+        small.form-text { color: var(--bs-secondary-color); }
         .form-container {
-            background-color: var(--bs-tertiary-bg); /* Usa variável BS */
-            padding: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            margin-bottom: 2rem;
+            background-color: var(--bs-tertiary-bg); padding: 2rem; border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); margin-bottom: 2rem;
         }
-         h1, h2 {
-            color: var(--bs-heading-color); /* Usa variável BS */
-         }
-         .alert {
-             margin-top: 1rem;
-             /* Bootstrap cuida das cores do alerta */
-         }
+         .alert { margin-top: 1rem; }
          /* Estilos para resultados */
-         .correct-answer {
-             color: var(--custom-correct-color); /* Usa variável customizada */
-             font-weight: bold;
-         }
-         .incorrect-answer {
-             color: var(--custom-incorrect-color); /* Usa variável customizada */
-             font-weight: bold;
-         }
-         .feedback {
-             font-style: italic;
-             font-size: 0.9em;
-             margin-top: 5px;
-             color: var(--bs-body-color);
-         }
-         /* Estilos adicionais para o resumo de performance */
+         .correct-answer { color: var(--bs-success-text-emphasis); font-weight: bold; } /* Usando variável BS direta */
+         .incorrect-answer { color: var(--bs-danger-text-emphasis); font-weight: bold; } /* Usando variável BS direta */
+         .feedback { font-style: italic; font-size: 0.9em; margin-top: 5px; }
+         .justification { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); } /* Ajuste visual */
+
+         /* Estilos para o resumo de performance */
+         .results-validation { margin-top: 2rem; } /* Espaçamento */
          .performance-summary {
-             border: 1px solid var(--bs-border-color); /* Usa variável BS */
-             background-color: var(--bs-secondary-bg); /* Fundo levemente diferente */
+             border: 1px solid var(--bs-border-color);
+             background-color: var(--bs-secondary-bg);
+             border-radius: .375rem; /* Consistente com outros elementos */
          }
-         .performance-summary h4 {
-             color: var(--bs-emphasis-color); /* Usa variável BS */
-         }
-         .performance-summary .table {
-             margin-bottom: 0.5rem !important;
-             /* Cores da tabela são tratadas pelo BS */
-         }
-         .performance-summary .alert {
-             font-size: 0.95em;
-             /* Cores do alerta são tratadas pelo BS */
-         }
+         .performance-summary h4 { color: var(--bs-emphasis-color); }
+         .performance-summary .table { margin-bottom: 0.5rem !important; }
+         .performance-summary .alert { font-size: 0.95em; }
 
-        /* --- NOVO: Ajustes específicos para Dark Mode --- */
-        [data-bs-theme="dark"] {
-          --custom-correct-color: var(--bs-success-text-emphasis); /* Ajusta para cor de sucesso do tema escuro */
-          --custom-incorrect-color: var(--bs-danger-text-emphasis); /* Ajusta para cor de perigo do tema escuro */
-
-          .form-container {
-             /* Sombra sutil para modo escuro */
-             box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
-          }
-          /* Ajuste opcional se alguma cor não ficou boa automaticamente */
-          /* Ex:
-          .meu-elemento-muito-custom {
-              background-color: #444;
-              color: #ccc;
-          }
-          */
-        }
-        /* --- FIM Dark Mode --- */
-
-        /* Estilo para o botão flutuante do tema */
-        .bd-mode-toggle { z-index: 1500; } /* Garante que fique acima de outros elementos */
-
+         /* Ajustes Dark Mode (Herda a maioria do base, mas pode ter específicos) */
+         [data-bs-theme="dark"] .form-container,
+         [data-bs-theme="dark"] .results-container, /* Adicionado para consistência */
+         [data-bs-theme="dark"] .answer-input-section { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
     </style>
-</head>
-<body>
-    {# --- NOVO: Símbolos SVG para Ícones do Seletor de Tema --- #}
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-      <symbol id="check2" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></symbol>
-      <symbol id="circle-half" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/></symbol>
-      <symbol id="moon-stars-fill" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/><path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.734 1.734 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.734 1.734 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.734 1.734 0 0 0 1.097-1.097l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L13.863.1z"/></symbol>
-      <symbol id="sun-fill" viewBox="0 0 16 16"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/></symbol>
-    </svg>
-    {# --- FIM: Símbolos SVG --- #}
+{% endblock extra_head %}
 
-    {# --- NOVO: Seletor de Tema Dropdown --- #}
-    <div class="position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-        <div class="dropdown dropup"> {# Usando dropup para abrir para cima #}
-            <button class="btn btn-secondary dropdown-toggle d-flex align-items-center"
-                    id="bd-theme" type="button" aria-expanded="false"
-                    data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
-                <svg class="bi me-2 theme-icon-active" width="1em" height="1em"><use href="#circle-half"></use></svg>
-                <span class="d-lg-none ms-2" id="bd-theme-text">Tema</span> {# Texto para telas pequenas #}
+
+{% block content %} {# <<< PASSO 2: Todo o conteúdo específico da página vai aqui #}
+
+    {# Removido o Seletor de Tema e SVGs מכאן, pois eles estão no base.html #}
+
+    {# Header específico da página C/E #}
+     <header class="text-center mb-4">
+        <h1>Gerador de Questões Estilo Cebraspe (Certo/Errado)</h1>
+        <p class="lead">Use a IA Gemini/Gemma para criar itens de julgamento sobre um tópico.</p>
+        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
+        <!-- {# Navegação Breadcrumb (Pode simplificar/remover se o header base for suficiente) #}
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-center">
+            <li class="breadcrumb-item"><a href="{% url 'landing_page' %}">Início</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Gerador C/E</li>
+          </ol>
+        </nav> -->
+    </header>
+
+    {# Mensagem de erro de inicialização #}
+    {% if not service_initialized %}
+        <div class="alert alert-danger" role="alert">
+            <strong>Erro Crítico de Configuração:</strong> O serviço de geração não pôde ser inicializado. O formulário está desabilitado. <br>
+             {% if error_message %} Detalhe técnico: {{ error_message }} {% endif %}
+        </div>
+    {% endif %}
+
+    {# Formulário de Geração C/E #}
+    <div class="form-container">
+        <form method="post" id="generator-form" action="{% url 'generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
+            {% csrf_token %}
+             <div class="mb-3">
+                <label for="{{ form.topic.id_for_label }}" class="form-label">{{ form.topic.label }}</label>
+                {{ form.topic }} {# Renderiza widget do form #}
+                {% if form.topic.help_text %}<small class="form-text text-muted">{{ form.topic.help_text }}</small>{% endif %}
+                {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
+            </div>
+             <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>
+                    {{ form.num_questions }} {# Renderiza widget #}
+                     {% if form.num_questions.help_text %}<small class="form-text text-muted">{{ form.num_questions.help_text }}</small>{% endif %}
+                     {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
+                </div>
+                 <div class="col-md-8"> {# Ajustado col-md para ocupar espaço restante #}
+                    <label for="{{ form.difficulty_level.id_for_label }}" class="form-label">{{ form.difficulty_level.label }}</label>
+                    {{ form.difficulty_level }} {# Renderiza widget #}
+                    {% if form.difficulty_level.help_text %}<small class="form-text text-muted">{{ form.difficulty_level.help_text }}</small>{% endif %}
+                    {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
+                </div>
+            </div>
+             <button type="submit" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span>
+                <span id="button-text">Gerar Questões</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text">
-                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
-                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#sun-fill"></use></svg>Claro
-                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
-                    </button></li>
-                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
-                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#moon-stars-fill"></use></svg>Escuro
-                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
-                    </button></li>
-                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" aria-pressed="false"> {# Começa sem 'active' aqui, JS definirá #}
-                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#circle-half"></use></svg>Automático
-                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
-                    </button></li>
-            </ul>
-        </div>
+        </form>
     </div>
-    {# --- FIM: Seletor de Tema --- #}
 
-
-    <div class="container">
-        {# ... (header, form de geração, exibição de erros, etc como antes) ... #}
-         <header class="text-center mb-4">
-            <h1>Gerador de Questões Estilo Cebraspe (Certo/Errado)</h1>
-            <p class="lead">Use a IA Gemini/Gemma para criar itens de julgamento sobre um tópico.</p>
-            {% if local_time %}<p><small>Executando em: Boa Vista/RR (Horário Local {{ local_time }})</small></p>{% endif %}
-        </header>
-
-        {% if not service_initialized %}
-            <div class="alert alert-danger" role="alert">
-                <strong>Erro Crítico de Configuração:</strong> O serviço de geração de questões não pôde ser inicializado. O formulário está desabilitado. Por favor, contate o administrador. <br>
-                 {% if error_message %} Detalhe técnico: {{ error_message }} {% endif %}
-            </div>
-        {% endif %}
-
-        <div class="form-container">
-            <form method="post" id="generator-form" action="{% url 'generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
-                {% csrf_token %}
-                 <div class="mb-3">
-                    <label for="{{ form.topic.id_for_label }}" class="form-label">{{ form.topic.label }}</label>
-                    {{ form.topic }}
-                    {% if form.topic.help_text %}<small class="form-text text-muted">{{ form.topic.help_text }}</small>{% endif %}
-                    {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
-                </div>
-                 <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>
-                        {{ form.num_questions }}
-                         {% if form.num_questions.help_text %}<small class="form-text text-muted">{{ form.num_questions.help_text }}</small>{% endif %}
-                         {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
-                    </div>
-                     <div class="col-md-8">
-                        <label for="{{ form.difficulty_level.id_for_label }}" class="form-label">{{ form.difficulty_level.label }}</label>
-                        {{ form.difficulty_level }}
-                        {% if form.difficulty_level.help_text %}<small class="form-text text-muted">{{ form.difficulty_level.help_text }}</small>{% endif %}
-                        {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
-                    </div>
-                </div>
-                 <button type="submit" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span>
-                    <span id="button-text">Gerar Questões</span>
-                </button>
-            </form>
+    {# Mensagem de erro geral da Geração #}
+    {% if error_message and service_initialized and not form.errors %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>Atenção ao Gerar:</strong> {{ error_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+    {% endif %}
 
-        {% if error_message and service_initialized and not form.errors %}
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <strong>Atenção:</strong> {{ error_message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endif %}
-
-        {# Bloco para exibir as questões geradas e o formulário de respostas #}
-        {% if questions %}
-            <div class="results-container mt-4">
-                 <h2>Itens Gerados para Julgamento:</h2>
-                 <form method="post" action="{% url 'validate_answers' %}">
-                    {% csrf_token %}
-                    {% for item in questions %}
-                        <div class="question-item">
-                            <p><strong>Item {{ forloop.counter }}:</strong></p>
-                            <p>{{ item.afirmacao|linebreaksbr }}</p>
-                             <div class="mb-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="resposta_{{ forloop.counter0 }}" id="certo_{{ forloop.counter0 }}" value="C" required>
-                                    <label class="form-check-label" for="certo_{{ forloop.counter0 }}">Certo</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="resposta_{{ forloop.counter0 }}" id="errado_{{ forloop.counter0 }}" value="E" required>
-                                    <label class="form-check-label" for="errado_{{ forloop.counter0 }}">Errado</label>
-                                </div>
+    {# Bloco para exibir questões geradas e formulário de respostas #}
+    {% if questions %}
+        <div class="results-container mt-4">
+             <h2 class="h4 mb-3">Itens Gerados para Julgamento:</h2>
+             <form method="post" action="{% url 'validate_answers' %}">
+                {% csrf_token %}
+                {% for item in questions %}
+                    <div class="question-item">
+                        <p><strong>Item {{ forloop.counter }}:</strong> {{ item.afirmacao|linebreaksbr }}</p>
+                         <div class="mb-2">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="resposta_{{ forloop.counter0 }}" id="certo_{{ forloop.counter0 }}" value="C" required>
+                                <label class="form-check-label" for="certo_{{ forloop.counter0 }}">Certo</label>
                             </div>
-                             <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}">
-                             <input type="hidden" name="afirmacao_{{ forloop.counter0 }}" value="{{ item.afirmacao }}">
-                             <input type="hidden" name="gabarito_{{ forloop.counter0 }}" value="{{ item.gabarito|default:'?' }}">
-                             <input type="hidden" name="justificativa_{{ forloop.counter0 }}" value="{{ item.justificativa|default:'Justificativa não fornecida.' }}">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="resposta_{{ forloop.counter0 }}" id="errado_{{ forloop.counter0 }}" value="E" required>
+                                <label class="form-check-label" for="errado_{{ forloop.counter0 }}">Errado</label>
+                            </div>
                         </div>
-                        {% if not forloop.last %}<hr class="my-3">{% endif %}
-                    {% empty %}
-                         <div class="alert alert-info" role="alert">Nenhuma questão foi retornada.</div>
-                    {% endfor %}
-                     {% if questions %}
-                       <button type="submit" class="btn btn-success mt-3">Verificar Respostas</button>
-                    {% endif %}
-                </form>
-             </div>
-        {% endif %}
+                         {# Campos ocultos para enviar dados para validação #}
+                         <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}">
+                         <input type="hidden" name="afirmacao_{{ forloop.counter0 }}" value="{{ item.afirmacao }}">
+                         <input type="hidden" name="gabarito_{{ forloop.counter0 }}" value="{{ item.gabarito|default:'?' }}">
+                         <input type="hidden" name="justificativa_{{ forloop.counter0 }}" value="{{ item.justificativa|default:'Justificativa não fornecida.' }}">
+                    </div>
+                    {% if not forloop.last %}<hr class="my-3 d-md-none">{% endif %} {# Linha divisória apenas em telas pequenas? Ou sempre? Ajuste. #}
+                {% empty %}
+                     <div class="alert alert-info" role="alert">Nenhuma questão foi retornada.</div>
+                {% endfor %}
+                 {% if questions %}
+                   <button type="submit" class="btn btn-success mt-3">Verificar Respostas</button>
+                {% endif %}
+            </form>
+         </div>
+    {% endif %}
 
-         {# --- SEÇÃO DE RESULTADOS DA VALIDAÇÃO --- #}
-         {% if results %}
-             <div class="results-validation mt-4">
-                 <h2>Resultado da Verificação:</h2>
-                 {% for result in results %}
-                     <div class="question-item {% if result.correct %}border-success{% else %}border-danger{% endif %}">
-                         <p><strong>Item {{ forloop.counter }}:</strong></p>
-                         <p>{{ result.afirmacao|linebreaksbr }}</p>
-                         <p>Sua Resposta: <span class="{% if result.correct %}correct-answer{% else %}incorrect-answer{% endif %}">{% if result.user_answer == 'C' %}Certo{% elif result.user_answer == 'E' %}Errado{% else %}{{ result.user_answer|default:"Não respondido" }}{% endif %}</span></p>
-                         <p class="feedback">
-                             {% if result.correct %}<span class="correct-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.354 10.354l-2-2a.5.5 0 0 0-.708.708L7.293 11.5l3.5-3.5a.5.5 0 0 0-.708-.708l-3 3z"/></svg> Você acertou!</span>
-                             {% else %}<span class="incorrect-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg> Você errou.</span>{% endif %}
-                             Gabarito: {% if result.gabarito == 'C' %}Certo{% elif result.gabarito == 'E' %}Errado{% else %}{{ result.gabarito|default:"?" }}{% endif %}
-                         </p>
-                          {% if result.justificativa %}
-                         <div class="justification mt-2 pt-2 border-top">
-                             <p class="mb-1"><strong>Justificativa:</strong></p>
-                             <p class="text-muted small mb-0">{{ result.justificativa|linebreaksbr }}</p>
-                         </div>
+     {# --- SEÇÃO DE RESULTADOS DA VALIDAÇÃO --- #}
+     {% if results %}
+         <div class="results-validation mt-4">
+             <h2 class="h4 mb-3">Resultado da Verificação:</h2>
+             {% if error_message %} {# Mostra erro de processamento da validação, se houver #}
+                 <div class="alert alert-danger"><strong>Erro ao Processar Validação:</strong> {{ error_message }}</div>
+             {% endif %}
+
+             {% for result in results %}
+                 <div class="question-item {% if result.correct %}border-success{% else %}border-danger{% endif %}">
+                     <p><strong>Item {{ forloop.counter }}:</strong> {{ result.afirmacao|linebreaksbr }}</p>
+                     <p>Sua Resposta: <span class="{% if result.correct %}correct-answer{% else %}incorrect-answer{% endif %}">{% if result.user_answer == 'C' %}Certo{% elif result.user_answer == 'E' %}Errado{% else %}{{ result.user_answer|default:"Não resp." }}{% endif %}</span>
+                        (<span class="small">Gabarito: {% if result.gabarito == 'C' %}Certo{% elif result.gabarito == 'E' %}Errado{% else %}?{% endif %}</span>)
+                     </p>
+                     <p class="feedback mb-0"> {# Removido margin bottom #}
+                         {% if result.correct %}
+                            <span class="correct-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill me-1" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.354 10.354l-2-2a.5.5 0 0 0-.708.708L7.293 11.5l3.5-3.5a.5.5 0 0 0-.708-.708l-3 3z"/></svg>Você acertou!</span>
+                         {% else %}
+                            <span class="incorrect-answer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill me-1" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>Você errou.</span>
                          {% endif %}
+                     </p>
+                      {% if result.justificativa and result.justificativa != 'Justificativa não fornecida.' and result.justificativa != 'N/A.' %}
+                     <div class="justification mt-2 pt-2 border-top">
+                         <p class="text-muted small mb-0">{{ result.justificativa|linebreaksbr }}</p>
                      </div>
-                 {% endfor %}
-
-                 {% if performance %}
-                 <div class="performance-summary mt-4 p-3 bg-light border rounded">
-                     <h4 class="mb-3">Resumo do Desempenho (Estilo Cebraspe)</h4>
-                     <table class="table table-sm table-borderless mb-2" style="max-width: 350px;">
-                         <tbody>
-                             <tr><td>Total de Itens Respondidos:</td><td class="text-end"><strong>{{ performance.total }}</strong></td></tr>
-                             <tr><td>Acertos:</td><td class="text-end"><strong class="correct-answer">{{ performance.correct }}</strong>&nbsp;(+{{ performance.correct }})</td></tr>
-                             <tr><td>Erros:</td><td class="text-end"><strong class="incorrect-answer">{{ performance.incorrect }}</strong>&nbsp;(-{{ performance.incorrect }})</td></tr>
-                             <tr><td class="border-top pt-2"><strong>Pontuação Líquida:</strong></td><td class="text-end border-top pt-2"><strong style="font-size: 1.1em;">{% if performance.score > 0 %}+{% endif %}{{ performance.score }}</strong> / {{ performance.total }}</td></tr>
-                              <tr><td>Aproveitamento Bruto:</td><td class="text-end"><strong>{{ performance.percentage }}%</strong></td></tr>
-                         </tbody>
-                     </table>
-                      {% if performance.total > 0 %}
-                          {% if performance.score == performance.total %}<p class="alert alert-success mt-2 py-2 mb-0">Excelente! Gabaritou! ({{ performance.percentage }}% acertos)</p>
-                          {% elif performance.more_than_half %}<p class="alert alert-info mt-2 py-2 mb-0">Ótimo! Pontuação bem positiva. ({{ performance.percentage }}% acertos)</p>
-                          {% elif performance.score > 0 %}<p class="alert alert-secondary mt-2 py-2 mb-0">Bom! Pontuação positiva. ({{ performance.percentage }}% acertos)</p>
-                          {% elif performance.score == 0 %}<p class="alert alert-warning mt-2 py-2 mb-0">Neutro. Pontuação líquida zero. ({{ performance.percentage }}% acertos)</p>
-                          {% else %}<p class="alert alert-danger mt-2 py-2 mb-0">Atenção! Pontuação negativa. ({{ performance.percentage }}% acertos)</p>{% endif %}
                      {% endif %}
                  </div>
+             {% endfor %}
+
+             {# Resumo de Performance #}
+             {% if performance %}
+             <div class="performance-summary mt-4 p-3 rounded">
+                 <h4 class="mb-3">Resumo do Desempenho (Estilo Cebraspe)</h4>
+                 <table class="table table-sm table-borderless mb-2" style="max-width: 350px;">
+                     <tbody>
+                         <tr><td>Itens Respondidos:</td><td class="text-end fw-bold">{{ performance.total }}</td></tr>
+                         <tr><td>Acertos:</td><td class="text-end"><strong class="correct-answer">{{ performance.correct }}</strong>&nbsp;(+{{ performance.correct }})</td></tr>
+                         <tr><td>Erros:</td><td class="text-end"><strong class="incorrect-answer">{{ performance.incorrect }}</strong>&nbsp;(-{{ performance.incorrect }})</td></tr>
+                         <tr><td class="border-top pt-2"><strong>Pontuação Líquida:</strong></td><td class="text-end border-top pt-2"><strong style="font-size: 1.1em;">{% if performance.score > 0 %}+{% endif %}{{ performance.score }}</strong> / {{ performance.total }}</td></tr>
+                          <tr><td>Aproveitamento Bruto:</td><td class="text-end fw-bold">{{ performance.percentage }}%</td></tr>
+                     </tbody>
+                 </table>
+                  {% if performance.total > 0 %}
+                      {% if performance.score == performance.total %}<p class="alert alert-success py-2 mb-0">Excelente! Gabaritou!</p>
+                      {% elif performance.more_than_half %}<p class="alert alert-info py-2 mb-0">Ótimo! Pontuação bem positiva.</p>
+                      {% elif performance.score > 0 %}<p class="alert alert-secondary py-2 mb-0">Bom! Pontuação positiva.</p>
+                      {% elif performance.score == 0 %}<p class="alert alert-warning py-2 mb-0">Neutro. Pontuação líquida zero.</p>
+                      {% else %}<p class="alert alert-danger py-2 mb-0">Atenção! Pontuação negativa.</p>{% endif %}
                  {% endif %}
-
              </div>
-         {% endif %}
-         {# --- FIM DA SEÇÃO DE RESULTADOS --- #}
+             {% endif %} {# Fim if performance #}
+
+         </div>
+     {% endif %}
+     {# --- FIM DA SEÇÃO DE RESULTADOS --- #}
+
+{% endblock content %} {# <<< Fim do Bloco de Conteúdo Específico #}
 
 
-    </div> {# Fim do .container #}
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-    {# Script de loading (mantido como estava) #}
+{% block extra_js %} {# <<< Bloco para JS específico desta página #}
+    {# Script de loading (mantido) #}
     <script>
         const form = document.getElementById('generator-form');
         const submitButton = document.getElementById('submit-button');
         const loadingSpinner = document.getElementById('loading-spinner');
         const buttonText = document.getElementById('button-text');
-        const serviceInitialized = {{ service_initialized|yesno:"true,false" }}; // Converte Django bool para JS
+        // A variável JS 'serviceInitialized' deve ser definida pelo Django template
+        const serviceInitialized = {{ service_initialized|yesno:"true,false" }};
 
          if (!serviceInitialized && submitButton) {
              submitButton.disabled = true;
@@ -309,18 +221,18 @@
 
         if (form && submitButton && loadingSpinner && buttonText) {
             form.addEventListener('submit', function(event) {
-                if (form.checkValidity()) { // Usa validação HTML5 do navegador
-                     submitButton.disabled = true;
-                     loadingSpinner.style.display = 'inline-block';
-                     buttonText.textContent = ' Gerando...';
-                } else {
-                     console.log("Formulário de geração inválido (HTML5).");
-                     // Previne o spinner se o form não for válido no HTML5
-                     event.preventDefault(); // Impede o envio se inválido
-                }
+                // if (!form.checkValidity()) { // Validação HTML5 básica
+                //      console.log("Form C/E inválido (HTML5).");
+                //      event.preventDefault();
+                //      return;
+                // }
+                 // Mostra loading após validação passar (ou se não checou)
+                 submitButton.disabled = true;
+                 loadingSpinner.style.display = 'inline-block';
+                 buttonText.textContent = ' Gerando...';
             });
         }
-
+         // Reseta botão ao voltar com histórico
         window.addEventListener('pageshow', function (event) {
             if (event.persisted && submitButton && serviceInitialized) {
                  submitButton.disabled = false;
@@ -329,79 +241,5 @@
             }
         });
     </script>
-
-    {# --- NOVO: Script para Lógica do Dark Mode (Bootstrap 5.3) --- #}
-    <script>
-      /*!
-       * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
-       * Copyright 2011-2024 The Bootstrap Authors
-       * Licensed under the Creative Commons Attribution 3.0 Unported License.
-       */
-      (() => {
-        'use strict'
-        const getStoredTheme = () => localStorage.getItem('theme')
-        const setStoredTheme = theme => localStorage.setItem('theme', theme)
-        const getPreferredTheme = () => {
-          const storedTheme = getStoredTheme()
-          if (storedTheme) { return storedTheme }
-          return 'auto' // Default to auto
-        }
-        const setTheme = theme => {
-          if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.setAttribute('data-bs-theme', 'dark')
-          } else if (theme === 'auto'){
-             document.documentElement.setAttribute('data-bs-theme', 'light')
-          } else {
-            document.documentElement.setAttribute('data-bs-theme', theme)
-          }
-        }
-        setTheme(getPreferredTheme()) // Apply theme on load
-
-        const showActiveTheme = (theme, focus = false) => {
-          const themeSwitcher = document.querySelector('#bd-theme')
-          if (!themeSwitcher) { return }
-          const activeThemeIcon = document.querySelector('.theme-icon-active use')
-          const btnToActivate = document.querySelector(`[data-bs-theme-value="${theme}"]`)
-          // Check if btnToActivate exists before accessing properties
-          if (!btnToActivate) { return }
-          const svgOfActiveBtn = btnToActivate.querySelector('svg.theme-icon use').getAttribute('href')
-
-          document.querySelectorAll('[data-bs-theme-value]').forEach(element => {
-            element.classList.remove('active'); element.setAttribute('aria-pressed', 'false')
-            const checkIcon = element.querySelector('svg.bi.ms-auto.d-none')
-            if(checkIcon) { checkIcon.classList.add('d-none') } // Hide checkmark safely
-          })
-
-          btnToActivate.classList.add('active'); btnToActivate.setAttribute('aria-pressed', 'true')
-          const checkIconActive = btnToActivate.querySelector('svg.bi.ms-auto.d-none')
-          if(checkIconActive) { checkIconActive.classList.remove('d-none') } // Show checkmark safely
-
-          activeThemeIcon.setAttribute('href', svgOfActiveBtn)
-          const themeSwitcherLabel = `Theme (${btnToActivate.dataset.bsThemeValue})` // Simpler label
-          themeSwitcher.setAttribute('aria-label', themeSwitcherLabel)
-          if (focus) { themeSwitcher.focus() }
-        }
-
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-          const storedTheme = getStoredTheme()
-          if (storedTheme !== 'light' && storedTheme !== 'dark') {
-            setTheme(getPreferredTheme()) // Update if theme is 'auto'
-          }
-        })
-
-        window.addEventListener('DOMContentLoaded', () => {
-          showActiveTheme(getPreferredTheme()) // Set dropdown state on load
-          document.querySelectorAll('[data-bs-theme-value]')
-            .forEach(toggle => {
-              toggle.addEventListener('click', () => {
-                const theme = toggle.getAttribute('data-bs-theme-value')
-                setStoredTheme(theme); setTheme(theme); showActiveTheme(theme, true)
-              })
-            })
-        })
-      })()
-    </script>
-    {# --- FIM: Script Dark Mode --- #}
-
-</body>
-</html>
+    {# O Script do Dark Mode NÃO deve estar aqui, mas sim no base.html #}
+{% endblock extra_js %}
