@@ -1,14 +1,22 @@
-# generator/forms.py (CORRIGIDO)
+# generator/forms.py         
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError # Garanta que está importado no topo do forms.py
 
 # --- Constantes de Choices (Opcional: definir aqui para reutilização) ---
 AREA_CHOICES = [
-    ('', '---------'), ('Direito', 'Direito'), ('Administração', 'Administração'),
-    ('Economia', 'Economia'), ('Atualidades', 'Atualidades'), ('Sociologia', 'Sociologia'),
-    ('Políticas Públicas', 'Políticas Públicas'), ('Português', 'Português (Teoria)'), # Adicionado de DiscursiveAnswerForm
-    ('Outra', 'Outra'),
+    ('', '---------'),                         # Placeholder
+    ('Informática', 'Informática'),             # Primeira Opção
+    ('Português', 'Português (Teoria)'),        # Segunda Opção
+    ('Administração', 'Administração'),        # Início Ordem Alfabética
+    ('Atualidades', 'Atualidades'),
+    ('Direito', 'Direito'),
+    ('Economia', 'Economia'),
+    ('Mercado de Seguros', 'Mercado de Seguros'), # <<< ADICIONADO AQUI
+    ('Políticas Públicas', 'Políticas Públicas'),
+    ('Sociologia', 'Sociologia'),
+    # Adicione outras áreas aqui, mantendo a ordem alfabética se desejar
+    ('Outra', 'Outra'),                         # Última opção específica
 ]
 
 # --- Formulário Gerador C/E ---
@@ -62,8 +70,8 @@ class QuestionGeneratorForm(forms.Form):
 
     def clean_topic(self):
         topic = self.cleaned_data.get('topic', '').strip()
-        if len(topic) < 10:
-            raise forms.ValidationError("Descreva o tópico com mais detalhes (mínimo 10 caracteres).")
+        if len(topic) < 5:
+            raise forms.ValidationError("Descreva o tópico com mais detalhes (mínimo 5 caracteres).")
         # Validação de tópicos genéricos (opcional) mantida comentada
         # ...
         return topic
@@ -144,8 +152,8 @@ class DiscursiveExamForm(forms.Form):
 
     def clean_base_topic_or_context(self):
         text = self.cleaned_data.get('base_topic_or_context', '').strip()
-        if len(text) < 20: # Validação mínima mantida
-            raise ValidationError("Forneça um tópico ou contexto com mais detalhes (mínimo 20 caracteres).")
+        if len(text) < 5: # Validação mínima mantida
+            raise ValidationError("Forneça um tópico ou contexto com mais detalhes (mínimo 5 caracteres).")
         return text
 
 # --- Formulário para Geração de Resposta Discursiva Modelo ---
@@ -191,6 +199,6 @@ class DiscursiveAnswerForm(forms.Form):
 
     def clean_essay_prompt(self):
         prompt = self.cleaned_data.get('essay_prompt', '').strip()
-        if len(prompt) < 15: # Validação mínima mantida
-            raise ValidationError("O comando da questão parece muito curto (mínimo 15 caracteres).")
+        if len(prompt) < 5: # Validação mínima mantida
+            raise ValidationError("O comando da questão parece muito curto (mínimo 5 caracteres).")
         return prompt
