@@ -1,131 +1,202 @@
-# Gerador de Questões Certo/Errado (Estilo Cebraspe) com IA Generativa
 
-![Screenshot da Aplicação](image_fb989a.png)
-*(Substitua 'image_fb989a.png' pelo caminho correto se você adicionar a imagem ao repositório)*
+# Gerador de Questões IA (Estilo Cespe/Cebraspe e Discursivas) v1.0
 
-## Descrição
+## 📘 Descrição
 
-Este é um projeto Django que utiliza a API Google Generative AI (com modelos como Gemini/Gemma) para gerar questões de múltipla escolha no estilo Certo/Errado, similar às aplicadas pela banca Cebraspe (anteriormente Cespe). O usuário fornece um tópico e o número de questões desejado, a IA gera as afirmações e seus respectivos gabaritos (Certo ou Errado). A aplicação permite ao usuário responder às questões geradas e verifica imediatamente as respostas, mostrando o resultado.
-
-## Funcionalidades
-
-* Geração de questões Certo/Errado baseadas em um tópico fornecido pelo usuário.
-* Definição do número de questões a serem geradas (com limite configurável).
-* Interface web para inserir o tópico e responder às questões geradas.
-* Validação automática das respostas do usuário contra o gabarito gerado pela IA.
-* Exibição clara dos resultados (acertos e erros).
-
-## Tecnologias Utilizadas
-
-* **Backend:** Python, Django
-* **IA Generativa:** Google Generative AI API (Gemini/Gemma) - via biblioteca `google-generativeai`
-* **Frontend:** HTML, CSS (Bootstrap 5), JavaScript (básico)
-* **Ambiente:** Python Virtual Environment (`venv`)
-
-## Pré-requisitos
-
-* Python 3.10 ou superior
-* Git
-* Uma chave de API do Google AI Studio (anteriormente MakerSuite). Você pode obter uma em [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-
-## Instalação e Configuração
-
-1.  **Clone o repositório:**
-    ```bash
-    git clone <URL_DO_SEU_REPOSITORIO_GITHUB>
-    cd <NOME_DA_PASTA_DO_PROJETO> # Ex: gemma-cespe-generator
-    ```
-
-2.  **Crie e ative um ambiente virtual:**
-    ```bash
-    python -m venv venv
-    # Linux/Mac:
-    source venv/bin/activate
-    # Windows:
-    # venv\Scripts\activate
-    ```
-
-3.  **Instale as dependências:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  **Configure a Chave da API (IMPORTANTE):**
-    O projeto precisa da sua chave da API do Google AI para funcionar. **Não coloque sua chave diretamente no código que vai para o GitHub.** A melhor forma é usar variáveis de ambiente:
-    * **Método 1 (Recomendado - Variável de Ambiente):**
-        Defina uma variável de ambiente chamada `GOOGLE_API_KEY` com o valor da sua chave.
-        * No Linux/Mac (temporário, para a sessão atual do terminal):
-            ```bash
-            export GOOGLE_API_KEY='SUA_CHAVE_API_AQUI'
-            ```
-        * No Windows (temporário, para a sessão atual do cmd):
-            ```bash
-            set GOOGLE_API_KEY=SUA_CHAVE_API_AQUI
-            ```
-        * No Windows (PowerShell):
-            ```bash
-            $env:GOOGLE_API_KEY="SUA_CHAVE_API_AQUI"
-            ```
-        * Para definir permanentemente, consulte a documentação do seu sistema operacional.
-        * **Certifique-se que seu `settings.py` (ou `services.py`) está lendo a chave da variável de ambiente.** Exemplo em `settings.py`:
-            ```python
-            import os
-            GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
-            ```
-            *Se seu código atual (services.py) lê `settings.GOOGLE_API_KEY`, então a linha acima deve estar no seu `settings.py`.*
-
-    * **Método 2 (Arquivo .env):**
-        * Instale `python-dotenv`: `pip install python-dotenv`
-        * Crie um arquivo chamado `.env` na raiz do projeto (mesmo nível do `manage.py`).
-        * Adicione a seguinte linha ao arquivo `.env`:
-            ```dotenv
-            GOOGLE_API_KEY=SUA_CHAVE_API_AQUI
-            ```
-        * **Certifique-se que o arquivo `.env` está listado no seu `.gitignore`!** (Já deve estar se você usou o exemplo anterior).
-        * No topo do seu `settings.py`, adicione:
-            ```python
-            from dotenv import load_dotenv
-            import os
-            load_dotenv() # Carrega variáveis do .env
-            GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-            ```
-
-5.  **Execute as Migrações do Django (se houver modelos):**
-    (Este projeto pode não ter modelos próprios, mas é uma boa prática)
-    ```bash
-    python manage.py migrate
-    ```
-
-6.  **Execute o Servidor de Desenvolvimento:**
-    ```bash
-    python manage.py runserver
-    ```
-
-## Uso
-
-1.  Abra seu navegador e acesse `http://127.0.0.1:8000/` (ou a porta que o `runserver` indicar).
-2.  Digite o Tópico/Assunto sobre o qual deseja gerar questões.
-3.  Selecione o Número de Questões.
-4.  Clique em "Gerar Questões".
-5.  Aguarde a IA gerar as afirmações.
-6.  Responda cada item marcando "Certo" ou "Errado".
-7.  Clique em "Verificar Respostas".
-8.  Veja o resultado da correção na própria página.
-
-## Configurações Adicionais (settings.py)
-
-Você pode ajustar alguns parâmetros da IA e da aplicação no arquivo `settings.py`:
-
-* `GOOGLE_API_KEY`: Configurada via variável de ambiente (recomendado).
-* `AI_MODEL_NAME`: Modelo do Google AI a ser usado (ex: `'gemini-1.5-flash-latest'`).
-* `AI_GENERATION_TEMPERATURE`: Controla a "criatividade" da IA (0.0 a 1.0).
-* `AI_MAX_QUESTIONS_PER_REQUEST`: Limite máximo de questões por pedido no formulário.
-* `GOOGLE_AI_SAFETY_SETTINGS`: Configurações de segurança para a API (veja a documentação do Google AI).
-
-## Contato
-
-Marcelo Firmino - [seu-email@exemplo.com](mailto:seu-email@exemplo.com) *(Opcional)*
-
-Link do Projeto: [https://github.com/seu-usuario/seu-repositorio](https://github.com/seu-usuario/seu-repositorio) *(Opcional)*
+O **Gerador de Questões IA** é uma aplicação web desenvolvida com Django e Python, projetada para auxiliar estudantes e professores na criação e resolução de questões de múltipla escolha (no formato Certo/Errado, similar ao Cebraspe) e questões discursivas, utilizando a API Google Generative AI (modelos Gemini/Gemma). Usuários cadastrados podem acompanhar seu desempenho via dashboard.
 
 ---
+
+## ✅ Funcionalidades Implementadas
+
+- **Geração de Questões Certo/Errado (C/E):**
+  - Geração por tópico e dificuldade.
+  - Gabarito (C/E) e justificativa automática.
+
+- **Geração de Questões Discursivas:**
+  - Com texto motivador, comando e aspectos.
+  - Suporte a múltiplos idiomas.
+
+- **Geração de Resposta Modelo (Discursiva):**
+  - Dissertação modelo com base nos aspectos e área.
+
+- **Validação de Respostas C/E:**
+  - Usuário responde, sistema compara com gabarito.
+  - Pontuação líquida ao estilo Cespe (acertos - erros).
+
+- **Avaliação de Respostas Discursivas (Beta):**
+  - Avaliação por aspecto, NC, NE e NPD.
+  - Feedback textual e parsing automático dos dados.
+
+- **Autenticação de Usuários:**
+  - Cadastro, login, logout.
+  - Proteção de views com `@login_required`.
+
+- **Persistência de Dados:**
+  - Modelos para áreas, questões, tentativas e avaliações.
+  - Todas as interações são salvas.
+
+- **Interface e Usabilidade:**
+  - Responsivo (Bootstrap 5).
+  - Tema claro/escuro automático.
+  - Navegação intuitiva e rodapé fixo.
+
+- **Dashboard de Desempenho:**
+  - Estatísticas de acertos/erros e últimas tentativas.
+
+---
+
+## 🧱 Arquitetura Resumida (Django MVT)
+
+- **Models:** Definem estrutura dos dados.
+- **Views:** Lógica de negócio e integração com templates/API.
+- **Templates:** Interface HTML com herança.
+- **Forms:** Validação e estrutura dos formulários.
+- **URLs:** Roteamento do app e projeto.
+- **Services:** Integração com Google Generative AI.
+- **Utils:** Funções auxiliares e parsers da IA.
+- **Exceptions:** Erros personalizados.
+- **Settings:** Configurações do Django, IA e segurança.
+- **.env:** Variáveis sensíveis (API key, secret key, etc).
+
+---
+
+## 🛠 Tecnologias Utilizadas
+
+- Python 3.10+
+- Django 5.2+
+- Google Generative AI SDK (`google-generativeai`)
+- Bootstrap 5
+- HTML5, CSS3, JavaScript
+- SQLite (padrão)
+- `python-dotenv`
+
+---
+
+## 📊 Modelagem de Dados
+
+### Diagrama de Classes (Visual)
+
+![Diagrama de Classes - Gerador IA](docs/diagrama_classes.svg)
+
+> 💡 Coloque o arquivo `diagrama_classes.svg` na pasta `docs/` do seu projeto.
+
+---
+
+## 🧩 Casos de Uso Principais
+
+**Ator Principal:** Usuário Cadastrado  
+**Ator Secundário:** Serviço de IA (Google Generative AI)
+
+- Gerenciar Conta (Registrar, Login, Logout, Mudar Senha)
+- Gerar Questão C/E
+- Gerar Questão Discursiva
+- Gerar Resposta Modelo Discursiva
+- Responder Questão C/E
+- Validar Respostas C/E
+- Responder Questão Discursiva
+- Avaliar Resposta Discursiva
+- Visualizar Desempenho (Dashboard)
+- Selecionar Tema da Interface
+
+---
+
+## ⚙️ Instalação Local
+
+### Pré-requisitos
+- Python 3.10+
+- Pip
+
+### Passos
+
+```bash
+# Clonar o projeto
+git clone [URL_DO_REPO]
+cd [PASTA_DO_PROJETO]
+
+# Criar ambiente virtual
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou
+. venv\Scripts\activate   # Windows
+
+# Instalar dependências
+pip install -r requirements.txt
+```
+
+### Criar `.env`
+
+```env
+GOOGLE_API_KEY=SUA_CHAVE_API_VALIDA_DO_GOOGLE_AI
+DJANGO_SECRET_KEY=SUA_CHAVE_SECRETA_LONGA_E_ALEATORIA_PARA_DJANGO
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost
+```
+
+### Migrate + Superusuário
+
+```bash
+python manage.py makemigrations generator
+python manage.py migrate
+python manage.py createsuperuser
+```
+
+### Executar
+
+```bash
+python manage.py runserver
+```
+
+Acesse: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+
+---
+
+## 🚀 Uso Básico
+
+1. Acesse a aplicação.
+2. Cadastre-se ou faça Login.
+3. Gere questões (discursiva ou C/E).
+4. Responda e envie para validação/avaliação.
+5. Veja seu desempenho no dashboard.
+6. Troque o tema se desejar.
+
+---
+
+## 🔐 Configurações Chave
+
+- `.env`: `GOOGLE_API_KEY`, `DJANGO_SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`
+- `settings.py`: modelos IA, `LOGIN_REDIRECT_URL`, segurança, logging
+- `services.py`: prompts e interações com IA
+- `utils.py`: parsing da resposta da IA
+
+---
+
+## 🧨 Tratamento de Erros
+
+- Exceções personalizadas em `exceptions.py`
+- Try/catch nas views e serviços
+- Logs configurados em `settings.py` com detalhamento
+
+---
+
+## ☁️ Deployment (Produção)
+
+- Use Gunicorn/uWSGI com Nginx
+- `DEBUG = False`
+- `SECRET_KEY` única e segura
+- Configurar `ALLOWED_HOSTS` corretamente
+- Executar `collectstatic`
+- Preferencialmente use PostgreSQL
+- Habilitar HTTPS
+
+---
+
+## 📌 Próximos Passos / Melhorias Futuras
+
+- Refinar parsers de resposta
+- Adicionar gráficos e filtros ao dashboard
+- Paginação do histórico
+- Favoritar questões
+- Melhorar mensagens de erro
+- Configurar painel admin do Django
+- Adicionar testes automatizados

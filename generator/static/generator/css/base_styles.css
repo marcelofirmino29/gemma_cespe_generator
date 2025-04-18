@@ -1,0 +1,30 @@
+html {
+    height: 100%;
+}
+body {
+   display: flex;
+   flex-direction: column;
+   min-height: 100vh;
+   padding-top: 56px; /* Ajuste se a altura da navbar for diferente */
+   /* padding-bottom removido */
+}
+main {
+   flex: 1 0 auto;
+}
+footer.footer {
+   flex-shrink: 0;
+}
+/* Estilos restantes que você tinha no base.html */
+.bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+@media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
+.bi { vertical-align: -.125em; fill: currentColor; }
+.bd-mode-toggle { z-index: 1500; }
+/* Adicione aqui quaisquer outros estilos base que estavam no <style> */
+
+/* Estilos para os controles de fonte no footer */
+.font-size-controls .btn {
+   /* Talvez um padding menor ou ajuste fino */
+   padding: 0.25rem 0.5rem;
+   font-size: 0.875rem;
+   line-height: 1.5;
+}
