@@ -15,34 +15,27 @@ load_dotenv(dotenv_path=dotenv_path)
 # See https://docs.djangoproject.com/en/stable/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-fallback-key-change-me') # Use variável de ambiente ou gere uma nova
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-fallback-key-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True' # Ler do .env ou padrão True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
 # --- Configurações da IA ---
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") # Busca a variável chamada GOOGLE_API_KEY
-AI_MODEL_NAME = 'gemini-1.5-flash-latest' # Ou outro modelo Gemma/Gemini disponível
-AI_GENERATION_TEMPERATURE = 0.7 # Ajuste conforme necessário
-AI_MAX_QUESTIONS_PER_REQUEST = 150 # Reduzido para testes iniciais mais rápidos
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+AI_MODEL_NAME = 'gemini-1.5-flash-latest'
+AI_GENERATION_TEMPERATURE = 0.7
+AI_MAX_QUESTIONS_PER_REQUEST = 150
 
-# === INÍCIO DA ADIÇÃO ===
 # Configurações de Segurança para a API Google AI (Usando Strings)
-# O serviço QuestionGenerationService precisará converter estas strings para os Enums da API.
-# Thresholds possíveis (strings): "BLOCK_NONE", "BLOCK_ONLY_HIGH", "BLOCK_MEDIUM_AND_ABOVE", "BLOCK_LOW_AND_ABOVE"
-# Veja a documentação oficial do Google AI para detalhes sobre cada categoria e threshold.
 GOOGLE_AI_SAFETY_SETTINGS = [
-    {"category": "HARM_CATEGORY_HARASSMENT",       "threshold": "BLOCK_NONE"}, # Menos restritivo
-    {"category": "HARM_CATEGORY_HATE_SPEECH",      "threshold": "BLOCK_NONE"}, # Menos restritivo
-    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold": "BLOCK_NONE"}, # Menos restritivo
-    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT","threshold": "BLOCK_NONE"}, # Menos restritivo
-    # Ajuste os valores de "threshold" conforme sua necessidade de segurança.
-    # "BLOCK_MEDIUM_AND_ABOVE" é um ponto de partida mais seguro que "BLOCK_NONE".
+    {"category": "HARM_CATEGORY_HARASSMENT",       "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH",      "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT","threshold": "BLOCK_NONE"},
 ]
-# === FIM DA ADIÇÃO ===
 
 # Verifica se a chave da API foi carregada (ESSENCIAL)
 if not GOOGLE_API_KEY:
@@ -80,20 +73,17 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls' # Aponta para o urls.py principal em config/
 
-# Em config/settings.py
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Correção anterior para encontrar seus templates
+        'DIRS': [BASE_DIR / 'templates'], # Para encontrar templates/registration/login.html
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request', # Necessário (Warning W411)
-                'django.contrib.auth.context_processors.auth',   # Necessário (Error E402)
-                'django.contrib.messages.context_processors.messages', # Necessário (Error E404)
-                # Você pode ter outros context processors customizados aqui também
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -112,66 +102,54 @@ DATABASES = {
 
 
 # Password validation
+# É recomendado adicionar os validadores padrão aqui:
 AUTH_PASSWORD_VALIDATORS = [
-    # ...
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
 
 # Internationalization
 LANGUAGE_CODE = 'pt-br'
-TIME_ZONE = 'America/Boa_Vista' # Fuso horário correto para Boa Vista
+TIME_ZONE = 'America/Boa_Vista'
 USE_I18N = True
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-# STATIC_ROOT = BASE_DIR / 'staticfiles' # Descomente para produção se necessário
+# STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# settings.py  (Adicione ou modifique esta variável)
+# --- Configurações de Autenticação ---
 
+# Redirecionamento após Logout (Já estava ok)
+LOGOUT_REDIRECT_URL = '/'
+
+# <<< LINHA ADICIONADA ABAIXO >>>
+# Redirecionamento após Login
+LOGIN_REDIRECT_URL = '/' # Redireciona para a URL raiz (landing page)
+
+
+# --- Configuração de Logging ---
 LOGGING = {
+    # ... (Configuração de Logging como antes) ...
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': { # Opcional: Define como as mensagens serão formatadas
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
+    'formatters': {
+        'verbose': {'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}', 'style': '{',},
+        'simple': {'format': '{levelname} {message}', 'style': '{',},
     },
     'handlers': {
-        'console': {
-            'level': 'DEBUG',  # <<< Nível mínimo que este handler processa
-            'class': 'logging.StreamHandler', # Envia para o terminal
-            'formatter': 'simple' # Escolha 'simple' ou 'verbose'
-        },
-        # Você pode adicionar outros handlers aqui (ex: para arquivos)
+        'console': {'level': 'DEBUG', 'class': 'logging.StreamHandler', 'formatter': 'simple'},
     },
     'loggers': {
-        'django': { # Configura logs internos do Django
-            'handlers': ['console'],
-            'level': 'INFO', # Geralmente INFO é suficiente para o Django
-            'propagate': False,
-        },
-        'generator': { # Logger específico do seu app (IMPORTANTE)
-            'handlers': ['console'],
-            'level': 'DEBUG',  # <<< Nível mínimo que este logger captura
-            'propagate': False, # Evita duplicar mensagens se o raiz também logar
-        },
-        # Se você não quiser configurar 'generator' especificamente, pode
-        # configurar o logger raiz '' para DEBUG:
-        # '': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        #     'propagate': True,
-        # },
+        'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False,},
+        'generator': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False,},
     },
 }

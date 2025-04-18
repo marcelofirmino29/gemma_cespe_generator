@@ -202,3 +202,36 @@ class DiscursiveAnswerForm(forms.Form):
         if len(prompt) < 5: # Validação mínima mantida
             raise ValidationError("O comando da questão parece muito curto (mínimo 5 caracteres).")
         return prompt
+    
+# No final de generator/forms.py
+
+from django import forms
+# Importa o UserCreationForm padrão e o model User
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User # Ou importe settings.AUTH_USER_MODEL se usar custom user
+
+# --- Formulário de Cadastro de Usuário ---
+class CustomUserCreationForm(UserCreationForm):
+    # Adicionamos o campo de email, que não vem por padrão no UserCreationForm
+    email = forms.EmailField(
+        required=True,
+        label="E-mail",
+        help_text="Um e-mail válido, por favor."
+    )
+
+    class Meta(UserCreationForm.Meta): # Herda a Meta do UserCreationForm
+        model = User # Especifica que este form cria um objeto User
+        # Define os campos do MODEL User que este form vai exibir/salvar,
+        # ALÉM dos campos de senha que já são tratados pelo UserCreationForm.
+        fields = ('username', 'email')
+
+    # Opcional: Adicionar validação para email único, se desejado
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Este endereço de e-mail já está em uso.")
+        return email
+
+    # Não precisamos redefinir o método save() se apenas adicionamos campos
+    # que já existem no model User e estão listados em Meta.fields.
+    # O save() do UserCreationForm pai cuidará de criar o usuário e salvar a senha hash.v

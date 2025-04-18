@@ -1,9 +1,9 @@
-{% extends 'generator/base.html' %} {# <<< PASSO 1: Herda do base.html #}
+{% extends 'generator/base.html' %} {# Herda do base.html #}
 {% load static %}
 
-{% block title %}Gerador de Questão Discursiva - Gerador IA{% endblock title %} {# <<< Opcional: Título específico #}
+{% block title %}Gerador de Questão Discursiva - Gerador IA{% endblock title %}
 
-{% block extra_head %} {# <<< Opcional: Bloco para CSS específico desta página #}
+{% block extra_head %}
     <style>
         /* Estilos específicos para esta página */
         .form-container, .results-container, .answer-input-section {
@@ -13,31 +13,21 @@
          .alert { margin-top: 1rem; }
          small.form-text { color: var(--bs-secondary-color); }
          .generated-exam-card { background-color: var(--bs-body-bg); border: 1px solid var(--bs-border-color-translucent);}
-         /* Estilo PRE para manter formatação mas usar fonte padrão */
          pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: inherit; padding: 0; margin: 0; background: none; border: none; }
-
          [data-bs-theme="dark"] .form-container,
          [data-bs-theme="dark"] .results-container,
          [data-bs-theme="dark"] .answer-input-section { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
          [data-bs-theme="dark"] .generated-exam-card { background-color: var(--bs-secondary-bg); }
-
     </style>
-    {# Biblioteca para renderizar Markdown (Exemplo: Marked.js) - OPCIONAL #}
     {# <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> #}
 {% endblock extra_head %}
 
-{% block content %} {# <<< PASSO 2: Todo o conteúdo específico da página vai dentro deste bloco #}
+{% block content %}
 
     <header class="text-center mb-4">
         <h1>Gerador de Questão Discursiva</h1>
         <p class="lead">Forneça um tema ou contexto e a IA criará uma questão discursiva completa.</p>
-        {# Navegação Breadcrumb (Pode simplificar/remover se o header base for suficiente) #}
-        <!-- <nav aria-label="breadcrumb">
-          <ol class="breadcrumb justify-content-center">
-            <li class="breadcrumb-item"><a href="{% url 'landing_page' %}">Início</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Gerador Questão Discursiva</li>
-          </ol>
-        </nav> -->
+        {# Breadcrumb comentado #}
         {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
     </header>
 
@@ -55,11 +45,11 @@
             {# Campo Tópico/Contexto Base #}
             <div class="mb-3">
                 <label for="{{ form.base_topic_or_context.id_for_label }}" class="form-label">{{ form.base_topic_or_context.label }}</label>
-                {{ form.base_topic_or_context }} {# Renderiza o widget do form #}
+                {{ form.base_topic_or_context }}
                 {% if form.base_topic_or_context.help_text %}<small class="form-text text-muted">{{ form.base_topic_or_context.help_text }}</small>{% endif %}
                 {% if form.base_topic_or_context.errors %}<div class="invalid-feedback d-block">{{ form.base_topic_or_context.errors|striptags }}</div>{% endif %}
             </div>
-            {# Linha para Opções: Nº Aspectos, Área, Complexidade, Idioma #}
+            {# Linha para Opções #}
             <div class="row g-3 mb-3">
                 <div class="col-md-3 col-sm-6">
                     <label for="{{ form.num_aspects.id_for_label }}" class="form-label">{{ form.num_aspects.label }}</label>
@@ -79,7 +69,7 @@
                     {% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}
                     {% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}
                 </div>
-                 <div class="col-md-3 col-sm-6"> {# Campo Idioma adicionado #}
+                 <div class="col-md-3 col-sm-6">
                     <label for="{{ form.language.id_for_label }}" class="form-label">{{ form.language.label }}</label>
                     {{ form.language }}
                     {% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}
@@ -102,15 +92,14 @@
     {% endif %}
 
     {# Exibição da Questão Gerada E Formulário para Resposta #}
-    {% if discursive_exam_text %}
+    {% if discursive_exam_text and questao_id %} {# Só mostra se a questão foi gerada E salva (tem ID) #}
         <div class="results-container mt-4">
             <h2 class="h4 mb-3">2. Questão Discursiva Gerada:</h2>
             <div class="card generated-exam-card mb-4">
                 <div class="card-body">
-                    {# Usando <pre> para tentar manter alguma formatação original, mas com estilo ajustado #}
                     <pre id="markdown-content">{{ discursive_exam_text }}</pre>
                 </div>
-                 <div class="card-footer text-end bg-transparent border-top-0 pt-0"> {# Ajustes visuais footer #}
+                 <div class="card-footer text-end bg-transparent border-top-0 pt-0">
                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">Copiar Texto da Questão</button>
                 </div>
             </div>
@@ -119,21 +108,23 @@
             <hr class="my-4">
             <div class="answer-input-section">
                 <h3 class="h4 mb-3">3. Sua Resposta para Avaliação (Beta)</h3>
-                {# Este formulário aponta para a URL de avaliação #}
                 <form method="post" action="{% url 'evaluate_discursive_answer' %}" id="user-answer-form">
                     {% csrf_token %}
-                    {# Campo Oculto para enviar o contexto da questão gerada #}
+                    {# Campo Oculto para enviar o contexto (texto completo da questão) #}
                     <textarea name="exam_context" style="display:none;" aria-hidden="true" readonly>{{ discursive_exam_text }}</textarea>
+                    {# Campo oculto para enviar contagem de linhas #}
+                    <input type="hidden" name="line_count" id="line_count_input" value="0">
+
+                    {# --- <<< CAMPO OCULTO COM O ID DA QUESTÃO ADICIONADO >>> --- #}
+                    <input type="hidden" name="questao_id" value="{{ questao_id }}">
+                    {# --- <<< FIM DA ADIÇÃO >>> --- #}
 
                     {# Campo para o usuário digitar a resposta #}
                     <div class="mb-3">
-                        <label for="user_answer_text" class="form-label visually-hidden">Sua Resposta</label> {# Label escondida visualmente #}
+                        <label for="user_answer_text" class="form-label visually-hidden">Sua Resposta</label>
                         <textarea class="form-control" id="user_answer_text" name="user_answer" rows="15" placeholder="Escreva sua resposta dissertativa aqui..." required></textarea>
                         <div id="word-count-feedback" class="form-text text-muted small mt-1">Contagem de palavras: 0</div>
                     </div>
-
-                     {# Campo para contar linhas (OPCIONAL) - Pode ser útil para a IA avaliar limites #}
-                     <input type="hidden" name="line_count" id="line_count_input" value="0">
 
                     {# Botão para submeter a resposta para avaliação #}
                     <button type="submit" class="btn btn-primary">
@@ -146,37 +137,26 @@
             {# ========== FIM: Formulário para Resposta do Usuário ========== #}
 
         </div> {# Fim results-container #}
-    {% endif %} {# Fim if discursive_exam_text #}
+    {% endif %} {# Fim if discursive_exam_text and questao_id #}
 
-{% endblock content %} {# <<< Fim do Bloco de Conteúdo Específico #}
+{% endblock content %}
 
 
-{% block extra_js %} {# <<< Bloco para JS específico desta página #}
-    {# Script loading button (Gerar Questão) #}
+{% block extra_js %}
+    {# ... (Scripts JS como antes: loading button, copy, word/line count) ... #}
     <script>
         const examForm = document.getElementById('discursive-exam-form');
         const examSubmitButton = document.getElementById('submit-discursive-exam');
         const examLoadingSpinner = document.getElementById('loading-spinner-discursive-exam');
         const examButtonText = document.getElementById('button-text-discursive-exam');
         const serviceInitialized = {{ service_initialized|yesno:"true,false" }};
-
          if (!serviceInitialized && examSubmitButton) { examSubmitButton.disabled = true; }
         if (examForm && examSubmitButton && examLoadingSpinner && examButtonText) {
             examForm.addEventListener('submit', function(event) {
-                // Checar validade HTML5 antes de mostrar loading (opcional)
-                // if (!examForm.checkValidity()) {
-                //      console.log("Form Q. Discursiva inválido (HTML5).");
-                //      event.preventDefault(); // Impede envio se inválido
-                //      // Poderia adicionar feedback visual aqui
-                //      return;
-                // }
-                // Mostra loading se passou na validação (ou se não checou)
                  examSubmitButton.disabled = true; examLoadingSpinner.style.display = 'inline-block';
                  examButtonText.textContent = ' Gerando Questão...';
-                 // Não precisa de event.preventDefault() aqui, deixa o form submeter
             });
         }
-         // Reseta botão ao voltar com histórico do navegador
          window.addEventListener('pageshow', function (event) {
             if (event.persisted && examSubmitButton && serviceInitialized) {
                  examSubmitButton.disabled = false; examLoadingSpinner.style.display = 'none';
@@ -184,41 +164,19 @@
             }
         });
     </script>
-    {# Script para Contagem de Palavras, Contagem de Linhas e Copiar Texto #}
     <script>
-         // Função para copiar texto
-        function copyToClipboard() {
-            const content = document.getElementById('markdown-content');
-            if (content) {
-                // Usar innerText preserva melhor as quebras de linha como o usuário as vê
-                navigator.clipboard.writeText(content.innerText)
-                    .then(() => { alert('Texto da questão copiado!'); })
-                    .catch(err => { console.error('Erro ao copiar: ', err); alert('Erro ao copiar.'); });
-            }
+        function copyToClipboard() { /* ... (função como antes) ... */
+             const content = document.getElementById('markdown-content');
+            if (content) { navigator.clipboard.writeText(content.innerText).then(() => { alert('Texto da questão copiado!'); }).catch(err => { console.error('Erro ao copiar: ', err); alert('Erro ao copiar.'); });}
         }
-
-        // Script Contagem de Palavras e Linhas
-        document.addEventListener('DOMContentLoaded', function() {
-            const textArea = document.getElementById('user_answer_text');
-            const wordCountFeedback = document.getElementById('word-count-feedback');
-            const lineCountInput = document.getElementById('line_count_input'); // Pega input hidden
-
+        document.addEventListener('DOMContentLoaded', function() { /* ... (Contagem palavras/linhas como antes) ... */
+             const textArea = document.getElementById('user_answer_text'); const wordCountFeedback = document.getElementById('word-count-feedback'); const lineCountInput = document.getElementById('line_count_input');
             if (textArea && wordCountFeedback && lineCountInput) {
                 textArea.addEventListener('input', function() {
-                    const text = textArea.value; // Pega valor completo
-                    const trimmedText = text.trim();
-                    // Contagem de palavras mais robusta
-                    const words = trimmedText === '' ? 0 : trimmedText.split(/\s+/).length;
-                    // Contagem de linhas simples (número de \n + 1, se não vazio)
-                    const lines = text === '' ? 0 : (text.match(/\n/g) || []).length + 1;
-
-                    wordCountFeedback.textContent = `Contagem de palavras: ${words}`;
-                    lineCountInput.value = lines; // Atualiza valor do input hidden de linhas
+                    const text = textArea.value; const trimmedText = text.trim(); const words = trimmedText === '' ? 0 : trimmedText.split(/\s+/).length; const lines = text === '' ? 0 : (text.match(/\n/g) || []).length + 1;
+                    wordCountFeedback.textContent = `Contagem de palavras: ${words}`; lineCountInput.value = lines;
                 });
-                // Dispara uma vez no load para inicializar contagem se houver texto (útil se recarregar com erro)
-                // textArea.dispatchEvent(new Event('input'));
             }
         });
     </script>
-    {# O Script do Dark Mode deve estar no base.html #}
 {% endblock extra_js %}

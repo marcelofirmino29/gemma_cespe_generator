@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 {% load static %}
-{# Adicionado data-bs-theme="auto" para que o JS possa controlá-lo #}
-<html lang="pt-br" data-bs-theme="auto">
+<html lang="pt-br" data-bs-theme="auto"> {# Habilita controle de tema via JS #}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,19 +8,31 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     {# <link rel="stylesheet" href="{% static 'generator/css/style.css' %}"> #}
     <style>
-        body { padding-top: 56px; /* Altura da navbar fixa */ padding-bottom: 60px; /* Espaço para rodapé fixo ou seletor */ }
-        .bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
-        @media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
-        .bi { vertical-align: -.125em; fill: currentColor; }
-        /* Estilo para o botão flutuante do tema */
-        .bd-mode-toggle { z-index: 1500; /* Garante que fique acima */ }
-        .footer { position: fixed; bottom: 0; width: 100%; height: 60px; line-height: 60px; } /* Exemplo rodapé fixo */
-    </style>
+      html {
+           height: 100%;
+      }
+      body {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          padding-top: 56px; /* Ajustado para altura da navbar fixa */
+      }
+      main {
+          flex: 1 0 auto;
+      }
+      footer.footer {
+          flex-shrink: 0;
+      }
+      .bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+      @media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
+      .bi { vertical-align: -.125em; fill: currentColor; }
+      .bd-mode-toggle { z-index: 1500; }
+  </style>
     {% block extra_head %}{% endblock extra_head %}
 </head>
 <body>
 
-    {# --- INÍCIO: Símbolos SVG para Ícones do Seletor de Tema --- #}
+    {# --- Ícones SVG para Seletor de Tema --- #}
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
       <symbol id="check2" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></symbol>
       <symbol id="circle-half" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/></symbol>
@@ -34,19 +45,40 @@
     <header>
         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
             <div class="container-fluid">
-                <a class="navbar-brand" href="{% url 'landing_page' %}">CESPE GENERATOR</a>
+                <a class="navbar-brand" href="{% url 'landing_page' %}">Meu Gerador IA</a> {# <<< Nome Ajustado >>> #}
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <ul class="navbar-nav me-auto mb-2 mb-md-0">
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="{% url 'landing_page' %}">Início</a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'landing_page' %}active{% endif %}" aria-current="page" href="{% url 'landing_page' %}">Início</a>
                         </li>
-                        {# Adicione outros links aqui, se necessário #}
+                         {# Adicione outros links principais aqui, se necessário #}
                     </ul>
-                    {# AQUI PODERIA SER UM LOCAL ALTERNATIVO PARA O SELETOR DE TEMA #}
-                    {# Exemplo: <div class="ms-auto"> [HTML do seletor aqui] </div> #}
+
+                    {# --- INÍCIO: Lógica Login/Logout/Cadastro ADICIONADA AQUI --- #}
+                    <div class="navbar-nav ms-auto"> {# ms-auto para alinhar à direita #}
+                        {% if user.is_authenticated %}
+                            {# Usuário Logado #}
+                             {# Link para o Dashboard #}
+                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Meu Desempenho</a>
+
+                            <span class="navbar-text me-3 ms-3 border-start ps-3"> {# Separador e margens #}
+                                Olá, {{ user.username }}!
+                            </span>
+                            <form action="{% url 'logout' %}" method="post" class="d-inline"> {# Formulário POST para logout #}
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-warning btn-sm">Sair</button>
+                            </form>
+                        {% else %}
+                            {# Usuário Não Logado #}
+                            <a class="btn btn-outline-light btn-sm me-2" href="{% url 'login' %}">Login</a>
+                            <a class="btn btn-warning btn-sm" href="{% url 'register' %}">Cadastre-se</a> {# Link para 'register' #}
+                        {% endif %}
+                    </div>
+                    {# --- FIM: Lógica Login/Logout/Cadastro --- #}
+
                 </div>
             </div>
         </nav>
@@ -54,156 +86,47 @@
     {# --- Fim Cabeçalho --- #}
 
     {# --- Área de Conteúdo Principal --- #}
-    <main class="container mt-5 mb-5"> {# Aumentei margem top #}
+    <main class="container mt-5 mb-5"> {# Margens ajustadas #}
         {% block content %}
         {# O conteúdo específico de cada página será inserido aqui #}
         {% endblock content %}
     </main>
     {# --- Fim Área de Conteúdo Principal --- #}
 
-    {# --- Rodapé (Opcional / Exemplo Fixo) --- #}
-    <footer class="footer mt-auto py-3 bg-body-tertiary border-top text-center"> {# Use bg-body-tertiary para adaptar ao tema #}
+    {# --- Rodapé --- #}
+    <footer class="footer mt-auto py-3 bg-body-tertiary border-top text-center">
         <div class="container">
-            <span class="text-body-secondary">CESPE GENERATOR - Um gerador de questões pela IA Gemma - MARCELO FIRMINO &copy; {% now "Y" %}</span> {# Use text-body-secondary #}
+            <span class="text-body-secondary">Meu Gerador IA &copy; {% now "Y" %}</span> {# <<< Nome Ajustado >>> #}
         </div>
     </footer>
     {# --- Fim Rodapé --- #}
 
-    {# --- INÍCIO: HTML do Seletor de Tema Dropdown (Fixo no Canto) --- #}
+    {# --- HTML do Seletor de Tema --- #}
     <div class="position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-        <div class="dropdown dropup"> {# dropup para abrir para cima #}
-            <button class="btn btn-secondary dropdown-toggle d-flex align-items-center"
-                    id="bd-theme" type="button" aria-expanded="false"
-                    data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
+         <div class="dropdown dropup">
+            <button class="btn btn-secondary dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
                 <svg class="bi me-2 theme-icon-active" width="1em" height="1em"><use href="#circle-half"></use></svg>
-                <span class="d-lg-none ms-2" id="bd-theme-text">Tema</span> {# Oculta texto em telas grandes #}
+                <span class="d-lg-none ms-2" id="bd-theme-text">Tema</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text">
-                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
-                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#sun-fill"></use></svg>Claro
-                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
-                    </button></li>
-                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
-                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#moon-stars-fill"></use></svg>Escuro
-                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
-                    </button></li>
-                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" aria-pressed="true"> {# Marcar 'auto' como ativo inicialmente? Ou JS define? #}
-                        <svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#circle-half"></use></svg>Automático
-                        <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
-                    </button></li>
+                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false"><svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#sun-fill"></use></svg>Claro<svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg></button></li>
+                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false"><svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#moon-stars-fill"></use></svg>Escuro<svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg></button></li>
+                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" aria-pressed="true"><svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#circle-half"></use></svg>Automático<svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg></button></li>
             </ul>
         </div>
     </div>
     {# --- FIM: HTML do Seletor de Tema --- #}
 
-
     {# Scripts JS Comuns #}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    {# --- INÍCIO: Script JS para Lógica do Dark Mode --- #}
+    {# --- Script JS para Lógica do Dark Mode --- #}
     <script>
-      /*!
-       * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
-       * Copyright 2011-2024 The Bootstrap Authors
-       * Licensed under the Creative Commons Attribution 3.0 Unported License.
-       */
-      (() => {
-        'use strict'
-        const getStoredTheme = () => localStorage.getItem('theme')
-        const setStoredTheme = theme => localStorage.setItem('theme', theme)
-
-        const getPreferredTheme = () => {
-          const storedTheme = getStoredTheme()
-          if (storedTheme) {
-            return storedTheme
-          }
-          // Define 'light' como padrão se 'auto' não for preferido ou para simplificar
-          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-          // return 'auto' // Ou mantenha 'auto' se preferir
-        }
-
-        const setTheme = theme => {
-          let themeToSet = theme
-          if (theme === 'auto') {
-             // Aplica o tema do sistema se for 'auto'
-            themeToSet = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-          }
-          // Aplica o atributo ao HTML tag
-          document.documentElement.setAttribute('data-bs-theme', themeToSet)
-        }
-
-        // Aplica o tema ao carregar a página
-        setTheme(getPreferredTheme())
-
-        const showActiveTheme = (theme, focus = false) => {
-          const themeSwitcher = document.querySelector('#bd-theme')
-          if (!themeSwitcher) { return }
-
-          // Tenta pegar o botão ativo antes para evitar erros se não achar o ícone
-          const btnToActivate = document.querySelector(`[data-bs-theme-value="${theme}"]`)
-          if (!btnToActivate) return; // Sai se o botão não existe
-
-          // Pega o ícone do botão ativo
-          const svgOfActiveBtn = btnToActivate.querySelector('svg.theme-icon use')?.getAttribute('href')
-          const activeThemeIcon = themeSwitcher.querySelector('.theme-icon-active use')
-
-           // Atualiza o ícone principal do botão dropdown (APENAS se encontrou o ícone)
-           if(activeThemeIcon && svgOfActiveBtn){
-                activeThemeIcon.setAttribute('href', svgOfActiveBtn)
-           }
-
-           // Atualiza label do botão
-           const themeSwitcherLabel = `Theme (${btnToActivate.dataset.bsThemeValue})`
-           themeSwitcher.setAttribute('aria-label', themeSwitcherLabel)
-
-
-          // Remove 'active' e check de todos os botões e adiciona ao correto
-          document.querySelectorAll('[data-bs-theme-value]').forEach(element => {
-            element.classList.remove('active')
-            element.setAttribute('aria-pressed', 'false')
-            const checkIcon = element.querySelector('svg.bi.ms-auto.d-none')
-            if(checkIcon) checkIcon.classList.add('d-none') // Garante que está escondido
-          })
-
-          btnToActivate.classList.add('active')
-          btnToActivate.setAttribute('aria-pressed', 'true')
-          const checkIconActive = btnToActivate.querySelector('svg.bi.ms-auto.d-none')
-           if(checkIconActive) checkIconActive.classList.remove('d-none') // Mostra check no item ativo
-
-          if (focus) { themeSwitcher.focus() }
-        }
-
-        // Listener para mudança de preferência do sistema (se usar 'auto')
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-          const storedTheme = getStoredTheme()
-          // Só atualiza se o usuário não tiver escolhido light/dark manualmente
-          if (storedTheme !== 'light' && storedTheme !== 'dark') {
-            setTheme(getPreferredTheme())
-            // Atualiza o dropdown para refletir 'auto' -> light/dark
-            const currentSystemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            showActiveTheme(currentSystemTheme); // Mostra o ícone do tema ativo do sistema
-          }
-        })
-
-        // Configura o estado inicial e listeners dos botões ao carregar
-        window.addEventListener('DOMContentLoaded', () => {
-          // Mostra o tema ativo no dropdown (pode ser 'auto', 'light', ou 'dark')
-          showActiveTheme(getPreferredTheme())
-
-          document.querySelectorAll('[data-bs-theme-value]')
-            .forEach(toggle => {
-              toggle.addEventListener('click', () => {
-                const theme = toggle.getAttribute('data-bs-theme-value')
-                setStoredTheme(theme) // Salva a escolha do usuário ('light', 'dark', ou 'auto')
-                setTheme(theme) // Aplica o tema (resolve 'auto' para light/dark)
-                showActiveTheme(theme, true) // Atualiza o dropdown para mostrar a escolha ativa
-              })
-            })
-        })
-      })()
+      /*! Color mode toggler ... (código JS completo do dark mode como antes) ... */
+      (() => {'use strict';const getStoredTheme=()=>localStorage.getItem('theme');const setStoredTheme=theme=>localStorage.setItem('theme',theme);const getPreferredTheme=()=>{const storedTheme=getStoredTheme();if(storedTheme){return storedTheme}return window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'};const setTheme=theme=>{let themeToSet=theme;if(theme==='auto'){themeToSet=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-bs-theme',themeToSet)};setTheme(getPreferredTheme());const showActiveTheme=(theme,focus=!1)=>{const themeSwitcher=document.querySelector('#bd-theme');if(!themeSwitcher){return}const btnToActivate=document.querySelector(`[data-bs-theme-value="${theme}"]`);if(!btnToActivate)return;const svgOfActiveBtn=btnToActivate.querySelector('svg.theme-icon use')?.getAttribute('href');const activeThemeIcon=themeSwitcher.querySelector('.theme-icon-active use');if(activeThemeIcon&&svgOfActiveBtn){activeThemeIcon.setAttribute('href',svgOfActiveBtn)}const themeSwitcherLabel=`Theme (${btnToActivate.dataset.bsThemeValue})`;themeSwitcher.setAttribute('aria-label',themeSwitcherLabel);document.querySelectorAll('[data-bs-theme-value]').forEach(element=>{element.classList.remove('active');element.setAttribute('aria-pressed','false');const checkIcon=element.querySelector('svg.bi.ms-auto.d-none');if(checkIcon)checkIcon.classList.add('d-none')});btnToActivate.classList.add('active');btnToActivate.setAttribute('aria-pressed','true');const checkIconActive=btnToActivate.querySelector('svg.bi.ms-auto.d-none');if(checkIconActive)checkIconActive.classList.remove('d-none');if(focus){themeSwitcher.focus()}};window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{const storedTheme=getStoredTheme();if(storedTheme!=='light'&&storedTheme!=='dark'){setTheme(getPreferredTheme());const currentSystemTheme=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';showActiveTheme(currentSystemTheme)}});window.addEventListener('DOMContentLoaded',()=>{showActiveTheme(getPreferredTheme());document.querySelectorAll('[data-bs-theme-value]').forEach(toggle=>{toggle.addEventListener('click',()=>{const theme=toggle.getAttribute('data-bs-theme-value');setStoredTheme(theme);setTheme(theme);showActiveTheme(theme,true)})})})})()
     </script>
     {# --- FIM: Script JS Dark Mode --- #}
 
-    {% block extra_js %}{% endblock extra_js %} {# Bloco para JS específicos da página #}
+    {% block extra_js %}{% endblock extra_js %}
 </body>
 </html>
