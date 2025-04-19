@@ -1,30 +1,55 @@
+/* static/generator/css/base_styles.css */
+
+/* Garante altura mínima para sticky footer */
 html {
-    height: 100%;
+   height: 100%;
 }
+
 body {
    display: flex;
    flex-direction: column;
-   min-height: 100vh;
-   padding-top: 56px; /* Ajuste se a altura da navbar for diferente */
-   /* padding-bottom removido */
+   min-height: 100vh; /* Mínimo da altura da janela */
+   padding-top: 56px;  /* Espaço para navbar fixa no topo (ajuste se a altura da navbar mudar) */
+   /* Removemos o padding-bottom daqui */
+   /* A fonte padrão será herdada ou definida pelo Bootstrap */
+   /* A cor padrão e o fundo são controlados por data-bs-theme no HTML tag */
 }
+
+/* Faz o conteúdo principal esticar */
 main {
-   flex: 1 0 auto;
+   flex: 1 0 auto; /* Equivalente a flex-grow: 1; flex-shrink: 0; flex-basis: auto; */
 }
+
+/* Impede o rodapé de encolher e remove altura fixa */
 footer.footer {
    flex-shrink: 0;
+   /* A altura será definida pelo padding py-3 do Bootstrap */
 }
-/* Estilos restantes que você tinha no base.html */
-.bd-placeholder-img { font-size: 1.125rem; text-anchor: middle; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
-@media (min-width: 768px) { .bd-placeholder-img-lg { font-size: 3.5rem; } }
-.bi { vertical-align: -.125em; fill: currentColor; }
-.bd-mode-toggle { z-index: 1500; }
-/* Adicione aqui quaisquer outros estilos base que estavam no <style> */
 
-/* Estilos para os controles de fonte no footer */
-.font-size-controls .btn {
-   /* Talvez um padding menor ou ajuste fino */
-   padding: 0.25rem 0.5rem;
-   font-size: 0.875rem;
-   line-height: 1.5;
+/* Estilos auxiliares do Bootstrap que podem ou não ser necessários */
+.bd-placeholder-img {
+   font-size: 1.125rem;
+   text-anchor: middle;
+   -webkit-user-select: none;
+   -moz-user-select: none;
+   user-select: none;
 }
+
+@media (min-width: 768px) {
+   .bd-placeholder-img-lg {
+       font-size: 3.5rem;
+   }
+}
+
+/* Estilo base para ícones Bootstrap (já incluído via CDN, mas não custa ter) */
+.bi {
+   vertical-align: -.125em;
+   fill: currentColor;
+}
+
+/* Estilo para o botão flutuante do tema */
+.bd-mode-toggle {
+   z-index: 1500; /* Garante que fique acima de outros elementos flutuantes */
+}
+
+/* Adicione aqui outros estilos GERAIS que você queira aplicar a TODAS as páginas */

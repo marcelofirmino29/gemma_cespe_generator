@@ -1,0 +1,82 @@
+/* Estilos específicos para a página C/E (question_generator.html) */
+.question-item {
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+.question-item p {
+   margin-bottom: 0.75rem;
+}
+.form-check-inline {
+   margin-right: 1rem;
+}
+/* Esconder spinner por padrão - JS controla exibição */
+.spinner-border {
+   display: none;
+}
+/* Estilo do botão desabilitado já vem do Bootstrap */
+button:disabled {
+    cursor: not-allowed;
+}
+small.form-text {
+    color: var(--bs-secondary-color);
+}
+.form-container {
+   background-color: var(--bs-tertiary-bg);
+   padding: 2rem;
+   border-radius: 0.5rem;
+   box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+   margin-bottom: 2rem;
+}
+.alert {
+    margin-top: 1rem;
+}
+/* Estilos para resultados da validação */
+.correct-answer {
+    color: var(--bs-success-text-emphasis); /* Usa variável Bootstrap para tema escuro/claro */
+    font-weight: bold;
+}
+.incorrect-answer {
+    color: var(--bs-danger-text-emphasis); /* Usa variável Bootstrap para tema escuro/claro */
+    font-weight: bold;
+}
+.feedback {
+    font-style: italic;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+.justification {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--bs-border-color-translucent); /* Borda mais sutil */
+}
+.results-validation {
+    margin-top: 2rem;
+}
+.performance-summary {
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-secondary-bg); /* Fundo levemente diferente */
+    border-radius: .375rem;
+}
+.performance-summary h4 {
+    color: var(--bs-emphasis-color);
+}
+.performance-summary .table {
+    margin-bottom: 0.5rem !important;
+}
+.performance-summary .alert {
+    font-size: 0.95em;
+}
+
+/* Ajustes Dark Mode específicos desta página (se necessários) */
+[data-bs-theme="dark"] .form-container,
+[data-bs-theme="dark"] .results-container, /* Adicionado para consistência se usar essa classe */
+[data-bs-theme="dark"] .results-validation .question-item { /* Ajusta fundo do item no modo escuro, se necessário */
+   /* background-color: var(--bs-gray-dark); */ /* Exemplo */
+}
+[data-bs-theme="dark"] .performance-summary {
+   /* Pode ajustar cores do resumo no modo escuro se necessário */
+   border-color: var(--bs-gray-700);
+}

@@ -19,8 +19,79 @@ from .exceptions import ( GeneratorError, ConfigurationError, AIServiceError, AI
 from .utils import parse_evaluation_scores
 # <<< Models importados (garanta que todos necessários estão aqui) >>>
 from .models import Questao, AreaConhecimento, TentativaResposta, Avaliacao
+from django.http import JsonResponse # Para retornar JSON
+from django.views.decorators.http import require_POST # Para garantir que só aceite POST
+import json # Para decodificar o corpo da requisição JSON
 
 logger = logging.getLogger('generator')
+
+
+# --- NOVA VIEW: Validação Individual C/E (AJAX) ---
+@login_required # Protege a view
+@require_POST # Garante que esta view só aceite requisições POST
+def validate_single_ce_view(request):
+    """
+    Recebe uma resposta para UM item C/E via POST (JSON/AJAX),
+    valida, salva a tentativa/avaliação e retorna o resultado em JSON.
+    """
+    try:
+        # Decodifica o corpo da requisição JSON enviado pelo JavaScript
+        data = json.loads(request.body)
+        questao_id = data.get('questao_id')
+        user_answer = data.get('user_answer') # Espera 'C' ou 'E'
+
+        logger.info(f"Recebido pedido AJAX validate_single_ce por {request.user.username} para Questao ID: {questao_id}")
+
+        # Validações dos dados recebidos
+        if not questao_id or user_answer not in ['C', 'E']:
+            logger.warning(f"Dados inválidos recebidos: ID={questao_id}, Resposta={user_answer}")
+            return JsonResponse({'error': 'Dados inválidos recebidos.'}, status=400) # Bad Request
+
+        # Busca a Questão e realiza a validação/salvamento (similar à validate_answers_view, mas para um item)
+        try:
+            questao_obj = Questao.objects.get(id=questao_id, tipo='CE')
+
+            # Cria/Atualiza TentativaResposta
+            tentativa, _ = TentativaResposta.objects.update_or_create(
+                usuario=request.user,
+                questao=questao_obj,
+                defaults={'resposta_ce': user_answer, 'data_resposta': timezone.now()}
+            )
+            logger.info(f"TentativaResposta ID {tentativa.id} (single) salva/atualizada.")
+
+            # Valida e calcula score
+            is_correct = (tentativa.resposta_ce == questao_obj.gabarito_ce)
+            score = 1 if is_correct else -1
+
+            # Cria/Atualiza Avaliacao
+            avaliacao, _ = Avaliacao.objects.update_or_create(
+                tentativa=tentativa,
+                defaults={'correto_ce': is_correct, 'score_ce': score}
+            )
+            logger.info(f"Avaliacao (single) salva/atualizada. Correto: {is_correct}, Score: {score}.")
+
+            # Prepara a resposta JSON
+            response_data = {
+                'correct': is_correct,
+                'gabarito': questao_obj.gabarito_ce,
+                'justification': questao_obj.justificativa_gabarito or "" # Envia string vazia se for None
+            }
+            return JsonResponse(response_data)
+
+        except Questao.DoesNotExist:
+            logger.error(f"Questão C/E ID {questao_id} não encontrada no DB para validação single.")
+            return JsonResponse({'error': 'Questão não encontrada.'}, status=404) # Not Found
+        except Exception as e:
+            logger.error(f"Erro ao processar validação single para Questao ID {questao_id}: {e}", exc_info=True)
+            return JsonResponse({'error': 'Erro interno ao processar a resposta.'}, status=500) # Internal Server Error
+
+    except json.JSONDecodeError:
+        logger.error("Erro ao decodificar JSON na validação single.")
+        return JsonResponse({'error': 'Requisição JSON inválida.'}, status=400)
+    except Exception as e:
+        logger.error(f"Erro inesperado em validate_single_ce_view: {e}", exc_info=True)
+        return JsonResponse({'error': 'Erro inesperado no servidor.'}, status=500)
+# --- FIM NOVA VIEW ---
 
 # --- Função Auxiliar (Mantida) ---
 def _get_base_context_and_service():

@@ -1,19 +1,12 @@
-{% extends 'generator/base.html' %} {# Herda do base.html #}
+{% extends 'generator/base.html' %}
 {% load static %}
 
 {% block title %}Resultado da Avaliação - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    <style>
-        /* Estilos específicos desta página */
-        .results-section { margin-bottom: 1.5rem; padding: 1.5rem; background-color: var(--bs-tertiary-bg); border-radius: 0.5rem; border: 1px solid var(--bs-border-color); }
-        pre { white-space: pre-wrap; word-wrap: break-word; background-color: var(--bs-body-bg); padding: 1rem; border: 1px solid var(--bs-border-color); border-radius: 0.25rem; max-height: 400px; overflow-y: auto; font-family: var(--bs-font-monospace); font-size: 0.875em; }
-        .evaluation-box { background-color: var(--bs-secondary-bg); border: 1px solid var(--bs-border-color-translucent); }
-        .score-highlight { font-weight: bold; color: var(--bs-primary); }
-        [data-bs-theme="dark"] .results-section { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
-        [data-bs-theme="dark"] pre { background-color: #2b3035; }
-        [data-bs-theme="dark"] .evaluation-box { background-color: var(--bs-tertiary-bg); }
-    </style>
+    {# <<< Link para o arquivo CSS externo >>> #}
+    <link rel="stylesheet" href="{% static 'generator/css/evaluation_result_styles.css' %}">
+    {# <<< Bloco <style> inline REMOVIDO מכאן >>> #}
 {% endblock extra_head %}
 
 
@@ -55,70 +48,60 @@
     {% endif %}
 
     {# --- Exibe os RESULTADOS DA AVALIAÇÃO --- #}
-    {% if parsed_scores or evaluation_result_text %}
-        {# Se o PARSING funcionou (mesmo que com erros em alguns campos) #}
-        {% if parsed_scores %}
-            <div class="results-section evaluation-box p-4">
-                <h3 class="text-primary mb-3">Avaliação Detalhada da IA (Estimativa)</h3>
-                <div class="row">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        {# --- CORREÇÃO 1: Usa default_if_none para notas --- #}
-                        <p><strong>Nota de Conteúdo (NC Estimada):</strong> <span class="score-highlight">{{ parsed_scores.NC|default_if_none:"N/A" }}</span> / 30.00</p> {# Exemplo com /30 #}
-                        <p><strong>Contagem Estimada de Erros (NE):</strong> <span class="score-highlight">{{ parsed_scores.NE|default_if_none:"N/A" }}</span></p>
-                        <p><strong>Nota Final Estimada (NPD):</strong> <span class="score-highlight">{{ parsed_scores.NPD|default_if_none:"N/A" }}</span></p>
-                    </div>
-                     <div class="col-md-6">
-                        {# --- CORREÇÃO 2: Usa as chaves corretas retornadas pelo parser --- #}
-                        {% with main_feedback=parsed_scores.Comentários justification_feedback=parsed_scores.Justificativa_NC %}
-                            {% if main_feedback or justification_feedback %}
-                                <p class="mb-1"><strong>Avaliação Descritiva da IA:</strong></p>
-                                {% if main_feedback %}
-                                    <p class="text-muted small">{{ main_feedback|linebreaksbr }}</p>
-                                {% endif %}
-                                {# Mostra Justificativa NC separadamente se ela existir e for diferente dos Comentários #}
-                                {% if justification_feedback and justification_feedback != main_feedback %}
-                                    <p class="mb-1 mt-2"><strong>Justificativa NC:</strong></p>
-                                    <p class="text-muted small">{{ justification_feedback|linebreaksbr }}</p>
-                                {% elif not main_feedback and justification_feedback %} {# Se SÓ tem Justificativa NC #}
-                                     <p class="text-muted small">{{ justification_feedback|linebreaksbr }}</p>
-                                {% endif %}
-                            {% else %}
-                                {# Mensagem se NENHUM texto foi encontrado pelo parser #}
-                                <p class="text-muted small">Nenhuma avaliação descritiva ou justificativa foi extraída.</p>
+    {% if parsed_scores %} {# Mostra apenas se o parsing teve sucesso (mesmo que parcial) #}
+        <div class="results-section evaluation-box p-4">
+            <h3 class="text-primary mb-3">Avaliação Detalhada da IA (Estimativa)</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <p><strong>Nota de Conteúdo (NC Estimada):</strong> <span class="score-highlight">{{ parsed_scores.NC|default_if_none:"N/A" }}</span> / 30.00</p>
+                    <p><strong>Contagem Estimada de Erros (NE):</strong> <span class="score-highlight">{{ parsed_scores.NE|default_if_none:"N/A" }}</span></p>
+                    <p><strong>Nota Final Estimada (NPD):</strong> <span class="score-highlight">{{ parsed_scores.NPD|default_if_none:"N/A" }}</span></p>
+                </div>
+                 <div class="col-md-6">
+                    {% with main_feedback=parsed_scores.Comentários justification_feedback=parsed_scores.Justificativa_NC %}
+                        {% if main_feedback or justification_feedback %}
+                            <p class="mb-1"><strong>Avaliação Descritiva da IA:</strong></p>
+                            {% if main_feedback %}
+                                <p class="text-muted small">{{ main_feedback|linebreaksbr }}</p>
                             {% endif %}
-                        {% endwith %}
-                        {# --- FIM DAS CORREÇÕES --- #}
-                    </div>
+                            {% if justification_feedback and justification_feedback != main_feedback %}
+                                <p class="mb-1 mt-2"><strong>Justificativa NC:</strong></p>
+                                <p class="text-muted small">{{ justification_feedback|linebreaksbr }}</p>
+                            {% elif not main_feedback and justification_feedback %}
+                                 <p class="text-muted small">{{ justification_feedback|linebreaksbr }}</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted small">Nenhuma avaliação descritiva ou justificativa foi extraída.</p>
+                        {% endif %}
+                    {% endwith %}
                 </div>
             </div>
-        {% endif %}
+        </div>
+    {% endif %}
 
-        {# Exibe o TEXTO BRUTO se ele existir (útil para debug) #}
-        {% if evaluation_result_text %}
-             <div class="results-section evaluation-box p-4 mt-3">
-                 <h3 class="text-secondary mb-3">Resultado Bruto da IA</h3>
-                 {% if parsed_scores and not evaluation_error %}
-                     <p class="small text-muted">Abaixo o texto completo retornado pela IA.</p>
-                 {% elif not parsed_scores and not evaluation_error %}
-                      <div class="alert alert-warning small">Não foi possível extrair os dados detalhados do texto abaixo. Exibindo resultado bruto.</div>
-                 {% endif %}
-                 <pre><code>{{ evaluation_result_text }}</code></pre>
-             </div>
-        {% endif %}
+    {# Exibe o TEXTO BRUTO apenas se o parsing FALHOU (parsed_scores é None mas evaluation_result_text existe) E não houve erro na chamada da IA #}
+    {% if not parsed_scores and evaluation_result_text and not evaluation_error %}
+         <div class="results-section evaluation-box p-4 mt-3">
+             <h3 class="text-secondary mb-3">Resultado Bruto da IA (Falha no Parsing)</h3>
+             <div class="alert alert-warning small">Não foi possível extrair os dados detalhados do texto abaixo. Verifique o formato da resposta da IA ou o parser em utils.py.</div>
+             <pre><code>{{ evaluation_result_text }}</code></pre>
+         </div>
+    {% endif %}
 
-    {# Se não há erro, nem scores, nem texto bruto #}
-    {% elif not evaluation_error and not submitted_exam_context and not submitted_user_answer %}
+
+    {# Se não há erro, nem scores parseados, e não temos os dados submetidos (caso raro) #}
+    {% if not evaluation_error and not parsed_scores and not submitted_exam_context and not submitted_user_answer and not evaluation_result_text %}
         <div class="alert alert-secondary">Nenhuma avaliação para exibir.</div>
     {% endif %}
 
     {# Botões de Navegação #}
      <div class="mt-4 text-center">
-         <a href="{% url 'generate_discursive_exam' %}" class="btn btn-secondary">Gerar/Avaliar Outra</a> {# Texto botão ajustado #}
+         <a href="{% url 'generate_discursive_exam' %}" class="btn btn-secondary">Gerar/Avaliar Outra</a>
          <a href="{% url 'landing_page' %}" class="btn btn-outline-secondary">Voltar ao Início</a>
      </div>
 
 {% endblock content %}
 
 {% block extra_js %}
-{# Nenhum JS específico aqui #}
+{# Nenhum JS específico aqui por enquanto #}
 {% endblock extra_js %}

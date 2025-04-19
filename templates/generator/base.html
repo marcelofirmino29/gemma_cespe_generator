@@ -1,21 +1,28 @@
 <!DOCTYPE html>
 {% load static %} {# << Necessário para a tag 'static' funcionar #}
-<html lang="pt-br" data-bs-theme="auto">
+<html lang="pt-br" data-bs-theme="auto"> {# data-bs-theme é controlado pelo darkmode.js #}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gerador de Questões IA{% endblock title %}</title>
     {# CSS do Bootstrap #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    {# CSS Base Separado #}
+    {# CSS do Bootstrap Icons #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    {# <<< CSS Base EXTERNO >>> #}
     <link rel="stylesheet" href="{% static 'generator/css/base_styles.css' %}">
+
+    {# <<< REMOVIDO Bloco <style> inline מכאן >>> #}
+
     {# Bloco para CSS extra das páginas filhas #}
     {% block extra_head %}{% endblock extra_head %}
 </head>
 <body>
 
-    {# --- Ícones SVG para Seletor de Tema (Mantidos inline) --- #}
+    {# --- Ícones SVG (Mantidos inline por conveniência) --- #}
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        {# ... Símbolos SVG como antes ... #}
       <symbol id="check2" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></symbol>
       <symbol id="circle-half" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/></symbol>
       <symbol id="moon-stars-fill" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/><path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.734 1.734 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.734 1.734 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.734 1.734 0 0 0 1.097-1.097l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L13.863.1z"/></symbol>
@@ -23,38 +30,27 @@
     </svg>
     {# --- FIM: Símbolos SVG --- #}
 
-    {# --- Cabeçalho Principal (Navbar) --- #}
+    {# --- Cabeçalho Principal (Navbar com links login/logout) --- #}
     <header>
-        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        {# ... (Navbar como antes, com links de login/logout/desempenho) ... #}
+         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
             <div class="container-fluid">
-                <a class="navbar-brand" href="{% url 'landing_page' %}">Meu Gerador IA</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                <a class="navbar-brand" href="{% url 'landing_page' %}"><i class="bi bi-robot me-2"></i>Meu Gerador IA</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
                 <div class="collapse navbar-collapse" id="navbarCollapse">
                     <ul class="navbar-nav me-auto mb-2 mb-md-0">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'landing_page' %}active{% endif %}" aria-current="page" href="{% url 'landing_page' %}">Início</a>
-                        </li>
-                        {# Adicione outros links principais aqui #}
+                        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'landing_page' %}active{% endif %}" aria-current="page" href="{% url 'landing_page' %}"><i class="bi bi-house-door-fill me-1"></i>Início</a></li>
                         {% if user.is_authenticated %}
-                         <li class="nav-item"> {# Link para Dashboard só se logado #}
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Meu Desempenho</a>
-                         </li>
+                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-graph-up me-1"></i>Meu Desempenho</a></li>
                         {% endif %}
                     </ul>
                     <div class="navbar-nav ms-auto">
                         {% if user.is_authenticated %}
-                            <span class="navbar-text me-3 ms-3 border-start ps-3 d-none d-md-inline"> {# Esconde em telas pequenas #}
-                                Olá, {{ user.username }}!
-                            </span>
-                            <form action="{% url 'logout' %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-warning btn-sm">Sair</button>
-                            </form>
+                            <span class="navbar-text me-3 ms-3 border-start ps-3 d-none d-md-inline"><i class="bi bi-person-check-fill me-1"></i>Olá, {{ user.username }}!</span>
+                            <form action="{% url 'logout' %}" method="post" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-box-arrow-right me-1"></i>Sair</button></form>
                         {% else %}
-                            <a class="btn btn-outline-light btn-sm me-2" href="{% url 'login' %}">Login</a>
-                            <a class="btn btn-warning btn-sm" href="{% url 'register' %}">Cadastre-se</a>
+                            <a class="btn btn-outline-light btn-sm me-2" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
+                            <a class="btn btn-warning btn-sm" href="{% url 'register' %}"><i class="bi bi-person-plus-fill me-1"></i>Cadastre-se</a>
                         {% endif %}
                     </div>
                 </div>
@@ -85,13 +81,11 @@
     </footer>
     {# --- Fim Rodapé --- #}
 
-    {# --- HTML do Seletor de Tema --- #}
+    {# --- HTML do Seletor de Tema (Mantido) --- #}
     <div class="position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
+         {# ... (Dropdown do seletor como antes) ... #}
          <div class="dropdown dropup">
-            <button class="btn btn-secondary dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
-                <svg class="bi me-2 theme-icon-active" width="1em" height="1em"><use href="#circle-half"></use></svg>
-                <span class="d-lg-none ms-2" id="bd-theme-text">Tema</span>
-            </button>
+            <button class="btn btn-secondary dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)"><svg class="bi me-2 theme-icon-active" width="1em" height="1em"><use href="#circle-half"></use></svg><span class="d-lg-none ms-2" id="bd-theme-text">Tema</span></button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text">
                 <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false"><svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#sun-fill"></use></svg>Claro<svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg></button></li>
                 <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false"><svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#moon-stars-fill"></use></svg>Escuro<svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg></button></li>
@@ -104,11 +98,15 @@
     {# Scripts JS Comuns #}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    {# <<< Scripts JS Externos Carregados Aqui >>> #}
+    {# <<< Scripts JS EXTERNOS >>> #}
+    {# Carrega usando a tag static do Django #}
     <script src="{% static 'generator/js/darkmode.js' %}" defer></script>
     <script src="{% static 'generator/js/fontsize_adjuster.js' %}" defer></script>
 
-    {% block extra_js %}{% endblock extra_js %} {# Bloco para JS de páginas filhas #}
+    {# <<< REMOVIDO Bloco <script> inline do Dark Mode מכאן >>> #}
+
+    {# Bloco para JS específicos da página filha #}
+    {% block extra_js %}{% endblock extra_js %}
 
 </body>
 </html>

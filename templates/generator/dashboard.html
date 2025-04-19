@@ -3,73 +3,128 @@
 
 {% block title %}Meu Desempenho - Gerador IA{% endblock title %}
 
-{% block extra_head %}
-    {# Adicione estilos específicos para o card de stats se desejar #}
+{% block extra_head %} {# Bloco para CSS específico desta página #}
     <style>
         .stat-value { font-size: 1.75rem; font-weight: bold; }
         .stat-label { font-size: 0.9rem; }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 250px; /* Altura fixa para o container do gráfico */
+            width: 100%;
+            max-width: 300px; /* Largura máxima para o gráfico de pizza/rosca */
+        }
+        .stat-icon {
+            font-size: 2.5rem; /* Tamanho dos ícones de estatística */
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        /* Ajuste para tabela não colar no card */
+        .card-body.p-0 .table { margin-bottom: 0 !important; }
     </style>
 {% endblock extra_head %}
 
 
-{% block content %}
+{% block content %} {# Conteúdo específico da página #}
+
     <header class="text-center mb-4">
         <h1>Meu Desempenho</h1>
         <p class="lead">Acompanhe seu histórico e estatísticas.</p>
         {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
     </header>
 
-    {% if error_message %}
+    {% if messages %} {# Exibe mensagens flash do Django #}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if error_message %} {# Exibe erros gerais passados pela view #}
         <div class="alert alert-danger">{{ error_message }}</div>
     {% endif %}
 
-    {# --- INÍCIO: Seção de Estatísticas Adicionada --- #}
-    {% if stats %} {# Verifica se o dicionário de stats existe no contexto #}
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <h2 class="h5 mb-0">Resumo Certo/Errado (Geral)</h2>
-        </div>
-        <div class="card-body">
-            <div class="row text-center g-3"> {# g-3 para espaçamento entre colunas #}
-                <div class="col-md-3 col-6"> {# Ocupa 3 de 12 colunas em telas médias ou maiores, 6 de 12 em pequenas #}
-                    <div class="stat-value">{{ stats.total_ce|default_if_none:"0" }}</div>
-                    <div class="stat-label text-muted">Tentativas C/E</div>
+    {# --- Seção de Estatísticas e Gráfico --- #}
+    <div class="row mb-4 g-4">
+
+        {# --- Card de Estatísticas (Resumo C/E) --- #}
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">Resumo Certo/Errado (Geral)</h2>
                 </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-value text-success">{{ stats.acertos_ce|default_if_none:"0" }}</div>
-                    <div class="stat-label text-muted">Acertos</div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-value text-danger">{{ stats.erros_ce|default_if_none:"0" }}</div>
-                    <div class="stat-label text-muted">Erros</div>
-                </div>
-                <div class="col-md-3 col-6">
-                     {# Aplica cor baseada no score #}
-                    <div class="stat-value {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-muted{% endif %}">
-                        {% if stats.score_ce > 0 %}+{% endif %}{{ stats.score_ce|default_if_none:"0" }}
+                <div class="card-body d-flex align-items-center">
+                    {% if stats %}
+                    <div class="row text-center g-3 w-100">
+                        <div class="col-md-3 col-6">
+                            <i class="bi bi-collection text-secondary stat-icon"></i>
+                            <div class="stat-value">{{ stats.total_ce|default_if_none:"0" }}</div>
+                            <div class="stat-label text-muted">Tentativas C/E</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <i class="bi bi-check-circle-fill text-success stat-icon"></i>
+                            <div class="stat-value text-success">{{ stats.acertos_ce|default_if_none:"0" }}</div>
+                            <div class="stat-label text-muted">Acertos</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <i class="bi bi-x-octagon-fill text-danger stat-icon"></i>
+                            <div class="stat-value text-danger">{{ stats.erros_ce|default_if_none:"0" }}</div>
+                            <div class="stat-label text-muted">Erros</div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <i class="bi bi-calculator-fill stat-icon {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-secondary{% endif %}"></i>
+                            <div class="stat-value {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                {% if stats.score_ce > 0 %}+{% endif %}{{ stats.score_ce|default_if_none:"0" }}
+                            </div>
+                            <div class="stat-label text-muted">Score Líquido</div>
+                        </div>
+                        {% if stats.total_ce > 0 %}
+                        <div class="col-12 mt-3">
+                             <div class="progress" role="progressbar" aria-label="Percentual de acerto" aria-valuenow="{{ stats.percentual_ce }}" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: {{ stats.percentual_ce }}%"></div>
+                             </div>
+                             <small class="text-muted">Aproveitamento Bruto: {{ stats.percentual_ce|default_if_none:"0" }}%</small>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="stat-label text-muted">Score Líquido</div>
+                    {% else %}
+                        <div class="alert alert-secondary small w-100 text-center">Estatísticas de desempenho ainda não disponíveis.</div>
+                    {% endif %}
                 </div>
-                {# Exibe percentual se houver tentativas #}
-                {% if stats.total_ce > 0 %}
-                <div class="col-12 mt-2">
-                     <small class="text-muted">Aproveitamento bruto: {{ stats.percentual_ce|default_if_none:"0" }}%</small>
-                </div>
-                {% endif %}
             </div>
         </div>
+
+        {# --- Card do Gráfico --- #}
+        <div class="col-lg-5">
+             <div class="card shadow-sm h-100">
+                 <div class="card-header">
+                     <h2 class="h5 mb-0">Distribuição Acertos/Erros (C/E)</h2>
+                 </div>
+                 <div class="card-body d-flex align-items-center justify-content-center">
+                     {% if stats and stats.total_ce > 0 %}
+                         <div class="chart-container">
+                             <canvas id="acertosErrosChart"
+                                     data-acertos="{{ stats.acertos_ce|default_if_none:0 }}"
+                                     data-erros="{{ stats.erros_ce|default_if_none:0 }}">
+                                 Gráfico indisponível.
+                             </canvas>
+                         </div>
+                     {% elif stats %}
+                         <div class="text-center text-muted small w-100">Responda questões C/E para gerar o gráfico.</div>
+                     {% else %}
+                         <div class="text-center text-muted small w-100">Gráfico indisponível.</div>
+                     {% endif %}
+                 </div>
+             </div>
+        </div>
     </div>
-    {% else %}
-        {# Mensagem se as stats não puderam ser calculadas pela view #}
-        <div class="alert alert-secondary small">Estatísticas de desempenho ainda não disponíveis.</div>
-    {% endif %}
-    {# --- FIM: Seção de Estatísticas --- #}
 
-
-    {# Seção do Histórico Recente (Tabela como antes) #}
+    {# --- Seção do Histórico Recente (Tabela) --- #}
     <div class="card shadow-sm">
-        <div class="card-header">
-            <h2 class="h5 mb-0">Últimas Tentativas (Máx. 20)</h2> {# Atualiza título da tabela #}
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Últimas Tentativas (Máx. 20)</h2>
         </div>
         <div class="card-body p-0">
             {% if tentativas_list %}
@@ -82,7 +137,7 @@
                                 <th scope="col">Área</th>
                                 <th scope="col">Questão (Início)</th>
                                 <th scope="col">Sua Resposta</th>
-                                {# <th scope="col">Resultado</th> <! - - Adicionaremos depois --> #}
+                                {# <th scope="col">Resultado</th> #}
                             </tr>
                         </thead>
                         <tbody>
@@ -93,15 +148,10 @@
                                 <td>{{ tentativa.questao.area.nome|default:"-" }}</td>
                                 <td>{{ tentativa.questao.texto_comando|truncatewords:12 }}</td>
                                 <td class="small">
-                                    {% if tentativa.resposta_ce %}
-                                        <span class="fw-bold">{{ tentativa.resposta_ce }}</span>
-                                    {% elif tentativa.resposta_discursiva %}
-                                        {{ tentativa.resposta_discursiva|truncatewords_html:10 }}
-                                    {% else %}
-                                        <span class="text-muted">N/R</span>
-                                    {% endif %}
+                                    {% if tentativa.resposta_ce %} <span class="fw-bold">{{ tentativa.resposta_ce }}</span>
+                                    {% elif tentativa.resposta_discursiva %} {{ tentativa.resposta_discursiva|truncatewords_html:10 }}
+                                    {% else %} <span class="text-muted">N/R</span> {% endif %}
                                 </td>
-                                {# ... (coluna resultado ainda comentada) ... #}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -116,3 +166,12 @@
     </div>
 
 {% endblock content %}
+
+
+{% block extra_js %} {# Adiciona JS específico desta página #}
+    {# Link para Chart.js #}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    {# Link para seu JS estático que inicializa o gráfico #}
+    {# Certifique-se que este arquivo existe e tem o código para criar o gráfico #}
+    <script src="{% static 'generator/js/dashboard_charts.js' %}" defer></script>
+{% endblock extra_js %}

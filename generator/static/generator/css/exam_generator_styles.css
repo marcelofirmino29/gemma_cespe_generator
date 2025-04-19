@@ -1,0 +1,48 @@
+/* Estilos específicos para a página do Gerador de Questão Discursiva */
+.form-container,
+.results-container,
+.answer-input-section {
+    background-color: var(--bs-tertiary-bg);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 2rem;
+}
+
+.alert {
+    margin-top: 1rem;
+}
+
+small.form-text {
+    color: var(--bs-secondary-color);
+}
+
+.generated-exam-card {
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+}
+
+/* Estilo PRE para exibir questão gerada (sem formatação extra) */
+pre#markdown-content { /* ID específico para evitar conflito com outros PREs */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit; /* Usa fonte padrão do corpo */
+    font-size: inherit;
+    padding: 0; /* Sem padding extra */
+    margin: 0;
+    background: none; /* Sem fundo extra */
+    border: none; /* Sem borda extra */
+    max-height: none; /* Remove limite de altura se houver */
+    overflow-y: visible; /* Remove scroll se houver */
+}
+
+/* Ajustes Dark Mode específicos */
+[data-bs-theme="dark"] .form-container,
+[data-bs-theme="dark"] .results-container,
+[data-bs-theme="dark"] .answer-input-section {
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+}
+
+[data-bs-theme="dark"] .generated-exam-card {
+    background-color: var(--bs-secondary-bg);
+}

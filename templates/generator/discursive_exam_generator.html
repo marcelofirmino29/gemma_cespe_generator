@@ -1,24 +1,12 @@
-{% extends 'generator/base.html' %} {# Herda do base.html #}
+{% extends 'generator/base.html' %}
 {% load static %}
 
 {% block title %}Gerador de Questão Discursiva - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    <style>
-        /* Estilos específicos para esta página */
-        .form-container, .results-container, .answer-input-section {
-            background-color: var(--bs-tertiary-bg); padding: 2rem; border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); margin-bottom: 2rem;
-        }
-         .alert { margin-top: 1rem; }
-         small.form-text { color: var(--bs-secondary-color); }
-         .generated-exam-card { background-color: var(--bs-body-bg); border: 1px solid var(--bs-border-color-translucent);}
-         pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: inherit; padding: 0; margin: 0; background: none; border: none; }
-         [data-bs-theme="dark"] .form-container,
-         [data-bs-theme="dark"] .results-container,
-         [data-bs-theme="dark"] .answer-input-section { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
-         [data-bs-theme="dark"] .generated-exam-card { background-color: var(--bs-secondary-bg); }
-    </style>
+    {# <<< Link para o CSS específico desta página >>> #}
+    <link rel="stylesheet" href="{% static 'generator/css/exam_generator_styles.css' %}">
+    {# Biblioteca para renderizar Markdown (Se for usar, link aqui ou no base.html) #}
     {# <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> #}
 {% endblock extra_head %}
 
@@ -27,7 +15,6 @@
     <header class="text-center mb-4">
         <h1>Gerador de Questão Discursiva</h1>
         <p class="lead">Forneça um tema ou contexto e a IA criará uma questão discursiva completa.</p>
-        {# Breadcrumb comentado #}
         {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
     </header>
 
@@ -51,31 +38,12 @@
             </div>
             {# Linha para Opções #}
             <div class="row g-3 mb-3">
-                <div class="col-md-3 col-sm-6">
-                    <label for="{{ form.num_aspects.id_for_label }}" class="form-label">{{ form.num_aspects.label }}</label>
-                    {{ form.num_aspects }}
-                    {% if form.num_aspects.help_text %}<small class="form-text text-muted">{{ form.num_aspects.help_text }}</small>{% endif %}
-                    {% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <label for="{{ form.area.id_for_label }}" class="form-label">{{ form.area.label }}</label>
-                    {{ form.area }}
-                    {% if form.area.help_text %}<small class="form-text text-muted">{{ form.area.help_text }}</small>{% endif %}
-                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
-                </div>
-                 <div class="col-md-3 col-sm-6">
-                    <label for="{{ form.complexity.id_for_label }}" class="form-label">{{ form.complexity.label }}</label>
-                    {{ form.complexity }}
-                    {% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}
-                    {% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}
-                </div>
-                 <div class="col-md-3 col-sm-6">
-                    <label for="{{ form.language.id_for_label }}" class="form-label">{{ form.language.label }}</label>
-                    {{ form.language }}
-                    {% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}
-                    {% if form.language.errors %}<div class="invalid-feedback d-block">{{ form.language.errors|striptags }}</div>{% endif %}
-                </div>
+                <div class="col-md-3 col-sm-6"><label for="{{ form.num_aspects.id_for_label }}" class="form-label">{{ form.num_aspects.label }}</label>{{ form.num_aspects }}{% if form.num_aspects.help_text %}<small class="form-text text-muted">{{ form.num_aspects.help_text }}</small>{% endif %}{% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}</div>
+                <div class="col-md-3 col-sm-6"><label for="{{ form.area.id_for_label }}" class="form-label">{{ form.area.label }}</label>{{ form.area }}{% if form.area.help_text %}<small class="form-text text-muted">{{ form.area.help_text }}</small>{% endif %}{% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}</div>
+                 <div class="col-md-3 col-sm-6"><label for="{{ form.complexity.id_for_label }}" class="form-label">{{ form.complexity.label }}</label>{{ form.complexity }}{% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}{% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}</div>
+                 <div class="col-md-3 col-sm-6"><label for="{{ form.language.id_for_label }}" class="form-label">{{ form.language.label }}</label>{{ form.language }}{% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}{% if form.language.errors %}<div class="invalid-feedback d-block">{{ form.language.errors|striptags }}</div>{% endif %}</div>
             </div>
+            {# Botão de Geração (HTML igual, JS agora é externo) #}
             <button type="submit" class="btn btn-info" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner-discursive-exam" style="display: none;"></span>
                  <span id="button-text-discursive-exam">Gerar Questão Discursiva</span>
@@ -92,41 +60,34 @@
     {% endif %}
 
     {# Exibição da Questão Gerada E Formulário para Resposta #}
-    {% if discursive_exam_text and questao_id %} {# Só mostra se a questão foi gerada E salva (tem ID) #}
+    {% if discursive_exam_text and questao_id %}
         <div class="results-container mt-4">
             <h2 class="h4 mb-3">2. Questão Discursiva Gerada:</h2>
             <div class="card generated-exam-card mb-4">
                 <div class="card-body">
+                     {# O JS externo agora cuidará da formatação (se usar Marked.js) ou o <pre> manterá #}
                     <pre id="markdown-content">{{ discursive_exam_text }}</pre>
                 </div>
                  <div class="card-footer text-end bg-transparent border-top-0 pt-0">
+                      {# O JS externo agora tem a função copyToClipboard anexada a window #}
                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">Copiar Texto da Questão</button>
                 </div>
             </div>
 
-            {# ========== Formulário para Resposta do Usuário ========== #}
+            {# Formulário para Resposta do Usuário (HTML igual, JS é externo) #}
             <hr class="my-4">
             <div class="answer-input-section">
                 <h3 class="h4 mb-3">3. Sua Resposta para Avaliação (Beta)</h3>
                 <form method="post" action="{% url 'evaluate_discursive_answer' %}" id="user-answer-form">
                     {% csrf_token %}
-                    {# Campo Oculto para enviar o contexto (texto completo da questão) #}
                     <textarea name="exam_context" style="display:none;" aria-hidden="true" readonly>{{ discursive_exam_text }}</textarea>
-                    {# Campo oculto para enviar contagem de linhas #}
                     <input type="hidden" name="line_count" id="line_count_input" value="0">
-
-                    {# --- <<< CAMPO OCULTO COM O ID DA QUESTÃO ADICIONADO >>> --- #}
                     <input type="hidden" name="questao_id" value="{{ questao_id }}">
-                    {# --- <<< FIM DA ADIÇÃO >>> --- #}
-
-                    {# Campo para o usuário digitar a resposta #}
                     <div class="mb-3">
                         <label for="user_answer_text" class="form-label visually-hidden">Sua Resposta</label>
                         <textarea class="form-control" id="user_answer_text" name="user_answer" rows="15" placeholder="Escreva sua resposta dissertativa aqui..." required></textarea>
                         <div id="word-count-feedback" class="form-text text-muted small mt-1">Contagem de palavras: 0</div>
                     </div>
-
-                    {# Botão para submeter a resposta para avaliação #}
                     <button type="submit" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send-check-fill me-2" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 1.59 2.498C8 14 8 13 8 12.5a4.5 4.5 0 0 1 5.026-4.47L15.964.686Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/><path d="M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Zm-1.993-1.679a.5.5 0 0 0-.686.172l-1.17 1.95-.547-.547a.5.5 0 0 0-.708.708l.774.773a.75.75 0 0 0 1.174-.144l1.335-2.226a.5.5 0 0 0-.172-.686Z"/></svg>
                         Enviar Resposta para Avaliação
@@ -134,49 +95,14 @@
                     <small class="text-muted ms-2 fst-italic">(A avaliação por IA é experimental)</small>
                 </form>
             </div>
-            {# ========== FIM: Formulário para Resposta do Usuário ========== #}
-
-        </div> {# Fim results-container #}
-    {% endif %} {# Fim if discursive_exam_text and questao_id #}
+        </div>
+    {% endif %}
 
 {% endblock content %}
 
 
 {% block extra_js %}
-    {# ... (Scripts JS como antes: loading button, copy, word/line count) ... #}
-    <script>
-        const examForm = document.getElementById('discursive-exam-form');
-        const examSubmitButton = document.getElementById('submit-discursive-exam');
-        const examLoadingSpinner = document.getElementById('loading-spinner-discursive-exam');
-        const examButtonText = document.getElementById('button-text-discursive-exam');
-        const serviceInitialized = {{ service_initialized|yesno:"true,false" }};
-         if (!serviceInitialized && examSubmitButton) { examSubmitButton.disabled = true; }
-        if (examForm && examSubmitButton && examLoadingSpinner && examButtonText) {
-            examForm.addEventListener('submit', function(event) {
-                 examSubmitButton.disabled = true; examLoadingSpinner.style.display = 'inline-block';
-                 examButtonText.textContent = ' Gerando Questão...';
-            });
-        }
-         window.addEventListener('pageshow', function (event) {
-            if (event.persisted && examSubmitButton && serviceInitialized) {
-                 examSubmitButton.disabled = false; examLoadingSpinner.style.display = 'none';
-                 examButtonText.textContent = 'Gerar Questão Discursiva';
-            }
-        });
-    </script>
-    <script>
-        function copyToClipboard() { /* ... (função como antes) ... */
-             const content = document.getElementById('markdown-content');
-            if (content) { navigator.clipboard.writeText(content.innerText).then(() => { alert('Texto da questão copiado!'); }).catch(err => { console.error('Erro ao copiar: ', err); alert('Erro ao copiar.'); });}
-        }
-        document.addEventListener('DOMContentLoaded', function() { /* ... (Contagem palavras/linhas como antes) ... */
-             const textArea = document.getElementById('user_answer_text'); const wordCountFeedback = document.getElementById('word-count-feedback'); const lineCountInput = document.getElementById('line_count_input');
-            if (textArea && wordCountFeedback && lineCountInput) {
-                textArea.addEventListener('input', function() {
-                    const text = textArea.value; const trimmedText = text.trim(); const words = trimmedText === '' ? 0 : trimmedText.split(/\s+/).length; const lines = text === '' ? 0 : (text.match(/\n/g) || []).length + 1;
-                    wordCountFeedback.textContent = `Contagem de palavras: ${words}`; lineCountInput.value = lines;
-                });
-            }
-        });
-    </script>
+    {# <<< Link para o arquivo JS específico desta página >>> #}
+    <script src="{% static 'generator/js/exam_generator_scripts.js' %}" defer></script>
+    {# <<< Bloco <script> inline REMOVIDO מכאן >>> #}
 {% endblock extra_js %}
