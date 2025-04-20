@@ -14,10 +14,11 @@ urlpatterns = [
     path('evaluate-discursive/', views.evaluate_discursive_answer_view, name='evaluate_discursive_answer'),
     path('accounts/register/', views.register_view, name='register'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
-
-    # --- <<< NOVA URL PARA VALIDAÇÃO INDIVIDUAL C/E (VIA AJAX) >>> ---
     path('validate-single-ce/', views.validate_single_ce_view, name='validate_single_ce'),
-    # --- <<< FIM NOVA URL >>> ---
+
+    path('simulado/configurar/', views.configurar_simulado_view, name='configurar_simulado'),
+    path('simulado/realizar/', views.realizar_simulado_view, name='realizar_simulado'),
+    path('simulado/resultado/', views.resultado_simulado_view, name='resultado_simulado'),
 
     path('test-print/', views.test_print_view, name='test_print'),
 ]

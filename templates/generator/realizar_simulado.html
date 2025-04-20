@@ -1,0 +1,93 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Simulado - Questão {{ indice_atual }} de {{ total_questoes }}{% endblock title %} {# Título mais curto #}
+
+{% block content %}
+    <header class="text-center mb-4">
+        <h1>Simulado em Andamento</h1>
+        {# TODO: Adicionar barra de progresso ou timer #}
+        <p class="lead">Questão {{ indice_atual }} de {{ total_questoes }}</p>
+        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if questao %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"> {# Fundo leve no header do card #}
+                 <small class="text-muted">
+                    {% if questao.area %}Área: {{ questao.area.nome }} | {% endif %}
+                    Tipo: {{ questao.get_tipo_display }} |
+                    Dificuldade: {{ questao.get_dificuldade_display|default:"N/D" }}
+                 </small>
+            </div>
+            <div class="card-body">
+                {# Exibe o comando/afirmação da questão #}
+                <div class="mb-3 fs-5"> {# Aumenta um pouco a fonte da questão #}
+                    {{ questao.texto_comando|linebreaksbr }}
+                </div>
+
+                {# --- Formulário de Resposta --- #}
+                <hr>
+                <form method="post" action="{% url 'realizar_simulado' %}" id="simulado-answer-form"> {# ID adicionado #}
+                    {% csrf_token %}
+
+                    {# <<< ADICIONADO: Input Hidden com ID da Questão Atual >>> #}
+                    <input type="hidden" name="questao_id" value="{{ questao.id }}">
+
+                    <p><strong>Sua Resposta:</strong></p>
+                    {% if questao.tipo == 'CE' %}
+                        {# Radios C/E #}
+                        <div class="form-check mb-2"> {# mb-2 para espaçar radios #}
+                            <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_c" value="C" required>
+                            <label class="form-check-label" for="resp_c"> Certo</label>
+                        </div>
+                        <div class="form-check mb-3"> {# mb-3 antes do botão #}
+                            <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_e" value="E" required>
+                            <label class="form-check-label" for="resp_e"> Errado</label>
+                        </div>
+                    {% elif questao.tipo == 'DISC' %}
+                        {# Textarea para Discursiva #}
+                         <textarea class="form-control mb-3" name="resposta_simulado" rows="10" required placeholder="Digite sua resposta aqui..."></textarea>
+                    {% else %}
+                        <p class="text-danger">Erro: Tipo de questão desconhecido.</p>
+                    {% endif %}
+
+                    {# Botões de Ação #}
+                    <div class="mt-4 d-flex justify-content-between"> {# Alinha botões #}
+                         <a href="{% url 'dashboard' %}" class="btn btn-outline-danger">Abandonar Simulado</a>
+                         {% if indice_atual == total_questoes %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>Finalizar Simulado e Ver Resultado
+                            </button>
+                         {% else %}
+                            <button type="submit" class="btn btn-primary">
+                                Salvar e Próxima Questão <i class="bi bi-arrow-right-circle-fill ms-1"></i>
+                            </button>
+                         {% endif %}
+                    </div>
+                </form>
+                 {# --- Fim Formulário de Resposta --- #}
+
+            </div> {# Fim card-body #}
+        </div> {# Fim card #}
+
+    {% else %}
+        {# Mensagem se não conseguiu carregar questao na view GET #}
+        <div class="alert alert-warning">Não foi possível carregar a questão atual do simulado.</div>
+        <a href="{% url 'configurar_simulado' %}" class="btn btn-primary">Configurar Novo Simulado</a>
+    {% endif %}
+
+{% endblock content %}
+
+{% block extra_js %}
+    {# Adicionar JS para timer ou outras interatividades do simulado aqui no futuro #}
+{% endblock extra_js %}

@@ -16,6 +16,23 @@ class AreaConhecimento(models.Model):
     def __str__(self):
         return self.nome
 
+# Modelo para armazenar os Tópicos
+class Topico(models.Model):
+    nome = models.CharField(max_length=150, unique=True, verbose_name="Nome do Tópico")
+    area_conhecimento = models.ForeignKey(
+        AreaConhecimento,
+        on_delete=models.CASCADE,
+        verbose_name="Área de Conhecimento"
+    )
+
+    class Meta:
+        verbose_name = "Tópico"
+        verbose_name_plural = "Tópicos"
+        ordering = ['nome']
+
+    def __str__(self):
+        return f"{self.nome} ({self.area_conhecimento.nome})"
+
 # Modelo para armazenar as Questões Geradas
 class Questao(models.Model):
     TIPO_QUESTAO_CHOICES = [
@@ -33,6 +50,12 @@ class Questao(models.Model):
         on_delete=models.SET_NULL, # Se a área for deletada, o campo fica nulo
         null=True, blank=True,      # Permite que a área seja opcional
         verbose_name="Área de Conhecimento"
+    )
+    topico = models.ForeignKey(
+        Topico,
+        on_delete=models.SET_NULL, # Se o tópico for deletado, o campo fica nulo
+        null=True, blank=True,      # Permite que o tópico seja opcional
+        verbose_name="Tópico"
     )
     tipo = models.CharField(
         max_length=4,
@@ -70,8 +93,6 @@ class Questao(models.Model):
         help_text="Explicação do porquê a afirmação C/E é certa ou errada."
     )
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
-
-    # <<< LINHA DESCOMENTADA AQUI >>>
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL, # Se usuário for deletado, questão fica sem criador mas não é deletada
@@ -91,7 +112,6 @@ class Questao(models.Model):
 
 # Modelo para armazenar as tentativas de resposta do usuário
 class TentativaResposta(models.Model):
-    # ... (código como antes) ...
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuário")
     questao = models.ForeignKey(Questao, on_delete=models.CASCADE, verbose_name="Questão Respondida")
     resposta_ce = models.CharField(max_length=1, choices=[('C','Certo'), ('E','Errado')], null=True, blank=True, verbose_name="Resposta C/E")
@@ -102,7 +122,6 @@ class TentativaResposta(models.Model):
 
 # Modelo para armazenar o resultado da avaliação/validação
 class Avaliacao(models.Model):
-    # ... (código como antes) ...
     tentativa = models.OneToOneField(TentativaResposta, on_delete=models.CASCADE, primary_key=True, verbose_name="Tentativa Avaliada")
     correto_ce = models.BooleanField(null=True, verbose_name="Acertou C/E?")
     score_ce = models.IntegerField(null=True, verbose_name="Score C/E (+1/-1)")

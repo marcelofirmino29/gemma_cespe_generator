@@ -1,0 +1,128 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Resultado do Simulado - Gerador IA{% endblock title %}
+
+{% block extra_head %}
+    {# Pode usar o mesmo CSS do question_generator ou criar um específico #}
+    <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'generator/css/evaluation_result_styles.css' %}"> {# Para estilo dos cards de resultado #}
+    <style>
+        .stat-card { text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { font-size: 0.85rem; }
+    </style>
+{% endblock extra_head %}
+
+
+{% block content %}
+    <header class="text-center mb-4">
+        <h1>Resultado do Simulado</h1>
+        <p class="lead">Confira seu desempenho no simulado concluído.</p>
+        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {# --- Resumo Estatístico do Simulado --- #}
+    {% if stats_simulado %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><h2 class="h5 mb-0">Resumo Geral do Simulado</h2></div>
+            <div class="card-body">
+                 <p>Total de Questões no Simulado: {{ stats_simulado.total_questoes_simulado }} | Respondidas: {{ stats_simulado.total_respondidas }}</p>
+                 <hr>
+                 {% if stats_simulado.total_ce > 0 %}
+                     <h6 class="text-primary">Desempenho Certo/Errado:</h6>
+                     <div class="row g-3 mb-2">
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value">{{ stats_simulado.total_ce }}</div><div class="stat-label text-muted">Itens C/E</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value text-success">{{ stats_simulado.acertos_ce }}</div><div class="stat-label text-muted">Acertos</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value text-danger">{{ stats_simulado.erros_ce }}</div><div class="stat-label text-muted">Erros</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value {% if stats_simulado.score_ce > 0 %}text-success{% elif stats_simulado.score_ce < 0 %}text-danger{% else %}text-muted{% endif %}">{% if stats_simulado.score_ce > 0 %}+{% endif %}{{ stats_simulado.score_ce }}</div><div class="stat-label text-muted">Score Líquido</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value">{{ stats_simulado.percentual_ce }}%</div><div class="stat-label text-muted">Aproveitamento</div></div>
+                     </div>
+                 {% endif %}
+                 {% if stats_simulado.total_disc > 0 %}
+                     <h6 class="text-info mt-3">Desempenho Discursivas (Avaliações Concluídas):</h6>
+                     {% if stats_simulado.total_disc_avaliadas > 0 %}
+                     <div class="row g-3">
+                        <div class="col-6 col-sm-4 col-md-3 stat-card"><div class="stat-value">{{ stats_simulado.total_disc }}</div><div class="stat-label text-muted">Itens Discursivos</div></div>
+                        <div class="col-6 col-sm-4 col-md-3 stat-card"><div class="stat-value">{{ stats_simulado.total_disc_avaliadas }}</div><div class="stat-label text-muted">Itens Avaliados</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value">{{ stats_simulado.media_nc|default_if_none:"-" }}</div><div class="stat-label text-muted">Média NC</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value">{{ stats_simulado.media_ne|default_if_none:"-" }}</div><div class="stat-label text-muted">Média NE</div></div>
+                        <div class="col-6 col-sm-4 col-md-2 stat-card"><div class="stat-value">{{ stats_simulado.media_npd|default_if_none:"-" }}</div><div class="stat-label text-muted">Média NPD</div></div>
+                     </div>
+                     {% else %}
+                         <p class="text-muted small">Nenhuma questão discursiva deste simulado foi avaliada ainda.</p>
+                     {% endif %}
+                 {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    {# --- Detalhamento das Respostas do Simulado --- #}
+    <div class="card shadow-sm">
+         <div class="card-header"><h2 class="h5 mb-0">Respostas e Resultados Detalhados</h2></div>
+         <div class="card-body">
+            {% if tentativas_simulado %}
+                {% for tentativa in tentativas_simulado %}
+                    <div class="question-item {% if tentativa.avaliacao.correto_ce is True %}border-success{% elif tentativa.avaliacao.correto_ce is False %}border-danger{% endif %} mb-3 p-3 border">
+                        {# Exibe Info da Questão #}
+                        <p><strong>Questão (ID: {{ tentativa.questao.id }} - {{ tentativa.questao.get_tipo_display }}){% if tentativa.questao.area %} - Área: {{ tentativa.questao.area.nome }}{% endif %}:</strong><br>
+                           {{ tentativa.questao.texto_comando|truncatewords:30|linebreaksbr }}
+                           {# Adicionar link para ver questão completa? #}
+                        </p>
+                        {# Exibe Resposta do Usuário #}
+                        <p><strong>Sua Resposta</strong> ({{ tentativa.data_resposta|date:"d/m/Y H:i" }}):<br>
+                           {% if tentativa.resposta_ce %} <span class="fw-bold fs-5">{{ tentativa.resposta_ce }}</span>
+                           {% elif tentativa.resposta_discursiva %} <pre class="small p-2 bg-light border rounded mt-1"><code>{{ tentativa.resposta_discursiva|escape|linebreaksbr }}</code></pre>
+                           {% else %} <span class="text-muted">Não Respondida</span>
+                           {% endif %}
+                        </p>
+                        {# Exibe Resultado/Avaliação #}
+                        {% with avaliacao=tentativa.avaliacao %} {# Usar with para evitar erro se não existir #}
+                            {% if avaliacao %}
+                                <div class="mt-2 pt-2 border-top">
+                                <p class="mb-1"><strong>Resultado:</strong></p>
+                                {% if tentativa.questao.tipo == 'CE' %}
+                                    {% if avaliacao.correto_ce %} <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Correto</span>
+                                    {% else %} <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill"></i> Errado</span>
+                                    {% endif %}
+                                    <span class="text-muted small ms-2">(Gabarito: {{ tentativa.questao.gabarito_ce }})</span>
+                                    {% if tentativa.questao.justificativa_gabarito %}
+                                        <p class="text-muted small mt-1 mb-0 fst-italic">Justificativa: {{ tentativa.questao.justificativa_gabarito|linebreaksbr }}</p>
+                                    {% endif %}
+                                {% elif tentativa.questao.tipo == 'DISC' %}
+                                    {% if avaliacao.npd is not None %}
+                                         <p class="mb-1 small">NC: {{ avaliacao.nc|default_if_none:"N/A" }} | NE: {{ avaliacao.ne|default_if_none:"N/A" }} | <strong class="score-highlight">NPD: {{ avaliacao.npd|default_if_none:"N/A" }}</strong></p>
+                                         {% if avaliacao.comentarios_ai %} <p class="text-muted small mb-1 mt-1 fst-italic">Comentários IA: {{ avaliacao.comentarios_ai|linebreaksbr }}</p>{% endif %}
+                                         {% if avaliacao.justificativa_nc_ai %} <p class="text-muted small mb-0 mt-1 fst-italic">Justificativa NC: {{ avaliacao.justificativa_nc_ai|linebreaksbr }}</p>{% endif %}
+                                    {% else %}
+                                         <span class="text-warning small">Avaliação pendente ou incompleta.</span>
+                                    {% endif %}
+                                {% endif %}
+                                </div>
+                            {% else %}
+                                <p class="text-warning small mt-2 pt-2 border-top">Avaliação não encontrada para esta tentativa.</p>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                 <p class="text-muted">Nenhuma tentativa encontrada para este simulado.</p>
+            {% endif %}
+         </div> {# Fim card-body #}
+         <div class="card-footer text-center">
+              <a href="{% url 'configurar_simulado' %}" class="btn btn-primary">Novo Simulado</a>
+              <a href="{% url 'dashboard' %}" class="btn btn-secondary">Ver Dashboard Geral</a>
+         </div>
+    </div> {# Fim card principal #}
+
+{% endblock content %}
+
+{% block extra_js %}
+    {# Se precisar de JS para esta página (ex: mostrar/esconder detalhes) #}
+{% endblock extra_js %}
