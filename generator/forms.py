@@ -10,6 +10,39 @@ from .models import AreaConhecimento, Topico
 logger = logging.getLogger(__name__)
 
 # --- DEFINIÇÕES GLOBAIS DE CHOICES ---
+# <<< LISTA DE ÁREAS ATUALIZADA PARA CONCURSOS >>>
+AREA_CHOICES = [
+    # O campo ModelChoiceField adicionará '---------' automaticamente se 'empty_label' for usado
+    # ou se required=False. Deixaremos a lista começar direto com as áreas.
+    ('Administração Financeira e Orçamentária (AFO)', 'AFO'),
+    ('Administração Geral', 'Administração Geral'),
+    ('Administração Pública', 'Administração Pública'),
+    ('Arquivologia', 'Arquivologia'),
+    ('Atualidades', 'Atualidades'),
+    ('Auditoria', 'Auditoria'),
+    ('Contabilidade Geral', 'Contabilidade Geral'),
+    ('Contabilidade Pública', 'Contabilidade Pública'),
+    ('Direito Administrativo', 'Direito Administrativo'),
+    ('Direito Civil', 'Direito Civil'),
+    ('Direito Constitucional', 'Direito Constitucional'),
+    ('Direito Penal', 'Direito Penal'),
+    ('Direito Processual Civil', 'Direito Processual Civil'),
+    ('Direito Processual Penal', 'Direito Processual Penal'),
+    ('Direito Previdenciário', 'Direito Previdenciário'),
+    ('Direito Tributário', 'Direito Tributário'),
+    ('Direito do Trabalho', 'Direito do Trabalho'),
+    ('Direito Processual do Trabalho', 'Direito Processual do Trabalho'),
+    ('Economia', 'Economia'),
+    ('Gestão de Pessoas', 'Gestão de Pessoas'),
+    ('Informática', 'Informática'),
+    ('Inglês', 'Inglês'),
+    ('Legislação Específica', 'Legislação Específica'),
+    ('Matemática', 'Matemática'),
+    ('Português', 'Português'),
+    ('Raciocínio Lógico', 'Raciocínio Lógico'),
+    ('Outra', 'Outra'),
+]
+
 DIFFICULTY_CHOICES = [
     ('', 'Qualquer'),
     ('facil', 'Fácil'),

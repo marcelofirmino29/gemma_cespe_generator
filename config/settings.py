@@ -93,13 +93,24 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.getenv('DATABASE_NAME', 'seu_projeto_db'),
+        'USER': os.getenv('DATABASE_USER', 'seu_usuario_db'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'sua_senha_db'),
+        'HOST': os.getenv('DATABASE_HOST', 'seu_host_db'),
+        'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
 }
-
 
 # Password validation
 # É recomendado adicionar os validadores padrão aqui:

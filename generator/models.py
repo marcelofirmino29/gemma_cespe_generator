@@ -63,7 +63,7 @@ class Questao(models.Model):
         verbose_name="Tipo de Questão"
     )
     dificuldade = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=DIFICULDADE_CHOICES,
         default='medio',
         blank=True, # Pode ser opcional

@@ -48,44 +48,66 @@ class QuestionGenerationService:
             else: logger.warning("Nenhuma safety setting válida."); self.safety_settings = None
         except Exception as e: logger.error(f"Erro processar Safety Settings: {e}", exc_info=True); raise ConfigurationError(f"Erro processar Safety Settings: {e}")
 
-    # --- MÉTODO generate_questions (Com indentação corrigida e prompt pedindo Justificativa) ---
+    # --- MÉTODO generate_questions (COM PROMPT "EXAMINADOR RÍGIDO") ---
     def generate_questions(self, topic, num_questions, difficulty_level='medio'):
-        """Gera afirmações C/E com gabarito E JUSTIFICATIVA."""
-        if not self.model: raise ConfigurationError("Serviço IA não inicializado.")
+        """
+        Gera itens C/E DESAFIADORES no formato Texto Motivador + Comando + Item,
+        com foco em nuances, exceções e análise crítica.
+        """
+        if not self.model:
+            raise ConfigurationError("Serviço de IA não inicializado corretamente.")
+
+        # <<< PROMPT "EXAMINADOR RÍGIDO" >>>
         prompt = (
-            f"**Instrução Principal:** Gere {num_questions} itens C/E (Cespe/Cebraspe) sobre: '{topic}'.\n"
-            f"**Nível:** '{difficulty_level}'.\n"
-            f"**Formato OBRIGATÓRIO Saída:**\n"
-            f"Para CADA item, use EXATAMENTE o formato abaixo, incluindo a justificativa. Separe cada item com '---'.\n\n"
-            f"Afirmação: [Texto afirmação C/E]\n"
-            f"Gabarito: [C ou E]\n"
-            f"Justificativa: [Explicação CURTA e DIRETA do porquê Certo ou Errado.]\n" # <<< Pede Justificativa
+            f"**Persona:** Você é um examinador de concurso público experiente, conhecido por sua **extrema rigurosidade e ceticismo**. Seu objetivo é criar itens de julgamento (Certo/Errado) **altamente desafiadores** sobre o tópico '{topic}', no nível de dificuldade '{difficulty_level}'. Você quer **separar os candidatos realmente preparados** daqueles com conhecimento superficial, testando a atenção a detalhes minuciosos, o conhecimento de **exceções às regras**, a capacidade de identificar **pegadinhas bem elaboradas** e a interpretação precisa de conceitos complexos. Sua meta é **reprovar os despreparados** através de itens tecnicamente corretos, mas que exigem raciocínio profundo.\n\n"
+            f"**Instrução Principal:** Gere exatamente {num_questions} itens C/E seguindo rigorosamente as diretrizes abaixo.\n"
+            f"**Diretrizes de Elaboração dos Itens:**\n"
+            f"- **Dificuldade e Sutileza:** Crie afirmações (Itens) que **pareçam corretas à primeira vista**, mas contenham um erro sutil, uma condição implícita não atendida, uma generalização indevida, ou se baseiem em uma exceção pouco conhecida à regra geral.\n"
+            f"- **Exploração de Nuances:** Foque em pontos controversos, detalhes específicos da legislação/doutrina/teoria, ou requisitos específicos para aplicação de um conceito.\n"
+#            f"- **Evite o Óbvio e o Absoluto:** NÃO crie itens sobre fatos básicos ou definições triviais. Evite termos como 'sempre', 'nunca', 'jamais', 'totalmente', 'apenas', 'somente', 'exclusivamente', a menos que o erro do item resida justamente na aplicação incorreta ou na veracidade técnica desse termo absoluto.\n"
+            f"- **Indução ao Erro (com Fundamento Técnico):** Formule itens que possam induzir ao erro um candidato com leitura rápida ou conhecimento superficial. Pode incluir informações corretas, mas irrelevantes para o julgamento central, ou omitir uma condição essencial.\n"
+            f"- **Contextualização (Obrigatória):** Use **SEMPRE** um Texto Motivador longo e um Comando claro para direcionar o julgamento do item.\n"
+            f"- **Gabarito Inequívoco:** Apesar da dificuldade, cada item DEVE ter um gabarito (C ou E) objetivamente correto e uma Justificativa **técnica e detalhada** que explique inequivocamente o erro ou acerto sutil, justificando por que as alternativas (C ou E) estariam incorretas e fazendo referência clara ao Texto Motivador ou Comando, se pertinente.\n\n"
+            f"**Formato OBRIGATÓRIO de Saída:**\n"
+            f"Para CADA UM dos {num_questions} itens, use EXATAMENTE a estrutura e os marcadores em negrito abaixo. Separe cada item completo com uma linha contendo apenas '---'.\n\n"
+            f"**Texto Motivador:** [Texto curto e pertinente (1-4 frases). Pode ser fragmento de lei, julgado, teoria, cenário hipotético. Se for IMPOSSÍVEL criar um motivador relevante, escreva 'Não aplicável', mas priorize a criação.]\n"
+            f"**Comando:** [Instrução clara e direta para julgar o item subsequente. Ex: 'Com base no texto, julgue o item a seguir acerca de...', 'Considerando a jurisprudência e a doutrina sobre X, julgue o item que se segue.']\n"
+            f"**Item:** [A afirmação C/E desafiadora, analítica e que explore nuances.]\n"
+            f"**Gabarito:** [C ou E]\n"
+            f"**Justificativa:** [Explicação técnica, detalhada e precisa do gabarito, desmontando a 'pegadinha' e justificando a resposta correta.]\n"
             f"---\n"
-            f"(Repita o padrão para os {num_questions} itens)"
+            f"(Repita essa estrutura completa {num_questions} vezes)"
         )
-        if self.safety_settings: logger.info(f"SERVICE CALL (C/E+Justif): Usando {len(self.safety_settings)} regras.")
-        else: logger.info("SERVICE CALL (C/E+Justif): Usando safety padrão.")
+        # <<< FIM DO NOVO PROMPT >>>
+
+        # O restante do método continua igual, chamando a API e o _parse_questions
+        if self.safety_settings: logger.info(f"SERVICE CALL (C/E Rígido): Usando {len(self.safety_settings)} regras.")
+        else: logger.info("SERVICE CALL (C/E Rígido): Usando safety padrão.")
         try:
-            logger.info(f"Enviando req (C/E+Justif) API (Modelo: {self.model._model_name})")
+            logger.info(f"Enviando req (C/E Rígido) API (Modelo: {self.model._model_name}, Tópico: {topic[:50]}...)")
             response = self.model.generate_content(prompt, generation_config=self.generation_config, safety_settings=self.safety_settings)
+            # ... (Verificação de Bloqueio como antes) ...
             first_candidate = response.candidates[0] if response.candidates else None
-            if first_candidate and first_candidate.finish_reason.name == 'SAFETY':
-                 block_reason = "SAFETY"; logger.warning(f"Resposta IA bloqueada (C/E+Justif). Razão: {block_reason}.")
-                 raise AIResponseError(f"Geração bloqueada ({block_reason}).")
-            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
-                 finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"; logger.warning(f"Resposta IA vazia/inválida (C/E+Justif). Finish: {finish_reason}.")
-                 raise AIResponseError(f"IA retornou resp vazia/inválida (Finish: {finish_reason}).")
+            if first_candidate and first_candidate.finish_reason.name == 'SAFETY': logger.warning(f"Resp IA bloqueada (C/E Rígido)."); raise AIResponseError(f"Geração bloqueada API.")
+            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts: finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"; logger.warning(f"Resp IA vazia (C/E Rígido). Finish: {finish_reason}."); raise AIResponseError(f"IA retornou resp vazia (Finish: {finish_reason}).")
 
             generated_text = first_candidate.content.parts[0].text
-            # <<< CHAMA O PARSER EXTERNO de utils.py >>>
-            parsed_questions = parse_ai_response_to_questions(generated_text)
+            logger.info("Texto C/E Rígido recebido da IA. Chamando parser...")
+            # O parser em utils.py (versão por blocos) precisa ser capaz de lidar com essa estrutura
+            parsed_questions = self._parse_questions(generated_text) # Chama _parse_questions (que chama utils)
             return parsed_questions
+        # ... (Blocos except como antes) ...
         except AIResponseError as e: raise e
-        except ParsingError as e: logger.error(f"Erro PARSING EXTERNO (C/E+Justif): {e}", exc_info=True); raise ParsingError(f"Erro processar resposta IA (C/E): {e}")
-        except Exception as e: logger.error(f"Erro GERAL API (C/E+Justif): {e}", exc_info=True); raise AIServiceError(f"Erro comunicação API (C/E): {e}")
+        except ParsingError as e: logger.error(f"Erro PARSING (C/E Rígido): {e}", exc_info=True); raise ParsingError(f"Erro processar resposta IA (C/E): {e}")
+        except Exception as e: logger.error(f"Erro GERAL API (C/E Rígido): {e}", exc_info=True); raise AIServiceError(f"Erro comunicação API (C/E): {e}")
 
-    # --- MÉTODO _parse_questions REMOVIDO מכאן ---
-    # A lógica de parsing agora está em utils.py/parse_ai_response_to_questions
+    # --- Método _parse_questions DEVE chamar utils.py ---
+    def _parse_questions(self, text: str) -> list:
+        """Delega o parsing C/E para a função especializada em utils.py."""
+        logger.debug("Service: _parse_questions chamando utils.parse_ai_response_to_questions")
+        try: return parse_ai_response_to_questions(text) # Usa a função do utils.py
+        except ParsingError as e: logger.error(f"Erro retornado por parser C/E: {e}"); raise e
+        except Exception as e: logger.error(f"Erro inesperado ao chamar parser C/E: {e}", exc_info=True); raise ParsingError(f"Erro inesperado no processamento C/E: {e}")
 
     # --- MÉTODO generate_discursive_exam_question (Inalterado) ---
     def generate_discursive_exam_question(self, base_topic_or_context, num_aspects=3, area=None, complexity='Intermediária', language='pt-br'):

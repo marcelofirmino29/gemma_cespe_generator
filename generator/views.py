@@ -8,6 +8,7 @@ import datetime
 from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required # Import do decorador
+from datetime import datetime # Garanta que datetime está importado
 
 # Importa Formulários
 from .forms import QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, CustomUserCreationForm
@@ -634,31 +635,97 @@ def evaluate_discursive_answer_view(request):
     logger.debug(f"Contexto final (evaluate_discursive_answer_view): User={request.user.username}, TentativaID={context['tentativa_id']}, { {k: v for k, v in context.items() if k not in ['submitted_user_answer', 'submitted_exam_context', 'form', 'evaluation_result_text']} }")
     return render(request, 'generator/discursive_evaluation_result.html', context)
 
-
-# --- VIEW DASHBOARD (Mantida - já busca dados) ---
 @login_required
 def dashboard_view(request):
-    # ... (código como antes) ...
-    context, _, _ = _get_base_context_and_service(); tentativas = []; stats = {}
+    context, _, _ = _get_base_context_and_service()
+    tentativas_recentes = []
+    stats = {}
+    date_from_obj = None # Data inicial do filtro
+    date_to_obj = None # Data final do filtro
+
+    # --- Lógica para Ler Filtros GET ---
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+
+    if date_from_str:
+        try:
+            date_from_obj = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+        except ValueError:
+            messages.warning(request, "Formato de data inicial inválido. Use AAAA-MM-DD.")
+            date_from_obj = None # Ignora filtro se inválido
+
+    if date_to_str:
+        try:
+            date_to_obj = datetime.strptime(date_to_str, '%Y-%m-%d').date()
+        except ValueError:
+            messages.warning(request, "Formato de data final inválido. Use AAAA-MM-DD.")
+            date_to_obj = None # Ignora filtro se inválido
+
+    logger.info(f"Dashboard acessado por {request.user.username}. Filtro Data: {date_from_str} a {date_to_str}")
+
     try:
-        tentativas = TentativaResposta.objects.filter(usuario=request.user).select_related('questao', 'questao__area').prefetch_related('avaliacao').order_by('-data_resposta')
-        logger.info(f"Buscando histórico {request.user.username}. Encontradas {tentativas.count()} tentativas.")
-        total_ce = 0; acertos_ce = 0; erros_ce = 0
-        for t in tentativas:
-            if t.questao.tipo == 'CE':
-                total_ce += 1
-                try: avaliacao = getattr(t, 'avaliacao', None)
-                except Avaliacao.DoesNotExist: avaliacao = None # Segurança extra
-                if avaliacao and avaliacao.correto_ce is not None:
-                    if avaliacao.correto_ce: acertos_ce += 1
-                    else: erros_ce += 1
+        # Busca base de TODAS as tentativas do usuário
+        todas_tentativas_qs = TentativaResposta.objects.filter(usuario=request.user)
+
+        # --- Aplica Filtros de Data ---
+        if date_from_obj:
+            todas_tentativas_qs = todas_tentativas_qs.filter(data_resposta__date__gte=date_from_obj)
+        if date_to_obj:
+            todas_tentativas_qs = todas_tentativas_qs.filter(data_resposta__date__lte=date_to_obj)
+
+        # --- Cálculos (sobre o queryset filtrado) ---
+        total_geral = todas_tentativas_qs.count() # Total no período
+
+        # Filtra C/E DENTRO do período para estatísticas
+        tentativas_ce = todas_tentativas_qs.filter(questao__tipo='CE').prefetch_related('avaliacao')
+        total_ce = tentativas_ce.count()
+        acertos_ce = 0; erros_ce = 0
+        for t_ce in tentativas_ce: # Itera SOMENTE nas C/E do período
+            avaliacao = getattr(t_ce, 'avaliacao', None)
+            try:
+                if avaliacao is None and t_ce.pk: avaliacao = Avaliacao.objects.get(tentativa=t_ce)
+            except Avaliacao.DoesNotExist: avaliacao = None
+            if avaliacao and avaliacao.correto_ce is not None:
+                if avaliacao.correto_ce: acertos_ce += 1
+                else: erros_ce += 1
         score_ce = acertos_ce - erros_ce
         percentual_ce = round((acertos_ce / total_ce) * 100) if total_ce > 0 else 0
-        stats = {'total_geral': tentativas.count(), 'total_ce': total_ce, 'acertos_ce': acertos_ce, 'erros_ce': erros_ce, 'score_ce': score_ce, 'percentual_ce': percentual_ce}
-        logger.info(f"Stats C/E {request.user.username}: {stats}")
-    except Exception as e: logger.error(f"Erro buscar/calcular dashboard {request.user.username}: {e}", exc_info=True); messages.error(request, "Erro carregar desempenho."); tentativas = []; stats = {}
-    context['tentativas_list'] = tentativas[:20]; context['stats'] = stats
+
+        # TODO: Calcular stats Discursivas para o período filtrado
+
+        stats = {
+            'total_geral': total_geral, # Agora é total NO PERÍODO
+            'total_ce': total_ce, 'acertos_ce': acertos_ce, 'erros_ce': erros_ce,
+            'score_ce': score_ce, 'percentual_ce': percentual_ce
+            # Adicionar outras stats discursivas do período aqui
+        }
+        logger.info(f"Stats C/E (Filtrado) {request.user.username}: {stats}")
+
+        # Pega as últimas 20 DENTRO do período filtrado para exibir na lista
+        tentativas_recentes = todas_tentativas_qs.select_related(
+            'questao', 'questao__area'
+            ).prefetch_related(
+                'avaliacao'
+            ).order_by('-data_resposta')[:20] # Pega as 20 mais recentes DENTRO do filtro
+
+    except Exception as e:
+        logger.error(f"Erro dashboard {request.user.username}: {e}", exc_info=True)
+        messages.error(request, "Erro carregar desempenho.")
+        tentativas_recentes = []
+        stats = {}
+
+    context['tentativas_list'] = tentativas_recentes
+    context['stats'] = stats
+    # Passa as datas usadas no filtro de volta para o template preencher o form
+    context['current_date_from'] = date_from_obj
+    context['current_date_to'] = date_to_obj
+
     return render(request, 'generator/dashboard.html', context)
+
+# ... (Restante das views) ...
+
+
+# ... (Restante das views) ...
 
 # Em generator/views.py
 

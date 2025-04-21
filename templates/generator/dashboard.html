@@ -3,25 +3,10 @@
 
 {% block title %}Meu Desempenho - Gerador IA{% endblock title %}
 
-{% block extra_head %} {# Bloco para CSS específico desta página #}
-    <style>
-        .stat-value { font-size: 1.75rem; font-weight: bold; }
-        .stat-label { font-size: 0.9rem; }
-        .chart-container {
-            position: relative;
-            margin: auto;
-            height: 250px; /* Altura fixa para o container do gráfico */
-            width: 100%;
-            max-width: 300px; /* Largura máxima para o gráfico de pizza/rosca */
-        }
-        .stat-icon {
-            font-size: 2.5rem; /* Tamanho dos ícones de estatística */
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        /* Ajuste para tabela não colar no card */
-        .card-body.p-0 .table { margin-bottom: 0 !important; }
-    </style>
+{% block extra_head %}
+    {# <<< Link para o arquivo CSS externo >>> #}
+    <link rel="stylesheet" href="{% static 'generator/css/dashboard_styles.css' %}">
+    {# <<< Bloco <style> inline REMOVIDO מכאן >>> #}
 {% endblock extra_head %}
 
 
@@ -45,6 +30,26 @@
     {% if error_message %} {# Exibe erros gerais passados pela view #}
         <div class="alert alert-danger">{{ error_message }}</div>
     {% endif %}
+
+
+    <div class="filter-form mb-4  g-4">
+        <form method="get" action="{% url 'dashboard' %}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="date_from" class="form-label fw-bold small mb-1">Filtrar Período:</label>
+                <input type="date" class="form-control form-control-sm" id="date_from" name="date_from"
+                       value="{{ current_date_from|date:'Y-m-d'|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="date_to" class="form-label visually-hidden">Até:</label>
+                <input type="date" class="form-control form-control-sm" id="date_to" name="date_to"
+                       value="{{ current_date_to|date:'Y-m-d'|default:'' }}">
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2" title="Remover Filtro de Data">Limpar</a>
+            </div>
+        </form>
+    </div>
 
     {# --- Seção de Estatísticas e Gráfico --- #}
     <div class="row mb-4 g-4">
