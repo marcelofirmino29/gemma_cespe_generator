@@ -171,7 +171,7 @@ def generate_questions_view(request):
                          messages.warning(request,"Nenhuma questão válida pôde ser salva.")
                     if len(saved_question_ids) < len(generated_items_data): messages.warning(request,"Alguns itens podem não ter sido salvos.")
                 # <<< Redireciona para GET após processar o POST >>>
-                return redirect('generate_questions')
+                return redirect('generator:generate_questions')
 
             except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError, Exception) as e:
                 logger.error(f"Erro GERAL Geração C/E: {e}", exc_info=True); context['error_message'] = f"Falha gerar/processar: {e}"
@@ -243,7 +243,7 @@ def validate_answers_view(request):
          context['results'] = results_list; context['performance'] = performance_data; context['error_message'] = error_processing
          logger.debug(f"Contexto final (validate_answers_view): User={request.user.username}, ...")
          return render(request, 'generator/question_generator.html', context)
-     elif request.method == 'GET': return redirect('landing_page')
+     elif request.method == 'GET': return redirect('generator:landing_page')
      context['error_message'] = context.get('error_message', "Acesso inválido.")
      return render(request, 'generator/question_generator.html', context)
 
@@ -346,7 +346,7 @@ def validate_answers_view(request):
         logger.debug(f"Contexto final (validate_answers_view): User={request.user.username}, { {k: v for k, v in context.items() if k not in ['results', 'performance', 'form']} }")
         return render(request, 'generator/question_generator.html', context)
 
-    elif request.method == 'GET': return redirect('landing_page')
+    elif request.method == 'GET': return redirect('generator:landing_page')
     context['error_message'] = context.get('error_message', "Acesso inválido.")
     return render(request, 'generator/question_generator.html', context)
 
@@ -457,7 +457,7 @@ def configurar_simulado_view(request):
                 request.session['simulado_respostas'] = {}
                 logger.info(f"Simulado C/E configurado. Questões: {len(selected_ids)}. Redirecionando...")
                 messages.success(request, f"Simulado com {len(selected_ids)} questões C/E configurado!")
-                return redirect('realizar_simulado')
+                return redirect('generator:realizar_simulado')
 
             except Exception as e:
                 logger.error(f"Erro ao selecionar questões C/E: {e}", exc_info=True)
@@ -484,7 +484,7 @@ def realizar_simulado_view(request):
 
         if not questao_id_respondida or resposta_submetida is None: # Verifica ambos
             messages.warning(request, "Resposta ou ID da questão ausente.")
-            return redirect('realizar_simulado') # Recarrega questão atual
+            return redirect('generator:realizar_simulado') # Recarrega questão atual
 
         try:
             questao_obj = Questao.objects.get(id=questao_id_respondida)
@@ -492,17 +492,17 @@ def realizar_simulado_view(request):
             if questao_ids[indice_atual] != questao_obj.id:
                  messages.error(request, "Erro de sequência no simulado. Reiniciando configuração.")
                  request.session.pop('simulado_questao_ids', None); request.session.pop('simulado_indice_atual', None)
-                 return redirect('configurar_simulado')
+                 return redirect('generator:configurar_simulado')
 
             # Salva/Atualiza TentativaResposta
             defaults_tentativa = {'data_resposta': timezone.now()}
             if questao_obj.tipo == 'CE':
                 resposta_ce_valida = resposta_submetida.strip().upper()
                 if resposta_ce_valida in ['C', 'E']: defaults_tentativa['resposta_ce'] = resposta_ce_valida
-                else: messages.error(request, "Resposta C/E inválida."); return redirect('realizar_simulado')
+                else: messages.error(request, "Resposta C/E inválida."); return redirect('generator:realizar_simulado')
             # Removido Bloco DISC aqui pois simulado é só C/E
             # elif questao_obj.tipo == 'DISC': defaults_tentativa['resposta_discursiva'] = resposta_submetida.strip()
-            else: messages.error(request,"Tipo questão inválido."); return redirect('configurar_simulado')
+            else: messages.error(request,"Tipo questão inválido."); return redirect('generator:configurar_simulado')
 
             tentativa, _ = TentativaResposta.objects.update_or_create(usuario=request.user, questao=questao_obj, defaults=defaults_tentativa)
             logger.info(f"Tentativa ID {tentativa.id} salva/atualizada p/ Q ID {questao_id_respondida}.")
@@ -518,15 +518,15 @@ def realizar_simulado_view(request):
             request.session['simulado_indice_atual'] = indice_proxima
             logger.info(f"Usuário {request.user.username} respondeu índice {indice_atual}, avançando para {indice_proxima}.")
 
-        except Questao.DoesNotExist: messages.error(request,...); return redirect('configurar_simulado')
-        except IndexError: messages.error(request, "Erro: Tentativa de acessar índice inválido."); return redirect('configurar_simulado')
+        except Questao.DoesNotExist: messages.error(request,...); return redirect('generator:configurar_simulado')
+        except IndexError: messages.error(request, "Erro: Tentativa de acessar índice inválido."); return redirect('generator:configurar_simulado')
         except Exception as e: logger.error(f"Erro salvar tentativa simulado: {e}", exc_info=True); messages.error(request, "Erro ao salvar resposta."); return redirect('realizar_simulado')
 
         # Redireciona para si mesmo (GET) para carregar a próxima questão ou finalizar
-        return redirect('realizar_simulado')
+        return redirect('generator:realizar_simulado')
 
     # --- Lógica para GET ---
-    if not questao_ids: messages.warning(request, "Simulado não iniciado."); return redirect('configurar_simulado')
+    if not questao_ids: messages.warning(request, "Simulado não iniciado."); return redirect('generator:configurar_simulado')
 
     # Verifica se o índice atual já ultrapassou a lista de questões
     if indice_atual >= len(questao_ids):
@@ -537,7 +537,7 @@ def realizar_simulado_view(request):
         request.session.pop('simulado_respostas', None)
         request.session.pop('simulado_config', None)
         logger.info(f"Simulado finalizado para {request.user.username}. IDs: {simulado_finalizado_ids}")
-        return redirect('resultado_simulado') # Redireciona para a página de resultado
+        return redirect('generator:resultado_simulado') # Redireciona para a página de resultado
 
     # Busca a questão do índice atual para exibir
     questao_id_atual = questao_ids[indice_atual]
@@ -547,7 +547,7 @@ def realizar_simulado_view(request):
         context['indice_atual'] = indice_atual + 1 # Para exibição (1 de N)
         context['total_questoes'] = len(questao_ids)
         logger.info(f"Exibindo questão índice {indice_atual} (ID: {questao_id_atual}) para {request.user.username}.")
-    except Questao.DoesNotExist: messages.error(request,...); request.session.pop('simulado_questao_ids', None); return redirect('configurar_simulado')
+    except Questao.DoesNotExist: messages.error(request,...); request.session.pop('simulado_questao_ids', None); return redirect('generator:configurar_simulado')
     except Exception as e: logger.error(f"Erro buscar questão {questao_id_atual}: {e}", exc_info=True); messages.error(request, "Erro carregar questão."); return redirect('configurar_simulado')
 
     return render(request, 'generator/realizar_simulado.html', context)
@@ -658,7 +658,7 @@ def evaluate_discursive_answer_view(request):
 
     # Fim do if request.method == 'POST'
     elif request.method == 'GET':
-        return redirect('generate_discursive_exam')
+        return redirect('generator:generate_discursive_exam')
 
     # Atualiza contexto final ANTES de renderizar
     context['evaluation_result_text'] = evaluation_result_text
@@ -768,7 +768,7 @@ def resultado_simulado_view(request):
 
     if not questao_ids:
         messages.warning(request, "Não há resultados de simulado para exibir.")
-        return redirect('dashboard') # Ou para 'configurar_simulado'
+        return redirect('generator:dashboard') # Ou para 'configurar_simulado'
 
     logger.info(f"Exibindo resultado do simulado para {request.user.username}. Questões IDs: {questao_ids}")
 

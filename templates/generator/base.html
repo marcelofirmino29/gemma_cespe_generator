@@ -1,6 +1,7 @@
-<!DOCTYPE html>
 {% load static %}
-<html lang="pt-br" data-bs-theme="dark"> {# Inicia com tema escuro como padrão #}
+<!DOCTYPE html>
+{# Define o tema inicial como escuro, o JS cuidará da persistência #}
+<html lang="pt-br" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,21 +13,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {# Link para seu CSS base #}
     <link rel="stylesheet" href="{% static 'generator/css/base_styles.css' %}">
 
     <style>
+        /* Estilos base inline ou movidos para base_styles.css */
         html, body { height: 100%; }
         body { font-family: 'Inter', sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
-        main { flex-grow: 1; }
+        main { flex-grow: 1; padding-top: 5rem; /* Aumentado para compensar navbar fixa mais alta? */ padding-bottom: 2rem; }
         footer { flex-shrink: 0; }
         .bd-mode-toggle { z-index: 1050; }
         .font-size-controls .btn { padding: 0.15rem 0.4rem; font-size: 0.75rem; line-height: 1.2; }
+        /* Estilo para navbar fixa */
+        .navbar.fixed-top { z-index: 1030; }
     </style>
-    {% block extra_head %}{% endblock extra_head %}
+
+    {# --- Bloco ÚNICO para CSS/meta tags extras da página filha --- #}
+    {% block extra_head %}
+    {% endblock extra_head %}
+    {# --- Fim Bloco extra_head --- #}
+
+    {# <<< A DEFINIÇÃO DUPLICADA DE extra_head FOI REMOVIDA >>> #}
+
 </head>
 <body class="d-flex flex-column">
 
-    {# --- Ícones SVG --- #}
+    {# --- Ícones SVG para o seletor de tema --- #}
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
       <symbol id="check2" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></symbol>
       <symbol id="circle-half" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/></symbol>
@@ -37,7 +49,7 @@
 
     {# --- Cabeçalho Principal --- #}
     <header>
-         <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom shadow-sm">
+         <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom shadow-sm fixed-top">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold" href="{% url 'generator:landing_page' %}"><i class="bi bi-robot me-2"></i>Meu Gerador IA</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPrincipal" aria-controls="navbarPrincipal" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,6 +86,7 @@
                         {% endif %}
                     </ul>
                     <div class="navbar-nav ms-auto align-items-center">
+                        {# Seletor de Tema #}
                         <div class="nav-item dropdown bd-mode-toggle me-2">
                             <button class="btn btn-secondary btn-sm py-1 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
                                 <svg class="bi theme-icon-active me-1" width="1em" height="1em"><use href="#circle-half"></use></svg>
@@ -85,9 +98,9 @@
                                 <li><button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true"><svg class="bi me-2 theme-icon" width="1em" height="1em"><use href="#circle-half"></use></svg>Automático<svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg></button></li>
                             </ul>
                         </div>
+                        {# Login/Logout/Registro #}
                         {% if user.is_authenticated %}
                             <span class="navbar-text me-3 small d-none d-lg-inline"><i class="bi bi-person-check-fill me-1"></i>Olá, {{ user.username }}!</span>
-                            {# logout NÃO usa namespace #}
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-outline-warning btn-sm py-1">
@@ -95,11 +108,8 @@
                                 </button>
                             </form>
                         {% else %}
-                             {# login NÃO usa namespace #}
                             <a class="btn btn-outline-light btn-sm me-2 py-1" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
-                             {# <<< REVERTIDO: Removido namespace 'generator:' do link de registro >>> #}
-                             {# Assumindo que 'register' está definido globalmente ou em auth.urls #}
-                            <a class="btn btn-warning btn-sm py-1" href="{% url 'register' %}"><i class="bi bi-person-plus-fill me-1"></i>Cadastre-se</a>
+                            <a class="btn btn-warning btn-sm py-1" href="{% url 'generator:register' %}"><i class="bi bi-person-plus-fill me-1"></i>Cadastre-se</a>
                         {% endif %}
                     </div>
                 </div>
@@ -132,7 +142,6 @@
 
     {# Scripts JS Comuns #}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
     {# Scripts JS EXTERNOS #}
     <script src="{% static 'generator/js/darkmode.js' %}" defer></script>
     <script src="{% static 'generator/js/fontsize_adjuster.js' %}" defer></script>

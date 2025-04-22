@@ -1,16 +1,22 @@
 {% extends 'generator/base.html' %}
 {% load static %}
 
-{% block title %}Configurar Novo Simulado C/E - Gerador IA{% endblock title %} {# Título ajustado #}
+{% block title %}Configurar Simulado C/E - Gerador IA{% endblock title %}
+
+{% block extra_head %}
+    {# Link para CSS externo (se houver) #}
+    {# <link rel="stylesheet" href="{% static 'generator/css/config_simulado_styles.css' %}"> #}
+    <style>
+        /* Estilos mínimos para espaçamento, se necessário */
+        label { display: block; margin-bottom: 0.25rem; }
+    </style>
+{% endblock extra_head %}
 
 {% block content %}
-    <header class="text-center mb-4">
-        <h1>Configurar Novo Simulado (Certo/Errado)</h1> {# Título ajustado #}
-        <p class="lead">Defina os parâmetros para o seu simulado personalizado.</p>
-        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
-    </header>
+    {# Removido header principal #}
+    {# {% if local_time %}...{% endif %} #}
 
-    {# Exibe mensagens flash (sucesso, erro, warning) #}
+    {# Mensagens #}
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
@@ -20,64 +26,59 @@
         {% endfor %}
     {% endif %}
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
-            <form method="post" action="{% url 'generator:configurar_simulado' %}">
-                {% csrf_token %}
+    {# Removido card envolvente #}
+    <div class="mb-5"> {# Adiciona margem inferior geral #}
+        <h1 class="h4 mb-3 fw-normal">Configurar Novo Simulado C/E</h1> {# Título simplificado #}
+        <form method="post" action="{% url 'generator:configurar_simulado' %}">
+            {% csrf_token %}
 
-                {# Exibe erros gerais do formulário (ex: nenhuma questão solicitada) #}
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger py-2">
-                        {% for error in form.non_field_errors %} {{ error }} {% endfor %}
-                    </div>
-                {% endif %}
-
-                <div class="row g-3">
-                    {# Número de Questões C/E #}
-                    <div class="col-md-6 col-lg-4"> {# Ajustado grid #}
-                        <label for="{{ form.num_ce.id_for_label }}" class="form-label">{{ form.num_ce.label }}</label>
-                        {{ form.num_ce }} {# Renderiza widget #}
-                        {% if form.num_ce.help_text %}<div class="form-text">{{ form.num_ce.help_text|safe }}</div>{% endif %}
-                        {% if form.num_ce.errors %}<div class="invalid-feedback d-block">{{ form.num_ce.errors|striptags }}</div>{% endif %}
-                    </div>
-
-                    {# Área #}
-                    <div class="col-md-6 col-lg-4"> {# Ajustado grid #}
-                        <label for="{{ form.area.id_for_label }}" class="form-label">{{ form.area.label }}</label>
-                        {{ form.area }}
-                        {% if form.area.help_text %}<div class="form-text">{{ form.area.help_text|safe }}</div>{% endif %}
-                        {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
-                    </div>
-
-                     {# Dificuldade C/E #}
-                    <div class="col-md-6 col-lg-4"> {# Ajustado grid #}
-                        <label for="{{ form.dificuldade_ce.id_for_label }}" class="form-label">{{ form.dificuldade_ce.label }}</label>
-                        {{ form.dificuldade_ce }}
-                        {% if form.dificuldade_ce.help_text %}<div class="form-text">{{ form.dificuldade_ce.help_text|safe }}</div>{% endif %}
-                        {% if form.dificuldade_ce.errors %}<div class="invalid-feedback d-block">{{ form.dificuldade_ce.errors|striptags }}</div>{% endif %}
-                    </div>
-
-                    {# --- <<< CAMPO TÓPICO (TEXTAREA) >>> --- #}
-                    <div class="col-md-12"> {# Ocupa linha inteira #}
-                        <label for="{{ form.topico.id_for_label }}" class="form-label">{{ form.topico.label }}</label>
-                        {{ form.topico }} {# Renderiza o textarea #}
-                        {% if form.topico.help_text %}<div class="form-text">{{ form.topico.help_text|safe }}</div>{% endif %}
-                        {% if form.topico.errors %}<div class="invalid-feedback d-block">{{ form.topico.errors|striptags }}</div>{% endif %}
-                    </div>
-                    {# --- <<< FIM CAMPO TÓPICO >>> --- #}
-
-                </div> {# Fim da row g-3 #}
-
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-play-circle-fill me-1"></i> Iniciar Simulado C/E
-                    </button>
-                     {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
-                     <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary ms-2">Cancelar</a>
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small"> {# Erro pequeno #}
+                    {% for error in form.non_field_errors %} {{ error }} {% endfor %}
                 </div>
-            </form>
-        </div>
+            {% endif %}
+
+            <div class="row g-3 mb-3"> {# Linha para os filtros #}
+                {# Número de Questões C/E #}
+                <div class="col-md-6 col-lg-3">
+                    <label for="{{ form.num_ce.id_for_label }}" class="form-label small">{{ form.num_ce.label }}</label>
+                    {{ form.num_ce }}
+                    {% if form.num_ce.help_text %}<div class="form-text text-muted small">{{ form.num_ce.help_text|safe }}</div>{% endif %}
+                    {% if form.num_ce.errors %}<div class="invalid-feedback d-block">{{ form.num_ce.errors|striptags }}</div>{% endif %}
+                </div>
+
+                {# Área #}
+                <div class="col-md-6 col-lg-3">
+                    <label for="{{ form.area.id_for_label }}" class="form-label small">{{ form.area.label }}</label>
+                    {{ form.area }}
+                    {% if form.area.help_text %}<div class="form-text text-muted small">{{ form.area.help_text|safe }}</div>{% endif %}
+                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
+                </div>
+
+                 {# Dificuldade C/E #}
+                <div class="col-md-6 col-lg-3">
+                    <label for="{{ form.dificuldade_ce.id_for_label }}" class="form-label small">{{ form.dificuldade_ce.label }}</label>
+                    {{ form.dificuldade_ce }}
+                    {% if form.dificuldade_ce.help_text %}<div class="form-text text-muted small">{{ form.dificuldade_ce.help_text|safe }}</div>{% endif %}
+                    {% if form.dificuldade_ce.errors %}<div class="invalid-feedback d-block">{{ form.dificuldade_ce.errors|striptags }}</div>{% endif %}
+                </div>
+
+                {# Tópico #}
+                <div class="col-md-6 col-lg-3">
+                    <label for="{{ form.topico.id_for_label }}" class="form-label small">{{ form.topico.label }}</label>
+                    {{ form.topico }}
+                    {% if form.topico.help_text %}<div class="form-text text-muted small">{{ form.topico.help_text|safe }}</div>{% endif %}
+                    {% if form.topico.errors %}<div class="invalid-feedback d-block">{{ form.topico.errors|striptags }}</div>{% endif %}
+                </div>
+            </div> {# Fim da row g-3 #}
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary btn-sm"> {# Botão menor #}
+                    <i class="bi bi-play-circle-fill me-1"></i> Iniciar Simulado
+                </button>
+                 <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm ms-2">Cancelar</a> {# Botão menor #}
+            </div>
+        </form>
     </div>
 
 {% endblock content %}

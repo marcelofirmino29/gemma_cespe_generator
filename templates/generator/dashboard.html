@@ -4,194 +4,150 @@
 {% block title %}Meu Desempenho - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    {# <<< Link para o arquivo CSS externo >>> #}
+    {# Link para CSS externo (se houver) #}
     <link rel="stylesheet" href="{% static 'generator/css/dashboard_styles.css' %}">
-    {# <<< Bloco <style> inline REMOVIDO מכאן >>> #}
+    <style>
+        /* Estilos mínimos inline (ou mova para dashboard_styles.css) */
+        .stat-value { font-size: 1.75rem; font-weight: bold; }
+        .stat-label { font-size: 0.9rem; }
+        .chart-container { position: relative; margin: auto; height: 250px; width: 100%; max-width: 300px; }
+        .stat-icon { font-size: 2.5rem; margin-bottom: 0.5rem; display: block; }
+        .filter-form { padding: 1rem 1.5rem; background-color: var(--bs-tertiary-bg); border-radius: 0.5rem; border: 1px solid var(--bs-border-color); }
+        [data-bs-theme="dark"] .filter-form { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
+        /* Remove margem inferior padrão da tabela dentro do card-body p-0 (se usado) */
+        /* .card-body.p-0 .table { margin-bottom: 0 !important; } */
+    </style>
 {% endblock extra_head %}
 
 
 {% block content %} {# Conteúdo específico da página #}
 
-    <header class="text-center mb-4">
-        <h1>Meu Desempenho</h1>
-        <p class="lead">Acompanhe seu histórico e estatísticas.</p>
-        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
-    </header>
+    {# Removido Header principal #}
+    {# {% if local_time %}...{% endif %} #}
 
-    {% if messages %} {# Exibe mensagens flash do Django #}
-        {% for message in messages %}
-            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+    {# Mensagens #}
+    {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
+    {% if error_message %} <div class="alert alert-danger">{{ error_message }}</div> {% endif %}
 
-    {% if error_message %} {# Exibe erros gerais passados pela view #}
-        <div class="alert alert-danger">{{ error_message }}</div>
-    {% endif %}
-
-
-    <div class="filter-form mb-4 g-4">
-        {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+    {# --- Formulário de Filtro por Data (Mantido com estilo) --- #}
+    <div class="filter-form mb-4"> {# Adicionado mb-4 #}
         <form method="get" action="{% url 'generator:dashboard' %}" class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label for="date_from" class="form-label fw-bold small mb-1">Filtrar Período:</label>
-                <input type="date" class="form-control form-control-sm" id="date_from" name="date_from"
-                       value="{{ current_date_from|date:'Y-m-d'|default:'' }}">
+                <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" value="{{ current_date_from|date:'Y-m-d'|default:'' }}">
             </div>
             <div class="col-md-4">
                 <label for="date_to" class="form-label visually-hidden">Até:</label>
-                <input type="date" class="form-control form-control-sm" id="date_to" name="date_to"
-                       value="{{ current_date_to|date:'Y-m-d'|default:'' }}">
+                <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" value="{{ current_date_to|date:'Y-m-d'|default:'' }}">
             </div>
             <div class="col-md-auto">
                 <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-                {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
-                <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2" title="Remover Filtro de Data">Limpar</a>
+                <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2" title="Remover Filtro">Limpar</a>
             </div>
         </form>
     </div>
+    {# --- FIM: Formulário de Filtro --- #}
 
-    {# --- Seção de Estatísticas e Gráfico --- #}
+
+    {# --- Seção de Estatísticas e Gráfico (SEM CARDS) --- #}
     <div class="row mb-4 g-4">
 
-        {# --- Card de Estatísticas (Resumo C/E) --- #}
+        {# --- Bloco de Estatísticas (Resumo C/E) --- #}
         <div class="col-lg-7">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <h2 class="h5 mb-0">Resumo Certo/Errado (Período Filtrado)</h2> {# Título ajustado #}
-                </div>
-                <div class="card-body d-flex align-items-center">
-                    {% if stats %}
-                    <div class="row text-center g-3 w-100">
-                        <div class="col-md-3 col-6">
-                            <i class="bi bi-collection text-secondary stat-icon"></i>
-                            <div class="stat-value">{{ stats.total_ce|default_if_none:"0" }}</div>
-                            <div class="stat-label text-muted">Tentativas C/E</div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <i class="bi bi-check-circle-fill text-success stat-icon"></i>
-                            <div class="stat-value text-success">{{ stats.acertos_ce|default_if_none:"0" }}</div>
-                            <div class="stat-label text-muted">Acertos</div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <i class="bi bi-x-octagon-fill text-danger stat-icon"></i>
-                            <div class="stat-value text-danger">{{ stats.erros_ce|default_if_none:"0" }}</div>
-                            <div class="stat-label text-muted">Erros</div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <i class="bi bi-calculator-fill stat-icon {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-secondary{% endif %}"></i>
-                            <div class="stat-value {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-muted{% endif %}">
-                                {% if stats.score_ce > 0 %}+{% endif %}{{ stats.score_ce|default_if_none:"0" }}
-                            </div>
-                            <div class="stat-label text-muted">Score Líquido</div>
-                        </div>
-                        {% if stats.total_ce > 0 %}
-                        <div class="col-12 mt-3">
-                             <div class="progress" role="progressbar" aria-label="Percentual de acerto" aria-valuenow="{{ stats.percentual_ce }}" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
-                                <div class="progress-bar bg-success" style="width: {{ stats.percentual_ce }}%"></div>
-                             </div>
-                             <small class="text-muted">Aproveitamento Bruto: {{ stats.percentual_ce|default_if_none:"0" }}%</small>
-                        </div>
-                        {% endif %}
+            <h2 class="h5 mb-3 fw-normal">Resumo C/E {% if current_date_from %}(Período Filtrado){% else %}(Geral){% endif %}</h2> {# Título simplificado #}
+            <div class="p-3 rounded border bg-body-secondary"> {# Div com fundo e borda #}
+                {% if stats %}
+                <div class="row text-center g-3 w-100">
+                    {# Colunas com stats e ícones como antes #}
+                    <div class="col-md-3 col-6"> <i class="bi bi-collection text-secondary stat-icon"></i> <div class="stat-value">{{ stats.total_ce|default_if_none:"0" }}</div> <div class="stat-label text-muted">Tentativas C/E</div> </div>
+                    <div class="col-md-3 col-6"> <i class="bi bi-check-circle-fill text-success stat-icon"></i> <div class="stat-value text-success">{{ stats.acertos_ce|default_if_none:"0" }}</div> <div class="stat-label text-muted">Acertos</div> </div>
+                    <div class="col-md-3 col-6"> <i class="bi bi-x-octagon-fill text-danger stat-icon"></i> <div class="stat-value text-danger">{{ stats.erros_ce|default_if_none:"0" }}</div> <div class="stat-label text-muted">Erros</div> </div>
+                    <div class="col-md-3 col-6"> <i class="bi bi-calculator-fill stat-icon {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-secondary{% endif %}"></i> <div class="stat-value {% if stats.score_ce > 0 %}text-success{% elif stats.score_ce < 0 %}text-danger{% else %}text-muted{% endif %}"> {% if stats.score_ce > 0 %}+{% endif %}{{ stats.score_ce|default_if_none:"0" }} </div> <div class="stat-label text-muted">Score Líquido</div> </div>
+                    {% if stats.total_ce > 0 %}
+                    <div class="col-12 mt-3">
+                         <div class="progress" role="progressbar" aria-label="Percentual de acerto" aria-valuenow="{{ stats.percentual_ce }}" aria-valuemin="0" aria-valuemax="100" style="height: 6px;"> <div class="progress-bar bg-success" style="width: {{ stats.percentual_ce }}%"></div> </div>
+                         <small class="text-muted">Aproveitamento Bruto: {{ stats.percentual_ce|default_if_none:"0" }}%</small>
                     </div>
-                    {% else %}
-                        <div class="alert alert-secondary small w-100 text-center">Estatísticas de desempenho ainda não disponíveis.</div>
                     {% endif %}
                 </div>
+                {% else %}
+                    <div class="alert alert-secondary small w-100 text-center mb-0">Sem dados para o período.</div> {# Removido mb padrão do alert #}
+                {% endif %}
             </div>
         </div>
 
-        {# --- Card do Gráfico --- #}
+        {# --- Bloco do Gráfico --- #}
         <div class="col-lg-5">
-             <div class="card shadow-sm h-100">
-                 <div class="card-header">
-                     <h2 class="h5 mb-0">Distribuição Acertos/Erros (C/E - Período)</h2> {# Título ajustado #}
-                 </div>
-                 <div class="card-body d-flex align-items-center justify-content-center">
-                     {% if stats and stats.total_ce > 0 %}
-                         <div class="chart-container">
-                             <canvas id="acertosErrosChart"
-                                     data-acertos="{{ stats.acertos_ce|default_if_none:0 }}"
-                                     data-erros="{{ stats.erros_ce|default_if_none:0 }}">
-                                 Gráfico indisponível.
-                             </canvas>
-                         </div>
-                     {% elif stats %}
-                         <div class="text-center text-muted small w-100">Responda questões C/E para gerar o gráfico.</div>
-                     {% else %}
-                         <div class="text-center text-muted small w-100">Gráfico indisponível.</div>
-                     {% endif %}
-                 </div>
+            <h2 class="h5 mb-3 fw-normal">Distribuição Acertos/Erros (C/E - Período)</h2> {# Título simplificado #}
+             <div class="p-3 rounded border bg-body-secondary d-flex align-items-center justify-content-center" style="min-height: 300px;"> {# Div com fundo e borda, altura mínima #}
+                 {% if stats and stats.total_ce > 0 %}
+                     <div class="chart-container">
+                         <canvas id="acertosErrosChart" data-acertos="{{ stats.acertos_ce|default_if_none:0 }}" data-erros="{{ stats.erros_ce|default_if_none:0 }}">Gráfico indisponível.</canvas>
+                     </div>
+                 {% elif stats %}
+                     <div class="text-center text-muted small w-100">Responda questões C/E para gerar o gráfico.</div>
+                 {% else %}
+                     <div class="text-center text-muted small w-100">Gráfico indisponível.</div>
+                 {% endif %}
              </div>
         </div>
-    </div>
+    </div> {# --- Fim da row de Stats/Gráfico --- #}
 
-    {# --- Seção do Histórico Recente (Tabela) --- #}
-    <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2 class="h5 mb-0">Últimas Tentativas (Máx. 20 no Período)</h2> {# Título ajustado #}
-        </div>
-        <div class="card-body p-0">
-            {% if tentativas_list %}
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0 small"> {# Adicionado small para tabela #}
-                        <thead>
-                            <tr>
-                                <th scope="col">Data</th>
-                                <th scope="col">Tipo</th>
-                                <th scope="col">Área</th>
-                                <th scope="col">Questão (Início)</th>
-                                <th scope="col">Sua Resposta</th>
-                                {# <th scope="col">Resultado</th> #} {# Coluna Resultado comentada #}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tentativa in tentativas_list %}
-                            <tr>
-                                <td class="text-nowrap">{{ tentativa.data_resposta|date:"d/m/Y H:i" }}</td>
-                                <td><span class="badge {% if tentativa.questao.tipo == 'CE' %}bg-primary-subtle text-primary-emphasis{% else %}bg-info-subtle text-info-emphasis{% endif %}">{{ tentativa.questao.get_tipo_display }}</span></td> {# Badges ajustados #}
-                                <td>{{ tentativa.questao.area.nome|default:"-" }}</td>
-                                <td>{{ tentativa.questao.texto_comando|truncatewords:12 }}</td>
-                                <td class="text-center"> {# Centraliza resposta #}
-                                    {% if tentativa.resposta_ce %}
-                                        <span class="fw-bold">{{ tentativa.resposta_ce }}</span>
-                                        {# Adiciona ícone de certo/errado se houver avaliação #}
-                                        {% if tentativa.avaliacao.correto_ce is not None %}
-                                            {% if tentativa.avaliacao.correto_ce %}
-                                                <i class="bi bi-check-circle-fill text-success ms-1" title="Correto"></i>
-                                            {% else %}
-                                                <i class="bi bi-x-circle-fill text-danger ms-1" title="Errado"></i>
+
+    {# --- Seção do Histórico Recente (Tabela - SEM CARD) --- #}
+    <div class="mb-4"> {# Apenas margem inferior #}
+        <h2 class="h5 mb-3 fw-normal">Histórico de Tentativas {% if current_date_from %}(Período Filtrado){% else %}(Últimas 20){% endif %}</h2>
+        {% if tentativas_list %}
+            <div class="table-responsive border rounded"> {# Adiciona borda e responsividade #}
+                <table class="table table-striped table-hover mb-0 small"> {# Tabela pequena #}
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Área</th>
+                            <th scope="col">Questão (Início)</th>
+                            <th scope="col" class="text-center">Sua Resposta</th> {# Centralizado #}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tentativa in tentativas_list %}
+                        <tr>
+                            <td class="text-nowrap">{{ tentativa.data_resposta|date:"d/m/Y H:i" }}</td>
+                            <td><span class="badge {% if tentativa.questao.tipo == 'CE' %}bg-primary-subtle text-primary-emphasis{% else %}bg-info-subtle text-info-emphasis{% endif %}">{{ tentativa.questao.get_tipo_display }}</span></td>
+                            <td>{{ tentativa.questao.area.nome|default:"-" }}</td>
+                            <td>{{ tentativa.questao.texto_comando|truncatewords:12 }}</td>
+                            <td class="text-center">
+                                {% if tentativa.resposta_ce %}
+                                    <span class="fw-bold">{{ tentativa.resposta_ce }}</span>
+                                    {% with avaliacao=tentativa.avaliacao %} {# Usar with para evitar erro #}
+                                        {% if avaliacao and avaliacao.correto_ce is not None %}
+                                            {% if avaliacao.correto_ce %}<i class="bi bi-check-circle-fill text-success ms-1" title="Correto"></i>
+                                            {% else %}<i class="bi bi-x-circle-fill text-danger ms-1" title="Errado"></i>
                                             {% endif %}
                                         {% endif %}
-                                    {% elif tentativa.resposta_discursiva %}
-                                        <span class="text-muted fst-italic">Discursiva</span> {# Indica que é discursiva #}
-                                         {# Poderia adicionar um link para ver a avaliação discursiva se existir #}
-                                    {% else %}
-                                        <span class="text-muted">N/R</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="p-3 text-center text-muted">
-                    Nenhuma tentativa encontrada{% if current_date_from or current_date_to %} neste período{% endif %}. Comece a gerar e responder questões!
-                </div>
-            {% endif %}
-        </div>
+                                    {% endwith %}
+                                {% elif tentativa.resposta_discursiva %}
+                                    <span class="text-muted fst-italic">Discursiva</span>
+                                {% else %} <span class="text-muted">N/R</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-secondary mt-3 small"> {# Alert em vez de p #}
+                Nenhuma tentativa encontrada{% if current_date_from or current_date_to %} neste período{% endif %}.
+            </div>
+        {% endif %}
     </div>
+    {# --- FIM: Histórico --- #}
 
 {% endblock content %}
 
 
-{% block extra_js %} {# Adiciona JS específico desta página #}
-    {# Link para Chart.js #}
+{% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    {# Link para seu JS estático que inicializa o gráfico #}
-    {# Certifique-se que este arquivo existe e tem o código para criar o gráfico #}
     <script src="{% static 'generator/js/dashboard_charts.js' %}" defer></script>
 {% endblock extra_js %}

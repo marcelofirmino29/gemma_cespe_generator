@@ -4,67 +4,92 @@
 {% block title %}Resultado da Avaliação - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    {# <<< Link para o arquivo CSS externo >>> #}
     <link rel="stylesheet" href="{% static 'generator/css/evaluation_result_styles.css' %}">
-    {# <<< Bloco <style> inline REMOVIDO מכאן >>> #}
+    <style>
+        /* Estilos mínimos inline ou mova para evaluation_result_styles.css */
+        .evaluation-section {
+            padding: 1.5rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            background-color: var(--bs-tertiary-bg);
+            margin-bottom: 1.5rem; /* mb-4 */
+        }
+        .submitted-text pre code {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9em;
+            background-color: var(--bs-secondary-bg); /* Fundo leve para o código */
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            display: block; /* Garante que o pre ocupe a largura */
+        }
+        .score-highlight {
+            font-weight: bold;
+            color: var(--bs-primary); /* Ou outra cor de destaque */
+        }
+    </style>
 {% endblock extra_head %}
 
 
 {% block content %}
-    {# Header específico da página #}
-    <div class="text-center mb-4">
-        <h1>Avaliação da Resposta Discursiva (Beta)</h1>
-        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
-    </div>
+    {# Removido header principal #}
+    {# {% if local_time %}...{% endif %} #}
 
     {# Exibição de Erro #}
     {% if evaluation_error %}
         <div class="alert alert-danger"><strong>Erro na Avaliação:</strong> {{ evaluation_error }}</div>
     {% endif %}
 
-    {# Exibição do Contexto e Resposta Submetidos #}
+    {# Exibição do Contexto e Resposta Submetidos (Layout Simplificado) #}
     {% if submitted_exam_context or submitted_user_answer %}
-        {% if submitted_exam_context %}
-        <div class="results-section">
-            <h3>Questão Avaliada (Contexto Fornecido)</h3>
-            <pre><code>{{ submitted_exam_context }}</code></pre>
+        <div class="mb-4"> {# Container simples com margem #}
+            {% if submitted_exam_context %}
+            <div class="mb-3">
+                <h2 class="h5 fw-normal mb-2">Questão Avaliada (Contexto)</h2>
+                <div class="submitted-text border rounded p-3 small">
+                    <pre class="mb-0"><code>{{ submitted_exam_context }}</code></pre> {# Usa <pre> para manter formatação #}
+                </div>
+            </div>
+            {% endif %}
+            {% if submitted_user_answer %}
+            <div class="mb-3">
+                <h2 class="h5 fw-normal mb-2">Sua Resposta (Submetida)</h2>
+                <div class="submitted-text border rounded p-3 small">
+                     <pre class="mb-0"><code>{{ submitted_user_answer }}</code></pre> {# Usa <pre> #}
+                </div>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
-        {% if submitted_user_answer %}
-        <div class="results-section">
-            <h3>Sua Resposta (Submetida)</h3>
-            <pre><code>{{ submitted_user_answer }}</code></pre>
-        </div>
-        {% endif %}
     {% elif not evaluation_error %}
-         <div class="alert alert-info">Dados da questão ou resposta não encontrados para exibição.</div>
+         <div class="alert alert-info small">Dados da questão ou resposta não encontrados para exibição.</div>
     {% endif %}
 
-    {# --- Exibe os RESULTADOS DA AVALIAÇÃO --- #}
-    {% if parsed_scores %} {# Mostra apenas se o parsing teve sucesso (mesmo que parcial) #}
-        <div class="results-section evaluation-box p-4">
-            <h3 class="text-primary mb-3">Avaliação Detalhada da IA (Estimativa)</h3>
-            <div class="row">
+    {# --- Exibe os RESULTADOS DA AVALIAÇÃO (SEM CARD) --- #}
+    {% if parsed_scores %}
+        <hr class="my-4">
+        <div class="evaluation-section"> {# Usa classe para estilo #}
+            <h2 class="h5 fw-normal mb-3 text-primary">Avaliação Detalhada da IA (Estimativa)</h2>
+            <div class="row small"> {# Usa row e texto pequeno #}
                 <div class="col-md-6 mb-3 mb-md-0">
-                    <p><strong>Nota de Conteúdo (NC Estimada):</strong> <span class="score-highlight">{{ parsed_scores.NC|default_if_none:"N/A" }}</span> / 30.00</p>
-                    <p><strong>Contagem Estimada de Erros (NE):</strong> <span class="score-highlight">{{ parsed_scores.NE|default_if_none:"N/A" }}</span></p>
-                    <p><strong>Nota Final Estimada (NPD):</strong> <span class="score-highlight">{{ parsed_scores.NPD|default_if_none:"N/A" }}</span></p>
+                    <p class="mb-1"><strong>Nota Conteúdo (NC):</strong> <span class="score-highlight">{{ parsed_scores.NC|default_if_none:"N/A" }}</span> / 30.00</p>
+                    <p class="mb-1"><strong>Erros (NE):</strong> <span class="score-highlight">{{ parsed_scores.NE|default_if_none:"N/A" }}</span></p>
+                    <p class="mb-0"><strong>Nota Final (NPD):</strong> <span class="score-highlight">{{ parsed_scores.NPD|default_if_none:"N/A" }}</span></p>
                 </div>
                  <div class="col-md-6">
                     {% with main_feedback=parsed_scores.Comentários justification_feedback=parsed_scores.Justificativa_NC %}
                         {% if main_feedback or justification_feedback %}
-                            <p class="mb-1"><strong>Avaliação Descritiva da IA:</strong></p>
+                            <p class="mb-1"><strong>Feedback Descritivo:</strong></p>
                             {% if main_feedback %}
-                                <p class="text-muted small">{{ main_feedback|linebreaksbr }}</p>
+                                <p class="text-muted mb-2">{{ main_feedback|linebreaksbr }}</p>
                             {% endif %}
                             {% if justification_feedback and justification_feedback != main_feedback %}
                                 <p class="mb-1 mt-2"><strong>Justificativa NC:</strong></p>
-                                <p class="text-muted small">{{ justification_feedback|linebreaksbr }}</p>
+                                <p class="text-muted mb-0">{{ justification_feedback|linebreaksbr }}</p>
                             {% elif not main_feedback and justification_feedback %}
-                                 <p class="text-muted small">{{ justification_feedback|linebreaksbr }}</p>
+                                 <p class="text-muted mb-0">{{ justification_feedback|linebreaksbr }}</p>
                             {% endif %}
                         {% else %}
-                            <p class="text-muted small">Nenhuma avaliação descritiva ou justificativa foi extraída.</p>
+                            <p class="text-muted mb-0">Nenhum feedback descritivo extraído.</p>
                         {% endif %}
                     {% endwith %}
                 </div>
@@ -72,25 +97,26 @@
         </div>
     {% endif %}
 
-    {# Exibe o TEXTO BRUTO apenas se o parsing FALHOU (parsed_scores é None mas evaluation_result_text existe) E não houve erro na chamada da IA #}
+    {# Exibe o TEXTO BRUTO apenas se o parsing FALHOU #}
     {% if not parsed_scores and evaluation_result_text and not evaluation_error %}
-         <div class="results-section evaluation-box p-4 mt-3">
-             <h3 class="text-secondary mb-3">Resultado Bruto da IA (Falha no Parsing)</h3>
-             <div class="alert alert-warning small">Não foi possível extrair os dados detalhados do texto abaixo. Verifique o formato da resposta da IA ou o parser em utils.py.</div>
-             <pre><code>{{ evaluation_result_text }}</code></pre>
+         <hr class="my-4">
+         <div class="evaluation-section"> {# Usa mesma classe #}
+             <h2 class="h5 fw-normal mb-3 text-secondary">Resultado Bruto da IA (Falha no Parsing)</h2>
+             <div class="alert alert-warning small">Não foi possível extrair os dados detalhados do texto abaixo. Verifique o formato da resposta da IA ou o parser.</div>
+             <pre class="small"><code>{{ evaluation_result_text }}</code></pre> {# Usa <pre> #}
          </div>
     {% endif %}
 
 
-    {# Se não há erro, nem scores parseados, e não temos os dados submetidos (caso raro) #}
     {% if not evaluation_error and not parsed_scores and not submitted_exam_context and not submitted_user_answer and not evaluation_result_text %}
-        <div class="alert alert-secondary">Nenhuma avaliação para exibir.</div>
+        <div class="alert alert-secondary small">Nenhuma avaliação para exibir.</div>
     {% endif %}
 
-    {# Botões de Navegação #}
+    {# Botões de Navegação (Simplificados) #}
      <div class="mt-4 text-center">
-         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-secondary">Gerar/Avaliar Outra</a>
-         <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary">Voltar ao Início</a>
+         {# <<< CORRIGIDO: Namespaces adicionados >>> #}
+         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-secondary btn-sm">Gerar/Avaliar Outra</a>
+         <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">Início</a>
      </div>
 
 {% endblock content %}

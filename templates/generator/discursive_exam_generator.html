@@ -4,86 +4,117 @@
 {% block title %}Gerador de Questão Discursiva - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    {# <<< Link para o CSS específico desta página >>> #}
     <link rel="stylesheet" href="{% static 'generator/css/exam_generator_styles.css' %}">
-    {# Biblioteca para renderizar Markdown (Se for usar, link aqui ou no base.html) #}
-    {# <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> #}
+    {# Estilos inline mínimos para espaçamento e <pre> #}
+    <style>
+        .generated-exam-text pre {
+            white-space: pre-wrap; /* Permite quebra de linha no <pre> */
+            word-wrap: break-word;
+            background-color: var(--bs-tertiary-bg);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--bs-border-color);
+            font-size: 0.9em; /* Texto um pouco menor */
+        }
+        /* Garante que labels fiquem acima dos campos */
+        label { display: block; margin-bottom: 0.25rem; }
+        /* Garante que o help text fique abaixo */
+        .form-text { width: 100%; }
+    </style>
 {% endblock extra_head %}
 
 {% block content %}
 
-    <header class="text-center mb-4">
-        <h1>Gerador de Questão Discursiva</h1>
-        <p class="lead">Forneça um tema ou contexto e a IA criará uma questão discursiva completa.</p>
-        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
-    </header>
+    {# Removido header principal da página #}
 
+    {# Mensagens #}
     {% if not service_initialized %}
         <div class="alert alert-danger" role="alert">
-             <strong>Atenção:</strong> Serviço de IA indisponível ou não configurado corretamente. Verifique as configurações.
+             <strong>Atenção:</strong> Serviço de IA indisponível.
         </div>
     {% endif %}
+    {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
 
-    {# Formulário para gerar a QUESTÃO discursiva #}
-    <div class="form-container mb-5"> {# Adicionado mb-5 #}
-         <h2 class="h4 mb-3">1. Gerar Nova Questão</h2>
-         {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+    {# Formulário para gerar a QUESTÃO discursiva (Layout Ajustado) #}
+    <div class="mb-4"> {# Margem inferior #}
+         <h1 class="h4 mb-3 fw-normal">Gerar Nova Questão Discursiva</h1> {# Título simplificado #}
         <form method="post" action="{% url 'generator:generate_discursive_exam' %}" id="discursive-exam-form" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
             {% csrf_token %}
-            {# Campo Tópico/Contexto Base #}
+            {# Campo Tópico/Contexto Base (continua ocupando largura total) #}
             <div class="mb-3">
-                <label for="{{ form.base_topic_or_context.id_for_label }}" class="form-label">{{ form.base_topic_or_context.label }}</label>
+                <label for="{{ form.base_topic_or_context.id_for_label }}" class="form-label small fw-medium">{{ form.base_topic_or_context.label }}</label>
                 {{ form.base_topic_or_context }}
                 {% if form.base_topic_or_context.help_text %}<small class="form-text text-muted">{{ form.base_topic_or_context.help_text }}</small>{% endif %}
                 {% if form.base_topic_or_context.errors %}<div class="invalid-feedback d-block">{{ form.base_topic_or_context.errors|striptags }}</div>{% endif %}
             </div>
-            {# Linha para Opções #}
-            <div class="row g-3 mb-3">
-                <div class="col-md-3 col-sm-6"><label for="{{ form.num_aspects.id_for_label }}" class="form-label">{{ form.num_aspects.label }}</label>{{ form.num_aspects }}{% if form.num_aspects.help_text %}<small class="form-text text-muted">{{ form.num_aspects.help_text }}</small>{% endif %}{% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}</div>
-                <div class="col-md-3 col-sm-6"><label for="{{ form.area.id_for_label }}" class="form-label">{{ form.area.label }}</label>{{ form.area }}{% if form.area.help_text %}<small class="form-text text-muted">{{ form.area.help_text }}</small>{% endif %}{% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}</div>
-                 <div class="col-md-3 col-sm-6"><label for="{{ form.complexity.id_for_label }}" class="form-label">{{ form.complexity.label }}</label>{{ form.complexity }}{% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}{% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}</div>
-                 <div class="col-md-3 col-sm-6"><label for="{{ form.language.id_for_label }}" class="form-label">{{ form.language.label }}</label>{{ form.language }}{% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}{% if form.language.errors %}<div class="invalid-feedback d-block">{{ form.language.errors|striptags }}</div>{% endif %}</div>
+
+            {# --- LINHA PARA OPÇÕES (Layout em Grade Ajustado) --- #}
+            <div class="row g-3 mb-3"> {# Usando g-3 para espaçamento padrão #}
+                {# Número de Aspectos #}
+                <div class="col-sm-6 col-md-4 col-lg-3"> {# 4 colunas em LG, 3 em MD, 2 em SM #}
+                    <label for="{{ form.num_aspects.id_for_label }}" class="form-label small fw-medium">{{ form.num_aspects.label }}</label>
+                    {{ form.num_aspects }}
+                    {% if form.num_aspects.help_text %}<small class="form-text text-muted">{{ form.num_aspects.help_text }}</small>{% endif %}
+                    {% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}
+                </div>
+                {# Área #}
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <label for="{{ form.area.id_for_label }}" class="form-label small fw-medium">{{ form.area.label }}</label>
+                    {{ form.area }}
+                    {% if form.area.help_text %}<small class="form-text text-muted">{{ form.area.help_text }}</small>{% endif %}
+                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
+                </div>
+                 {# Complexidade #}
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <label for="{{ form.complexity.id_for_label }}" class="form-label small fw-medium">{{ form.complexity.label }}</label>
+                    {{ form.complexity }}
+                    {% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}
+                    {% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}
+                </div>
+                 {# Idioma #}
+                <div class="col-sm-6 col-md-12 col-lg-3"> {# Ocupa largura em MD, mas alinha em LG #}
+                    <label for="{{ form.language.id_for_label }}" class="form-label small fw-medium">{{ form.language.label }}</label>
+                    {{ form.language }}
+                    {% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}
+                    {% if form.language.errors %}<div class="invalid-feedback d-block">{{ form.language.errors|striptags }}</div>{% endif %}
+                </div>
             </div>
+            {# --- FIM LINHA PARA OPÇÕES --- #}
+
             {# Botão de Geração #}
-            <button type="submit" class="btn btn-info" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
-                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner-discursive-exam" style="display: none;"></span>
-                 <span id="button-text-discursive-exam">Gerar Questão Discursiva</span>
+            <button type="submit" class="btn btn-primary btn-sm" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
+                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner-discursive-exam"></span>
+                 <span id="button-text-discursive-exam">Gerar Questão</span>
             </button>
         </form>
     </div>
 
     {# Exibição de Erro Geral de Geração #}
     {% if error_message and service_initialized and not form.errors %}
-        <div class="alert alert-danger alert-dismissible fade show small" role="alert"> {# Adicionado small #}
-             <strong>Erro ao Gerar Questão:</strong> {{ error_message }}
+        <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+             <strong>Erro ao Gerar:</strong> {{ error_message }}
              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     {% endif %}
 
     {# Exibição da Questão Gerada E Formulário para Resposta #}
     {% if discursive_exam_text and questao_id %}
-        <hr class="my-4"> {# Separador visual #}
-        <div class="results-container mt-4">
-            <h2 class="h4 mb-3">2. Questão Discursiva Gerada:</h2>
-            <div class="card generated-exam-card mb-4 shadow-sm"> {# Adicionado shadow-sm #}
-                <div class="card-body">
-                     {# Mantém <pre> para preservar formatação ou usar JS para Markdown #}
-                    <pre id="markdown-content" class="bg-body-tertiary p-3 rounded small">{{ discursive_exam_text }}</pre> {# Adicionado estilo #}
-                </div>
-                 <div class="card-footer text-end bg-transparent border-top-0 pt-0">
-                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">Copiar Texto da Questão</button>
-                </div>
+        <hr class="my-4"> {# Separador #}
+        <div class="mt-4"> {# Container simples #}
+            <h2 class="h5 mb-3 fw-normal">Questão Discursiva Gerada:</h2>
+            <div class="generated-exam-text mb-3"> {# Div para aplicar estilo ao <pre> #}
+                <pre id="markdown-content">{{ discursive_exam_text }}</pre>
+            </div>
+            <div class="text-end mb-4"> {# Botão Copiar alinhado à direita #}
+                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">Copiar Texto</button>
             </div>
 
             {# Formulário para Resposta do Usuário #}
             <hr class="my-4">
-            <div class="answer-input-section">
-                <h3 class="h4 mb-3">3. Sua Resposta para Avaliação (Beta)</h3>
-                {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+            <div class="mb-4"> {# Container simples #}
+                <h3 class="h5 mb-3 fw-normal">Sua Resposta para Avaliação (Beta)</h3>
                 <form method="post" action="{% url 'generator:evaluate_discursive_answer' %}" id="user-answer-form">
                     {% csrf_token %}
-                    {# Campo oculto com o texto da questão para referência (opcional) #}
-                    {# <textarea name="exam_context" style="display:none;" aria-hidden="true" readonly>{{ discursive_exam_text }}</textarea> #}
                     <input type="hidden" name="line_count" id="line_count_input" value="0">
                     <input type="hidden" name="questao_id" value="{{ questao_id }}">
                     <div class="mb-3">
@@ -91,11 +122,10 @@
                         <textarea class="form-control" id="user_answer_text" name="user_answer" rows="15" placeholder="Escreva sua resposta dissertativa aqui..." required></textarea>
                         <div id="word-count-feedback" class="form-text text-muted small mt-1">Contagem de palavras: 0</div>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send-check-fill me-2" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 1.59 2.498C8 14 8 13 8 12.5a4.5 4.5 0 0 1 5.026-4.47L15.964.686Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/><path d="M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Zm-1.993-1.679a.5.5 0 0 0-.686.172l-1.17 1.95-.547-.547a.5.5 0 0 0-.708.708l.774.773a.75.75 0 0 0 1.174-.144l1.335-2.226a.5.5 0 0 0-.172-.686Z"/></svg>
-                        Enviar Resposta para Avaliação
+                    <button type="submit" class="btn btn-primary btn-sm"> {# btn-sm #}
+                        <i class="bi bi-send-check-fill me-1"></i> Enviar para Avaliação
                     </button>
-                    <small class="text-muted ms-2 fst-italic">(A avaliação por IA é experimental)</small>
+                    <small class="text-muted ms-2 fst-italic">(Avaliação por IA experimental)</small>
                 </form>
             </div>
         </div>
@@ -105,6 +135,18 @@
 
 
 {% block extra_js %}
-    {# <<< Link para o arquivo JS específico desta página >>> #}
     <script src="{% static 'generator/js/exam_generator_scripts.js' %}" defer></script>
+    <script>
+        // Função Copiar (pode ir para exam_generator_scripts.js)
+        function copyToClipboard() {
+            const content = document.getElementById('markdown-content');
+            if (content) {
+                navigator.clipboard.writeText(content.innerText)
+                    .then(() => { alert('Texto da questão copiado!'); }) // Mensagem mais curta
+                    .catch(err => { console.error('Erro ao copiar: ', err); alert('Falha ao copiar.'); });
+            }
+        }
+        // Lógica para contar palavras/linhas (assumindo que está em exam_generator_scripts.js)
+        // ...
+    </script>
 {% endblock extra_js %}
