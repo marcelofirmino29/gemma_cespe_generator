@@ -1,17 +1,16 @@
-# config/urls.py (AJUSTADO)
-
 from django.contrib import admin
-from django.urls import path, include # Certifique-se que 'include' está importado
+from django.urls import path, include
+from generator.views import register_view  # Aqui sim você importa views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # <<< ADICIONADO: URLs de Autenticação do Django >>>
-    # Isso ativa as views/URLs para login, logout, mudança de senha, etc.
-    # Elas estarão disponíveis em caminhos como /accounts/login/, /accounts/logout/, etc.
+    # Autenticação padrão do Django
     path('accounts/', include('django.contrib.auth.urls')),
-    # <<< FIM DA ADIÇÃO >>>
 
-    # Inclui as URLs do seu app generator na raiz do site
+    # Registro personalizado
+    path('accounts/register/', register_view, name='register'),
+
+    # Demais rotas do app
     path('', include('generator.urls')),
 ]

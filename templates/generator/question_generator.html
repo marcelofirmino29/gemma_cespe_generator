@@ -5,105 +5,196 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
-    {# Adiciona um CSS mínimo para o feedback AJAX #}
     <style>
-        .ce-result-feedback { min-height: 1.5em; } /* Evita que layout pule ao adicionar texto */
+        /* Estilos como definidos anteriormente */
+        .ce-result-feedback { min-height: 1.5em; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); margin-top: 0.75rem; }
+        .ce-result-feedback:empty { display: none; }
+        .verify-ce-btn { font-size: 0.8rem; }
+        .motivador-text { background-color: var(--bs-secondary-bg); border-left: 5px solid var(--bs-info); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.95em; }
     </style>
 {% endblock extra_head %}
-
 
 {% block content %}
 
     <header class="text-center mb-4">
         <h1>Gerador de Questões Estilo Cebraspe (Certo/Errado)</h1>
-        <p class="lead">Use a IA Gemini/Gemma para criar itens de julgamento sobre um tópico.</p>
+        <p class="lead">Gere um bloco de itens C/E a partir de um tópico ou contexto.</p>
         {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
     </header>
 
-    {% if not service_initialized %}
-        <div class="alert alert-danger" role="alert">... Serviço indisponível ...</div>
-    {% endif %}
-    {% if messages %}{% for message in messages %}
-        <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-            {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {# Mensagens #}
+    {% if not service_initialized %} {# Abre IF 1 #}
+        <div class="alert alert-danger" role="alert">
+             <strong>Erro Crítico de Configuração:</strong> Serviço indisponível.
+             {% if error_message %} Detalhe: {{ error_message }} {% endif %} {# Abre e fecha IF interno #}
         </div>
-    {% endfor %}{% endif %}
+    {% endif %} {# <<< FECHA IF 1 CORRETAMENTE >>> #}
 
-    {# Formulário de Geração C/E (sem mudanças aqui) #}
-    <div class="form-container">
-        <form method="post" id="generator-form" action="{% url 'generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
+    {% if messages %} {# Abre IF 2 #}
+        {% for message in messages %} {# Abre FOR 1 #}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %} {# Fecha FOR 1 #}
+    {% endif %} {# Fecha IF 2 #}
+
+
+    {# Formulário de Geração C/E #}
+    <div class="form-container mb-5"> {# Adicionado mb-5 #}
+        <h2 class="h4 mb-3">1. Gerar Novas Questões</h2>
+        {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+        <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
             {% csrf_token %}
-            <div class="mb-3"><label for="{{ form.topic.id_for_label }}" class="form-label">{{ form.topic.label }}</label>{{ form.topic }}{% if form.topic.help_text %}<div class="form-text">{{ form.topic.help_text|safe }}</div>{% endif %}{% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}</div>
-            <div class="row g-3 mb-3"><div class="col-md-4 col-lg-3"><label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>{{ form.num_questions }}{% if form.num_questions.help_text %}<div class="form-text">{{ form.num_questions.help_text|safe }}</div>{% endif %}{% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}</div><div class="col-md-4 col-lg-3"><label for="{{ form.difficulty_level.id_for_label }}" class="form-label">{{ form.difficulty_level.label }}</label>{{ form.difficulty_level }}{% if form.difficulty_level.help_text %}<div class="form-text">{{ form.difficulty_level.help_text|safe }}</div>{% endif %}{% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}</div><div class="col-md-4 col-lg-6"><label for="{{ form.area.id_for_label }}" class="form-label">{{ form.area.label }}</label>{{ form.area }}{% if form.area.help_text %}<div class="form-text">{{ form.area.help_text|safe }}</div>{% endif %}{% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}</div></div>
-            <button type="submit" class="btn btn-primary" id="submit-button" {% if not service_initialized %} disabled {% endif %}><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner"></span><span id="button-text">Gerar Questões</span></button>
+            {# Renderização do formulário Django (pode ser customizada com widget_tweaks ou manualmente) #}
+            <div class="mb-3">
+                <label for="{{ form.topic.id_for_label }}" class="form-label">{{ form.topic.label }}</label>
+                {{ form.topic }}
+                {% if form.topic.help_text %}<div class="form-text text-muted">{{ form.topic.help_text|safe }}</div>{% endif %}
+                {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4 col-lg-3">
+                    <label for="{{ form.num_questions.id_for_label }}" class="form-label">{{ form.num_questions.label }}</label>
+                    {{ form.num_questions }}
+                    {% if form.num_questions.help_text %}<div class="form-text text-muted">{{ form.num_questions.help_text|safe }}</div>{% endif %}
+                    {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 col-lg-3">
+                    <label for="{{ form.difficulty_level.id_for_label }}" class="form-label">{{ form.difficulty_level.label }}</label>
+                    {{ form.difficulty_level }}
+                    {% if form.difficulty_level.help_text %}<div class="form-text text-muted">{{ form.difficulty_level.help_text|safe }}</div>{% endif %}
+                    {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 col-lg-6">
+                    <label for="{{ form.area.id_for_label }}" class="form-label">{{ form.area.label }}</label>
+                    {{ form.area }}
+                    {% if form.area.help_text %}<div class="form-text text-muted">{{ form.area.help_text|safe }}</div>{% endif %}
+                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success mt-3" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
+                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner"></span> {# d-none inicial #}
+                <span id="button-text">Gerar Questões</span>
+            </button>
         </form>
     </div>
 
     {# Mensagem de erro geral da Geração #}
-    {% if error_message and service_initialized and not form.errors and not results %}
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">... Atenção ao Gerar ...</div>
+    {% if error_message and service_initialized and not form.errors and not questions %}
+        <div class="alert alert-warning alert-dismissible fade show small" role="alert">
+             Falha ao gerar questões: {{ error_message }}
+             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     {% endif %}
 
-    {# Bloco para exibir questões geradas e FORMULÁRIO DE VALIDAÇÃO MODIFICADO #}
-    {% if questions %}
+    {# Bloco para exibir as questões recém-geradas (vindo da view generate_questions_view GET) #}
+    {% if questions %} {# Verifica se a lista 'questions' não é None/vazia #}
+        <hr class="my-4">
         <div class="results-container mt-4">
-             <h2 class="h4 mb-3">Itens Gerados para Julgamento:</h2>
-             {# O formulário principal ainda existe para pegar o CSRF token e a URL, mas o botão de submit dele pode ser removido/ignorado #}
-             <form method="post" action="{% url 'validate_answers' %}" id="validate-form"
-                   data-validate-single-url="{% url 'validate_single_ce' %}"> {# <<< URL para o AJAX >>> #}
-                {% csrf_token %} {# <<< Token CSRF para o AJAX >>> #}
 
-                {% for item in questions %} {# item é um objeto Questao #}
-                    {# Container para cada item, com ID único #}
-                    <div class="question-item mb-3 p-3" id="question-item-{{ item.id }}">
-                        <p><strong>Item {{ forloop.counter }}:</strong> {{ item.texto_comando|linebreaksbr }}</p>
-                         <div class="mb-2 d-flex align-items-center flex-wrap"> {# Flexbox para alinhar radios e botão #}
-                            <div class="form-check form-check-inline">
-                                {# <<< Nome do radio agora é único por questão >>> #}
-                                <input class="form-check-input" type="radio" name="resposta_q{{ item.id }}" id="certo_{{ item.id }}" value="C" required>
-                                <label class="form-check-label" for="certo_{{ item.id }}">Certo</label>
+            {# Exibição do Texto Motivador #}
+            {% if main_motivador %}
+            <div class="motivador-text card card-body bg-body-secondary mb-4"> {# Usa classes Bootstrap #}
+                <h3 class="h5 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador</h3>
+                <div class="small">{{ main_motivador|linebreaksbr }}</div>
+            </div>
+            {% endif %}
+
+             <h2 class="h4 mb-3">2. Itens Gerados para Julgamento:</h2>
+
+             {# <<< CORRIGIDO: Adicionado namespace 'generator:' e data-url >>> #}
+             <form method="post" action="{% url 'generator:validate_answers' %}" id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}">
+                {% csrf_token %}
+                {% for item in questions %} {# Itera sobre a lista de questões #}
+                    <div class="question-item card mb-3 shadow-sm" id="question-item-{{ item.id }}">
+                        <div class="card-body">
+                            <p class="card-text mb-2"><strong>Item {{ forloop.counter }}:</strong></p>
+                            <p class="card-text ms-3">{{ item.texto_comando|linebreaksbr }}</p> {# Adiciona indentação #}
+                            <div class="d-flex align-items-center flex-wrap mt-3"> {# Adicionado mt-3 #}
+                                <div class="form-check form-check-inline me-3">
+                                    <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="certo_{{ item.id }}" value="C" required>
+                                    <label class="form-check-label small" for="certo_{{ item.id }}">Certo</label>
+                                </div>
+                                <div class="form-check form-check-inline me-3">
+                                    <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="errado_{{ item.id }}" value="E" required>
+                                    <label class="form-check-label small" for="errado_{{ item.id }}">Errado</label>
+                                </div>
+                                {# Botão para verificação AJAX individual #}
+                                <button type="button" class="btn btn-outline-info btn-sm ms-md-auto mt-2 mt-md-0 verify-ce-btn" data-questao-id="{{ item.id }}">
+                                    <i class="bi bi-check-lg"></i> Verificar Item
+                                </button>
                             </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="resposta_q{{ item.id }}" id="errado_{{ item.id }}" value="E" required>
-                                <label class="form-check-label" for="errado_{{ item.id }}">Errado</label>
+                            <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ item.id }}">
+                                {# Feedback AJAX será inserido aqui #}
                             </div>
-                            {# --- BOTÃO DE VERIFICAÇÃO INDIVIDUAL --- #}
-                            <button type="button" class="btn btn-sm btn btn-success mt-3 ms-md-3 mt-1 mt-md-0 verify-ce-btn" data-questao-id="{{ item.id }}">
-                                Verificar Item
-                            </button>
-                            {# --- FIM BOTÃO --- #}
                         </div>
-
-                        {# --- DIV PARA FEEDBACK INDIVIDUAL --- #}
-                        <div class="ce-result-feedback mt-2 small border-top pt-2" id="result-feedback-{{ item.id }}">
-                            {# O JavaScript preencherá esta área #}
-                        </div>
-                        {# --- FIM DIV FEEDBACK --- #}
-
-                         {# Campo oculto com ID ainda é útil se o form principal for submetido #}
-                         <input type="hidden" name="questao_id_{{ forloop.counter0 }}" value="{{ item.id }}">
-                         <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}">
                     </div>
-                    {# Não precisa mais da linha <hr> aqui #}
-                {% empty %}
-                     <div class="alert alert-info" role="alert">Nenhuma questão foi retornada ou salva.</div>
-                {% endfor %}
+                    {# Campos hidden para validação geral (validate_answers_view), se necessário #}
+                    {# <input type="hidden" name="questao_id_{{ forloop.counter0 }}" value="{{ item.id }}"> #}
+                    {# <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}"> #}
+                {% endfor %} {# Fim do loop for #}
 
-                 <!-- {# Este botão agora é opcional, pode remover se a verificação for SÓ individual #}
-                 {# {% if questions %}
-                   <button type="submit" class="btn btn-success mt-3" id="validate-all-btn">Verificar Todas as Respostas</button>
-                 {% endif %} #} -->
-            </form>
+                {# Removido botão de validação geral #}
+                </form>
+
          </div>
+    {# Mensagem se GET e não há questões recentes na sessão #}
+    {% elif request.method == 'GET' and not error_message %}
+         <div class="alert alert-secondary mt-4 small">Use o formulário acima para gerar novas questões C/E.</div>
     {% endif %} {# Fim if questions #}
 
+     {# Seção de Resultados da VALIDAÇÃO GERAL (mantida caso use validate_answers_view) #}
+     {% if results %}
+         <hr class="my-4">
+         <div class="results-validation mt-4">
+             <h2 class="h4 mb-3">Resultado da Verificação (Lote Anterior):</h2>
+             {# Mensagem de erro durante o processamento do lote anterior #}
+             {% if error_message and not performance %}
+                 <div class="alert alert-danger">{{ error_message }}</div>
+             {% endif %}
+
+             {% for result in results %}
+                 <div class="card question-item mb-3 {% if result.correct %}border-success{% else %}border-danger{% endif %}">
+                     <div class="card-body small">
+                         <p class="mb-1"><strong>Item:</strong> {{ result.afirmacao|linebreaksbr }}</p>
+                         <p class="mb-1">
+                             Sua Resposta: <span class="fw-bold {% if result.correct %}text-success{% else %}text-danger{% endif %}">{{ result.user_answer }}</span>
+                             (<span class="text-muted">Gabarito: {{ result.gabarito }}</span>)
+                         </p>
+                         <p class="feedback mb-0 fw-bold {% if result.correct %}text-success{% else %}text-danger{% endif %}">
+                             {% if result.correct %}
+                                <i class="bi bi-check-circle-fill me-1"></i>Você acertou!
+                             {% else %}
+                                <i class="bi bi-x-circle-fill me-1"></i>Você errou!
+                             {% endif %}
+                         </p>
+                          {% if result.justificativa %}
+                             <div class="justification mt-2 pt-2 border-top border-secondary-subtle text-muted">
+                                 <small><strong>Justificativa:</strong> {{ result.justificativa|linebreaksbr }}</small>
+                             </div>
+                         {% endif %}
+                     </div>
+                 </div>
+             {% endfor %}
+
+             {% if performance %}
+                 <div class="performance-summary mt-4 p-3 rounded bg-body-secondary text-center">
+                     <h3 class="h5">Resumo do Desempenho (Lote Anterior)</h3>
+                     <p class="mb-1">Total de Itens: {{ performance.total }}</p>
+                     <p class="mb-1 text-success">Acertos: {{ performance.correct }}</p>
+                     <p class="mb-1 text-danger">Erros: {{ performance.incorrect }}</p>
+                     <p class="mb-0 fw-bold">Score Líquido: {{ performance.score }} ({{ performance.percentage }}% de acerto)</p>
+                 </div>
+             {% endif %}
+         </div>
+     {% endif %}
 
 {% endblock content %}
 
 
 {% block extra_js %}
-    {# Link para o JS do botão de gerar (loading spinner) #}
+    {# Scripts JS para spinner e validação AJAX #}
     <script src="{% static 'generator/js/question_generator_scripts.js' %}" defer></script>
-    {# <<< Link para o NOVO JS que valida itens individuais via AJAX >>> #}
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
 {% endblock extra_js %}

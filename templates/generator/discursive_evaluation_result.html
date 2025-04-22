@@ -14,13 +14,6 @@
     {# Header específico da página #}
     <div class="text-center mb-4">
         <h1>Avaliação da Resposta Discursiva (Beta)</h1>
-        <nav aria-label="breadcrumb">
-          <ol class="breadcrumb justify-content-center">
-            <li class="breadcrumb-item"><a href="{% url 'landing_page' %}">Início</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'generate_discursive_exam' %}">Gerar Questão Discursiva</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Resultado Avaliação</li>
-          </ol>
-        </nav>
         {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
     </div>
 
@@ -96,8 +89,8 @@
 
     {# Botões de Navegação #}
      <div class="mt-4 text-center">
-         <a href="{% url 'generate_discursive_exam' %}" class="btn btn-secondary">Gerar/Avaliar Outra</a>
-         <a href="{% url 'landing_page' %}" class="btn btn-outline-secondary">Voltar ao Início</a>
+         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-secondary">Gerar/Avaliar Outra</a>
+         <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary">Voltar ao Início</a>
      </div>
 
 {% endblock content %}

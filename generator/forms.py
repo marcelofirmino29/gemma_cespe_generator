@@ -64,43 +64,76 @@ LANGUAGE_CHOICES = [
 
 
 # --- Formulário Gerador C/E ---
+
+
+# --- Formulário Gerador C/E (ATUALIZADO) ---
 class QuestionGeneratorForm(forms.Form):
-    topic = forms.CharField(label="Tópico/Assunto", widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Ex: Direito Constitucional...', 'class': 'form-control'}), required=True, help_text="Descreva o assunto.")
-    num_questions = forms.IntegerField(label="Nº Questões", min_value=1, initial=3, required=True, widget=forms.NumberInput(attrs={'class': 'form-control', 'style': 'max-width: 100px;'}))
+    topic = forms.CharField(
+        label="Tópico ou Contexto para Questões C/E", # Label ajustado
+        widget=forms.Textarea(attrs={
+            'rows': 5, # <<< Linhas aumentadas >>>
+            'placeholder': 'Digite o tópico específico (Ex: Controle de Constitucionalidade) ou cole um pequeno texto base...',
+            'class': 'form-control',
+            'autocomplete': 'off'  # <<< Atributo adicionado para tentar evitar autofill >>>
+        }),
+        required=True,
+        help_text="Descreva o assunto ou forneça um contexto." # Help text ajustado
+    )
+    num_questions = forms.IntegerField(
+        label="Nº Questões",
+        min_value=1, # Definido aqui
+        initial=3,
+        required=True,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'style': 'max-width: 100px;'
+            # max é definido no __init__
+        })
+    )
     difficulty_level = forms.ChoiceField(
         label="Dificuldade",
-        choices=DIFFICULTY_CHOICES[1:], # Remove o "Qualquer" para geração individual
+        # Usa a lista global, mas remove a opção 'Qualquer' (chave vazia)
+        choices=[opt for opt in DIFFICULTY_CHOICES if opt[0]],
         required=True, initial='medio',
         widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 150px;'})
         )
     area = forms.ModelChoiceField(
-        queryset=AreaConhecimento.objects.all(),
-        label="Área de Conhecimento (Opcional)",
+        queryset=AreaConhecimento.objects.all().order_by('nome'),
+        label="Área (Opcional)",
         required=False,
-        empty_label="Todas as Áreas",
+        empty_label="---------", # Texto para opção vazia
         widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 200px;'}),
         help_text="Ajuda a categorizar."
     )
 
     def __init__(self, *args, **kwargs):
-        max_questions_limit = kwargs.pop('max_questions', getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 5))
+        # Define o limite máximo de questões dinamicamente
+        max_questions_limit = kwargs.pop('max_questions', getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 10)) # Default 10
         super().__init__(*args, **kwargs)
         self.fields['num_questions'].max_value = max_questions_limit
         self.fields['num_questions'].widget.attrs['max'] = max_questions_limit
-        self.fields['num_questions'].help_text = f"Máx: {max_questions_limit}"
+        self.fields['num_questions'].help_text = f"Gere entre 1 e {max_questions_limit}." # Help text ajustado
 
+    # Validações adicionais
     def clean_topic(self):
         topic = self.cleaned_data.get('topic', '').strip()
-        if not topic:
-            raise ValidationError("O tópico deve ser preenchido.")
+        # <<< Validação de comprimento mínimo restaurada >>>
+        if len(topic) < 10:
+            raise ValidationError("Tópico/Contexto muito curto (mín. 10 caracteres).")
         return topic
 
     def clean_num_questions(self):
         num = self.cleaned_data.get('num_questions')
-        if num is None or num < 1:
-            raise ValidationError("O número de questões deve ser maior que zero.")
+        # <<< Validação explícita de min/max restaurada >>>
+        if num is not None:
+             max_limit = self.fields['num_questions'].max_value
+             min_limit = self.fields['num_questions'].min_value
+             if min_limit is not None and num < min_limit:
+                 raise ValidationError(f"O número mínimo de questões é {min_limit}.")
+             if max_limit is not None and num > max_limit:
+                 raise ValidationError(f"O número máximo de questões é {max_limit}.")
+        # Se for None, a validação required=True já falhou
         return num
-
 
 # --- Formulário para Gerar Questão Discursiva ---
 class DiscursiveExamForm(forms.Form):

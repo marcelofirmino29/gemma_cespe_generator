@@ -1,0 +1,101 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Página Inicial - Gerador IA{% endblock title %}
+
+{% block extra_head %}
+    {# Link para o CSS específico desta página #}
+    <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
+    {# Adiciona estilo para o card desabilitado e stretched-link #}
+    <style>
+        .card.landing-card {
+            position: relative; /* Necessário para stretched-link */
+        }
+        .stretched-link::after { /* Remove sublinhado visual do link expandido */
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: 1;
+            content: "";
+        }
+        .card.landing-card .btn { /* Garante que botão fique acima do link expandido */
+             position: relative;
+             z-index: 2;
+        }
+        .disabled-card { /* Estilo visual para card desabilitado */
+             opacity: 0.65;
+             pointer-events: none;
+        }
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+    <section class="text-center mb-5">
+        <h1 class="display-6 fw-semibold main-title mb-2">Bem-vindo ao CESPE GENERATOR</h1>
+        <p class="lead fs-6 subtitle">Selecione uma opção abaixo.</p>
+         {% if error_message %}
+             <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                 {{ error_message }}
+                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+             </div>
+         {% endif %}
+    </section>
+
+    <section class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
+
+        <div class="col">
+            <div class="card feature-card bg-primary text-white border-primary {% if not service_initialized %}disabled-card{% endif %}">
+                <div class="card-body d-flex flex-column">
+                    <h3 class="card-title d-flex align-items-center"> <i class="bi bi-check2-square icon"></i>
+                        Gerador C/E por Tópico
+                    </h3>
+                    <p class="card-text description"> Crie questões de Certo ou Errado (estilo Cebraspe) a partir de um tópico específico e nível de dificuldade.
+                    </p>
+                    <a href="{% url 'generator:generate_questions' %}" class="btn btn-outline-light btn-sm align-self-start mt-auto stretched-link {% if not service_initialized %}disabled{% endif %}">Acessar Gerador C/E</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+             <div class="card feature-card bg-info text-dark border-info {% if not service_initialized %}disabled-card{% endif %}">
+                <div class="card-body d-flex flex-column">
+                    <h3 class="card-title d-flex align-items-center"> <i class="bi bi-pencil-square icon"></i>
+                        Gerador de Questão Discursiva
+                    </h3>
+                    <p class="card-text description"> Forneça um tema ou contexto e a IA criará uma questão discursiva completa, com textos, comando e aspectos.
+                    </p>
+                     <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-primary btn-sm align-self-start mt-auto stretched-link {% if not service_initialized %}disabled{% endif %}">Acessar Gerador de Questão</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+             <div class="card feature-card bg-warning text-dark border-warning {% if not service_initialized %}disabled-card{% endif %}">
+                <div class="card-body d-flex flex-column">
+                    <h3 class="card-title d-flex align-items-center"> <i class="bi bi-sliders icon"></i>
+                        Configurar Simulado
+                    </h3>
+                     <p class="card-text description">
+                        Personalize seus simulados escolhendo o número de questões e os tópicos que deseja praticar.
+                    </p>
+                    <a href="{% url 'generator:configurar_simulado' %}" class="btn btn-primary btn-sm align-self-start mt-auto stretched-link {% if not service_initialized %}disabled{% endif %}">Configurar Simulado</a>
+                </div>
+            </div>
+        </div>
+
+         <div class="col">
+             <div class="card feature-card bg-success text-white border-success"> {# Dashboard sempre habilitado #}
+                <div class="card-body d-flex flex-column">
+                     <h3 class="card-title d-flex align-items-center"> <i class="bi bi-graph-up icon"></i>
+                        Dashboard de Desempenho
+                    </h3>
+                    <p class="card-text description">
+                        Acompanhe seu histórico de respostas, acertos, erros e pontuação geral nos simulados.
+                    </p>
+                    <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-light btn-sm align-self-start mt-auto stretched-link">Acessar Dashboard</a>
+                </div>
+            </div>
+        </div>
+
+    </section>
+{% endblock content %}
+

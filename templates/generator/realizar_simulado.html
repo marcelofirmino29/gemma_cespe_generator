@@ -63,7 +63,7 @@
 
                     {# Botões de Ação #}
                     <div class="mt-4 d-flex justify-content-between"> {# Alinha botões #}
-                         <a href="{% url 'dashboard' %}" class="btn btn-outline-danger">Abandonar Simulado</a>
+                         <a href="{% url 'generate:dashboard' %}" class="btn btn-outline-danger">Abandonar Simulado</a>
                          {% if indice_atual == total_questoes %}
                             <button type="submit" class="btn btn-success">
                                 <i class="bi bi-check-circle-fill me-1"></i>Finalizar Simulado e Ver Resultado
@@ -83,7 +83,7 @@
     {% else %}
         {# Mensagem se não conseguiu carregar questao na view GET #}
         <div class="alert alert-warning">Não foi possível carregar a questão atual do simulado.</div>
-        <a href="{% url 'configurar_simulado' %}" class="btn btn-primary">Configurar Novo Simulado</a>
+        <a href="{% url 'generate:onfigurar_simulado' %}" class="btn btn-primary">Configurar Novo Simulado</a>
     {% endif %}
 
 {% endblock content %}

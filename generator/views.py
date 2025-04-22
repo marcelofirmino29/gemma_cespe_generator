@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required # Import do decorador
 from datetime import datetime # Garanta que datetime está importado
+#from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Importa Formulários
 from .forms import QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, CustomUserCreationForm
@@ -20,13 +21,13 @@ from .utils import parse_evaluation_scores
 from .models import Questao, AreaConhecimento, TentativaResposta, Avaliacao
 from django.http import JsonResponse # Para retornar JSON
 from django.views.decorators.http import require_POST # Para garantir que só aceite POST
+#from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import json # Para decodificar o corpo da requisição JSON
 
 from .forms import SimuladoConfigForm
 from django.db.models import Q
 
 logger = logging.getLogger('generator')
-
 
 # --- Validação Individual C/E (AJAX) ---
 @login_required # Protege a view
@@ -120,91 +121,131 @@ def register_view(request):
     else: form = CustomUserCreationForm()
     context = {'form': form}; return render(request, 'generator/register.html', context)
 
-# --- VISÃO GERADOR QUESTÕES C/E (PROTEGIDA e SALVANDO QUESTÃO) ---
+# --- VISÃO DASHBOARD (PROTEGIDA) ---
 @login_required
 def generate_questions_view(request):
     context, service, service_initialized = _get_base_context_and_service()
-    saved_question_list = []
-    max_q = getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 5)
+    context['questions'] = None # Lista de questões ou None
+    context['main_motivador'] = None
+    context['error_message'] = context.get('error_message')
+
+    # Cria um formulário (será usado em GET e POST)
+    max_q = getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 150)
     form = QuestionGeneratorForm(request.POST or None, max_questions=max_q)
     context['form'] = form
-    context['error_message'] = context.get('error_message')
-    if request.method == 'POST':
-        if not service_initialized or not service:
-            logger.error("POST generate_questions_view s/ serviço IA.")
-            context['error_message'] = context.get('error_message', "Serviço IA indisponível.")
+
+    # --- Lógica POST (Gera, Salva, Guarda IDs na Sessão e Redireciona) ---
+    if request.method == 'POST' and service_initialized and service:
+        logger.info(f"POST generate_questions_view por {request.user.username}")
+        if form.is_valid():
+            topic_text = form.cleaned_data.get('topic'); num_questions = form.cleaned_data.get('num_questions'); difficulty = form.cleaned_data.get('difficulty_level'); area_obj = form.cleaned_data.get('area')
+            logger.info(f"Form válido. Gerando {num_questions}q...")
+            try:
+                main_motivador, generated_items_data = service.generate_questions(topic=topic_text, num_questions=num_questions, difficulty_level=difficulty)
+                if not generated_items_data or not isinstance(generated_items_data, list):
+                    logger.warning("IA retornou dados inválidos."); context['error_message'] = "IA retornou dados em formato inesperado."; generated_items_data = []
+                else: context['error_message'] = None
+
+                saved_question_ids = []
+                if generated_items_data: # Salva apenas se a lista não estiver vazia
+                    logger.info(f"Itens C/E recebidos: {len(generated_items_data)}. Salvando...")
+                    # ... (busca area_obj se necessário, como antes) ...
+                    if area_obj is None and form.cleaned_data.get('area'): # Refetch area if needed
+                       try: area_obj = AreaConhecimento.objects.get(id=form.cleaned_data.get('area').id)
+                       except Exception: area_obj = None
+
+                    for item_data in generated_items_data:
+                        try:
+                            if not isinstance(item_data, dict): continue
+                            gabarito = item_data.get('gabarito'); assert gabarito in ['C', 'E']
+                            q = Questao(tipo='CE', texto_motivador=main_motivador, texto_comando=item_data.get('afirmacao'), gabarito_ce=gabarito, justificativa_gabarito=item_data.get('justificativa'), dificuldade=(difficulty or 'medio'), area=area_obj, criado_por=request.user); q.save(); saved_question_ids.append(q.id)
+                        except Exception as save_error: logger.error(f"Erro salvar questão C/E: {save_error}", exc_info=True)
+
+                    logger.info(f"{len(saved_question_ids)} questões C/E salvas no DB.")
+                    if saved_question_ids:
+                        messages.success(request, f"{len(saved_question_ids)} questões C/E geradas e salvas!")
+                        # <<< GUARDA OS IDs DAS QUESTÕES RECÉM-SALVAS NA SESSÃO >>>
+                        request.session['latest_ce_ids'] = saved_question_ids
+                        request.session['latest_ce_motivador'] = main_motivador # Guarda motivador também
+                    else:
+                         messages.warning(request,"Nenhuma questão válida pôde ser salva.")
+                    if len(saved_question_ids) < len(generated_items_data): messages.warning(request,"Alguns itens podem não ter sido salvos.")
+                # <<< Redireciona para GET após processar o POST >>>
+                return redirect('generate_questions')
+
+            except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError, Exception) as e:
+                logger.error(f"Erro GERAL Geração C/E: {e}", exc_info=True); context['error_message'] = f"Falha gerar/processar: {e}"
+                # Renderiza o form com o erro, sem questões
+                return render(request, 'generator/question_generator.html', context)
+        else: # Form POST inválido
+             logger.warning(f"Form Geração C/E inválido: {form.errors.as_json()}")
+             # Renderiza o form com os erros, sem questões
+             return render(request, 'generator/question_generator.html', context)
+
+    # --- Lógica GET (Verifica Sessão para exibir APENAS o último lote) ---
+    else: # request.method == 'GET'
+        logger.debug(f"GET generate_questions_view por {request.user.username}")
+        # Tenta pegar os IDs da última geração da sessão
+        latest_ids = request.session.pop('latest_ce_ids', None) # .pop() pega e remove
+        latest_motivador = request.session.pop('latest_ce_motivador', None) # Pega motivador
+
+        if latest_ids:
+            logger.info(f"Exibindo último lote de questões C/E geradas (IDs: {latest_ids})")
+            # Busca APENAS as questões recém-criadas
+            question_list = Questao.objects.filter(id__in=latest_ids).order_by('id') # Mantém ordem de geração? Ou -criado_em?
+            context['questions'] = question_list # Passa a LISTA, não um Page Object
+            context['main_motivador'] = latest_motivador
         else:
-            logger.info(f"POST generate_questions_view (C/E Tópico) por {request.user.username}")
-            if form.is_valid():
-                topic_text = form.cleaned_data.get('topic')
-                num_questions = form.cleaned_data.get('num_questions')
-                difficulty = form.cleaned_data.get('difficulty_level')
-                area_selecionada = form.cleaned_data.get('area')  # Obtém a área selecionada
-                form_valid_for_api = True
-                if not topic_text or not topic_text.strip():
-                    form.add_error('topic', 'Obrigatório.')
-                    form_valid_for_api = False
-                if num_questions is None:
-                    form.add_error('num_questions', 'Obrigatório.')
-                    form_valid_for_api = False
-                if not difficulty or not difficulty.strip():
-                    form.add_error('difficulty_level', 'Obrigatório.')
-                    form_valid_for_api = False
-                if not form_valid_for_api:
-                    logger.warning("Geração Q C/E Tópico c/ campo obrigatório ausente.")
-                    context['error_message'] = "Erro formulário: Verifique campos obrigatórios."
-                else:
-                    logger.info(
-                        f"Form Q C/E válido API. Solicitando {num_questions}q [{difficulty}] TÓPICO: '{topic_text[:80]}...' (User: {request.user.username})"
-                    )
-                    try:
-                        generated_questions_data = service.generate_questions(
-                            topic=topic_text, num_questions=num_questions, difficulty_level=difficulty
-                        )
-                        if not generated_questions_data:
-                            logger.warning("Serviço Q C/E (Tópico) retornou vazio.")
-                            context['error_message'] = "IA não retornou questões válidas."
-                        else:
-                            logger.info(f"Questões C/E recebidas: {len(generated_questions_data)}. Salvando...")
-                            context['error_message'] = None
-                            saved_question_list = []
-                            for item_data in generated_questions_data:
-                                try:
-                                    gabarito = item_data.get('gabarito')
-                                    if gabarito not in ['C', 'E']:
-                                        logger.warning(f"Item C/E c/ gabarito inválido '{gabarito}' não salvo.")
-                                        continue
-                                    q = Questao(
-                                        tipo='CE',
-                                        texto_comando=item_data.get('afirmacao', 'N/A'),
-                                        gabarito_ce=gabarito,
-                                        justificativa_gabarito=item_data.get('justificativa'),
-                                        dificuldade=difficulty,
-                                        area=area_selecionada,  # Salva a área selecionada
-                                        criado_por=request.user if request.user.is_authenticated else None
-                                    )
-                                    q.save()
-                                    saved_question_list.append(q)
-                                except Exception as save_error:
-                                    logger.error(f"Erro salvar questão C/E: {save_error}. Item: {item_data}", exc_info=True)
-                                    messages.error(request, f"Erro salvar questão.")
-                            logger.info(f"{len(saved_question_list)} questões C/E salvas.")
-                            if len(saved_question_list) < len(generated_questions_data):
-                                messages.warning(request, f"Algumas questões geradas não foram salvas.")
-                    except ParsingError as e:
-                        logger.error(f"Erro PARSING INTERNO (C/E): {e}", exc_info=True)
-                        context['error_message'] = f"Erro processar resposta IA (C/E): {e}"
-                    except (AIResponseError, AIServiceError, GeneratorError, ConfigurationError, Exception) as e:
-                        logger.error(f"Erro GERAL geração Q C/E Tópico: {e}", exc_info=True)
-                        context['error_message'] = f"Falha gerar questões: {e}"
-            else:
-                logger.warning("Tentativa Geração Q C/E Tópico form inválido.")
-                context['error_message'] = "Formulário inválido. Corrija erros."
-    context['questions'] = saved_question_list
-    logger.debug(
-        f"Contexto final (generate_questions_view): User={request.user.username}, { {k: v for k, v in context.items() if k not in ['questions', 'form']} }"
-    )
-    return render(request, 'generator/question_generator.html', context)
+            # Se não tem 'latest_ce_ids' na sessão, não busca nada
+            logger.debug("Nenhum lote recente na sessão, exibindo apenas o formulário.")
+            context['questions'] = None
+            context['main_motivador'] = None
+
+        # Renderiza o template. 'questions' será a lista do último lote ou None.
+        return render(request, 'generator/question_generator.html', context)
+    
+# --- VISÃO VALIDAR RESPOSTAS C/E ---
+@login_required
+def validate_answers_view(request):
+    # ... (código como antes) ...
+     context, _, _ = _get_base_context_and_service(); performance_data = None; results_list = []; error_processing = None; context['form'] = QuestionGeneratorForm(max_questions=getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 150))
+     if request.method == 'POST':
+         logger.info(f"POST validate_answers_view por {request.user.username}")
+         try:
+             all_post_keys = request.POST.keys(); indices_str = sorted(list(set([k.split('_')[-1] for k in all_post_keys if k.startswith('questao_id_')])))
+             if not indices_str: raise ValueError("Nenhum ID questão POST.")
+             indices = [int(i) for i in indices_str]; attempt_results = []; total_processed = 0; correct_count = 0; incorrect_count = 0
+             for index in indices:
+                 user_answer = request.POST.get(f'resposta_{index}'); questao_id = request.POST.get(f'questao_id_{index}') # <<< Cuidado: nome do radio no template pode ter mudado para resposta_qX
+                 if user_answer is None: user_answer = request.POST.get(f'resposta_q{questao_id}') # Tenta pegar pelo nome alternativo se o JS estiver ativo
+                 if user_answer is None or user_answer.strip().upper() not in ['C', 'E']: logger.warning(f"Idx {index}/QID {questao_id}: Resp. inválida. Pulando."); continue
+                 if not questao_id: logger.warning(f"Idx {index}: ID ausente. Pulando."); continue
+                 try:
+                     questao_obj = Questao.objects.get(id=questao_id, tipo='CE')
+                     tentativa, _ = TentativaResposta.objects.update_or_create(usuario=request.user, questao=questao_obj, defaults={'resposta_ce': user_answer.strip().upper(), 'data_resposta': timezone.now()})
+                     is_correct = (tentativa.resposta_ce == questao_obj.gabarito_ce); score = 1 if is_correct else -1
+                     avaliacao, _ = Avaliacao.objects.update_or_create(tentativa=tentativa, defaults={'correto_ce': is_correct, 'score_ce': score})
+                     logger.info(f"Avaliacao C/E salva p/ Tentativa {tentativa.id}. Correto: {is_correct}")
+                     attempt_results.append({'index': index, 'afirmacao': questao_obj.texto_comando, 'user_answer': tentativa.resposta_ce, 'gabarito': questao_obj.gabarito_ce, 'correct': avaliacao.correto_ce, 'justificativa': questao_obj.justificativa_gabarito}) # Passa direto (pode ser None)
+                     total_processed += 1;
+                     if is_correct: correct_count += 1
+                     else: incorrect_count += 1
+                 except Questao.DoesNotExist: logger.error(f"Questão C/E ID {questao_id} não encontrada. Pulando."); error_processing = (error_processing or "") + f" Erro: Questão {index+1} não encontrada."
+                 except Exception as db_error: logger.error(f"Erro DB item {index} (Q ID {questao_id}): {db_error}", exc_info=True); error_processing = (error_processing or "") + f" Erro salvar item {index+1}."
+             results_list = attempt_results
+             if not results_list and not error_processing: error_processing = "Nenhum item válido processado."
+             if total_processed > 0:
+                  final_score = correct_count - incorrect_count; percentage_correct = round((correct_count / total_processed) * 100)
+                  performance_data = {'correct': correct_count, 'incorrect': incorrect_count, 'total': total_processed, 'score': final_score, 'percentage': percentage_correct }
+                  logger.info(f"Performance User {request.user.username} (Salvo): Score {final_score}/{total_processed}.")
+         except ValueError as e: logger.error(f"Erro ValueError validate: {e}"); error_processing = f"Erro dados POST: {e}."
+         except Exception as e: logger.exception(f"Erro Exception validate: {e}"); error_processing = "Erro inesperado."
+         context['results'] = results_list; context['performance'] = performance_data; context['error_message'] = error_processing
+         logger.debug(f"Contexto final (validate_answers_view): User={request.user.username}, ...")
+         return render(request, 'generator/question_generator.html', context)
+     elif request.method == 'GET': return redirect('landing_page')
+     context['error_message'] = context.get('error_message', "Acesso inválido.")
+     return render(request, 'generator/question_generator.html', context)
 
 # --- VISÃO VALIDAR RESPOSTAS C/E (SALVA TENTATIVA E AVALIAÇÃO) ---
 @login_required
@@ -309,7 +350,6 @@ def validate_answers_view(request):
     context['error_message'] = context.get('error_message', "Acesso inválido.")
     return render(request, 'generator/question_generator.html', context)
 
-
 # --- VISÃO GERAR RESPOSTA DISCURSIVA ---
 @login_required
 def generate_discursive_view(request):
@@ -331,7 +371,6 @@ def generate_discursive_view(request):
     context['essay_answer'] = essay_answer
     logger.debug(f"Contexto final (generate_discursive_view): User={request.user.username}, { {k: v for k, v in context.items() if k not in ['essay_answer', 'form']} }")
     return render(request, 'generator/discursive_generator.html', context)
-
 
 # --- VISÃO GERAR QUESTÃO DISCURSIVA ---
 @login_required
@@ -364,7 +403,6 @@ def generate_discursive_exam_view(request):
     context['discursive_exam_text'] = discursive_exam_text; context['questao_id'] = questao_id
     logger.debug(f"Contexto final (generate_discursive_exam_view): User={request.user.username}, QuestaoID={questao_id}, { {k: v for k, v in context.items() if k not in ['discursive_exam_text', 'form', 'questao_id']} }")
     return render(request, 'generator/discursive_exam_generator.html', context)
-
 
 # --- VISÃO Configuração do Simulado (COM FILTRO DE TÓPICO) ---
 @login_required
@@ -513,8 +551,6 @@ def realizar_simulado_view(request):
     except Exception as e: logger.error(f"Erro buscar questão {questao_id_atual}: {e}", exc_info=True); messages.error(request, "Erro carregar questão."); return redirect('configurar_simulado')
 
     return render(request, 'generator/realizar_simulado.html', context)
-
-# ... (Restante das views) ...
 
 # --- VIEW PARA AVALIAR RESPOSTA DISCURSIVA (MODIFICADA PARA SALVAR TENTATIVA E AVALIAÇÃO) ---
 @login_required
@@ -721,17 +757,6 @@ def dashboard_view(request):
     context['current_date_to'] = date_to_obj
 
     return render(request, 'generator/dashboard.html', context)
-
-# ... (Restante das views) ...
-
-
-# ... (Restante das views) ...
-
-# Em generator/views.py
-
-# ... (imports como antes) ...
-
-# --- VIEW Configuração do Simulado (APENAS C/E) ---
 
 # --- NOVA VIEW: Resultado do Simulado ---
 @login_required

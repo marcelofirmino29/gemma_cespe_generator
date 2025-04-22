@@ -25,9 +25,10 @@
     {% endif %}
 
     {# Formulário para gerar a QUESTÃO discursiva #}
-    <div class="form-container">
+    <div class="form-container mb-5"> {# Adicionado mb-5 #}
          <h2 class="h4 mb-3">1. Gerar Nova Questão</h2>
-        <form method="post" action="{% url 'generate_discursive_exam' %}" id="discursive-exam-form" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
+         {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+        <form method="post" action="{% url 'generator:generate_discursive_exam' %}" id="discursive-exam-form" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
             {% csrf_token %}
             {# Campo Tópico/Contexto Base #}
             <div class="mb-3">
@@ -43,7 +44,7 @@
                  <div class="col-md-3 col-sm-6"><label for="{{ form.complexity.id_for_label }}" class="form-label">{{ form.complexity.label }}</label>{{ form.complexity }}{% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}{% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}</div>
                  <div class="col-md-3 col-sm-6"><label for="{{ form.language.id_for_label }}" class="form-label">{{ form.language.label }}</label>{{ form.language }}{% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}{% if form.language.errors %}<div class="invalid-feedback d-block">{{ form.language.errors|striptags }}</div>{% endif %}</div>
             </div>
-            {# Botão de Geração (HTML igual, JS agora é externo) #}
+            {# Botão de Geração #}
             <button type="submit" class="btn btn-info" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="loading-spinner-discursive-exam" style="display: none;"></span>
                  <span id="button-text-discursive-exam">Gerar Questão Discursiva</span>
@@ -53,7 +54,7 @@
 
     {# Exibição de Erro Geral de Geração #}
     {% if error_message and service_initialized and not form.errors %}
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show small" role="alert"> {# Adicionado small #}
              <strong>Erro ao Gerar Questão:</strong> {{ error_message }}
              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -61,26 +62,28 @@
 
     {# Exibição da Questão Gerada E Formulário para Resposta #}
     {% if discursive_exam_text and questao_id %}
+        <hr class="my-4"> {# Separador visual #}
         <div class="results-container mt-4">
             <h2 class="h4 mb-3">2. Questão Discursiva Gerada:</h2>
-            <div class="card generated-exam-card mb-4">
+            <div class="card generated-exam-card mb-4 shadow-sm"> {# Adicionado shadow-sm #}
                 <div class="card-body">
-                     {# O JS externo agora cuidará da formatação (se usar Marked.js) ou o <pre> manterá #}
-                    <pre id="markdown-content">{{ discursive_exam_text }}</pre>
+                     {# Mantém <pre> para preservar formatação ou usar JS para Markdown #}
+                    <pre id="markdown-content" class="bg-body-tertiary p-3 rounded small">{{ discursive_exam_text }}</pre> {# Adicionado estilo #}
                 </div>
                  <div class="card-footer text-end bg-transparent border-top-0 pt-0">
-                      {# O JS externo agora tem a função copyToClipboard anexada a window #}
                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">Copiar Texto da Questão</button>
                 </div>
             </div>
 
-            {# Formulário para Resposta do Usuário (HTML igual, JS é externo) #}
+            {# Formulário para Resposta do Usuário #}
             <hr class="my-4">
             <div class="answer-input-section">
                 <h3 class="h4 mb-3">3. Sua Resposta para Avaliação (Beta)</h3>
-                <form method="post" action="{% url 'evaluate_discursive_answer' %}" id="user-answer-form">
+                {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+                <form method="post" action="{% url 'generator:evaluate_discursive_answer' %}" id="user-answer-form">
                     {% csrf_token %}
-                    <textarea name="exam_context" style="display:none;" aria-hidden="true" readonly>{{ discursive_exam_text }}</textarea>
+                    {# Campo oculto com o texto da questão para referência (opcional) #}
+                    {# <textarea name="exam_context" style="display:none;" aria-hidden="true" readonly>{{ discursive_exam_text }}</textarea> #}
                     <input type="hidden" name="line_count" id="line_count_input" value="0">
                     <input type="hidden" name="questao_id" value="{{ questao_id }}">
                     <div class="mb-3">
@@ -104,5 +107,4 @@
 {% block extra_js %}
     {# <<< Link para o arquivo JS específico desta página >>> #}
     <script src="{% static 'generator/js/exam_generator_scripts.js' %}" defer></script>
-    {# <<< Bloco <script> inline REMOVIDO מכאן >>> #}
 {% endblock extra_js %}

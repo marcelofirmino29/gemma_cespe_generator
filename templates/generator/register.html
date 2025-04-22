@@ -1,110 +1,99 @@
-{% extends 'generator/base.html' %} {# Herda a estrutura base #}
+{% extends 'generator/base.html' %}
+{% load static %}
 
-{% block title %}Cadastro de Novo Usuário - Gerador IA{% endblock title %}
+{% block title %}Simulado - Questão {{ indice_atual_display }} de {{ total_questoes }}{% endblock title %} {# Usa indice_atual_display (base 1) #}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-warning text-dark">
-                <h2 class="h4 mb-0">Criar Nova Conta</h2>
+    <header class="text-center mb-4">
+        <h1>Simulado em Andamento</h1>
+        {# Barra de Progresso Bootstrap #}
+        <div class="progress mt-2 mb-3" role="progressbar" aria-label="Progresso do Simulado" aria-valuenow="{{ indice_atual_display }}" aria-valuemin="1" aria-valuemax="{{ total_questoes }}" style="height: 10px;">
+          <div class="progress-bar" style="width: {% widthratio indice_atual_display total_questoes 100 %}%"></div>
+        </div>
+        <p class="lead">Questão {{ indice_atual_display }} de {{ total_questoes }}</p> {# Usa indice_atual_display (base 1) #}
+        {% if local_time %}<p><small>(Horário Local {{ local_time }})</small></p>{% endif %}
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if questao %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body-tertiary"> {# Fundo leve no header do card #}
+                 <small class="text-muted">
+                    {% if questao.area %}Área: {{ questao.area.nome }} | {% endif %}
+                    Tipo: {{ questao.get_tipo_display }} |
+                    Dificuldade: {{ questao.get_dificuldade_display|default:"N/D" }}
+                 </small>
             </div>
             <div class="card-body">
-                <p class="card-text text-muted small mb-3">Preencha os campos abaixo para se registrar.</p>
+                {# Exibe o comando/afirmação da questão #}
+                <div class="mb-3 fs-5"> {# Aumenta um pouco a fonte da questão #}
+                    {{ questao.texto_comando|linebreaksbr }}
+                </div>
 
-                <form method="post" action="{% url 'register' %}"> {# Action aponta para si mesmo #}
+                {# --- Formulário de Resposta --- #}
+                <hr>
+                {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+                <form method="post" action="{% url 'generator:realizar_simulado' %}" id="simulado-answer-form"> {# ID adicionado #}
                     {% csrf_token %}
 
-                    {# Exibe erros gerais que não são de um campo específico (ex: email já existe, se clean_email não associar ao campo) #}
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger py-2">
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
+                    {# Input Hidden com ID da Questão Atual #}
+                    <input type="hidden" name="questao_id" value="{{ questao.id }}">
+
+                    <p><strong>Sua Resposta:</strong></p>
+                    {% if questao.tipo == 'CE' %}
+                        {# Radios C/E #}
+                        <div class="form-check mb-2"> {# mb-2 para espaçar radios #}
+                            <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_c" value="C" required>
+                            <label class="form-check-label" for="resp_c"> Certo</label>
                         </div>
+                        <div class="form-check mb-3"> {# mb-3 antes do botão #}
+                            <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_e" value="E" required>
+                            <label class="form-check-label" for="resp_e"> Errado</label>
+                        </div>
+                    {% elif questao.tipo == 'DISC' %}
+                        {# Textarea para Discursiva (Este simulado é só C/E, mas mantendo como exemplo) #}
+                         <textarea class="form-control mb-3" name="resposta_simulado" rows="10" required placeholder="Digite sua resposta aqui..."></textarea>
+                    {% else %}
+                        <p class="text-danger">Erro: Tipo de questão desconhecido.</p>
                     {% endif %}
 
-                    {# --- INÍCIO: Renderização Manual dos Campos com Bootstrap --- #}
-
-                    {# Campo Username #}
-                    <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
-                        {# Renderiza o widget (<input>) adicionando a classe form-control #}
-                        <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}"
-                               class="form-control {% if form.username.errors %}is-invalid{% endif %}"
-                               required {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
-                        {# Exibe erros específicos do campo #}
-                        {% if form.username.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.username.errors|striptags }}
-                            </div>
-                        {% endif %}
-                        {# Exibe o texto de ajuda #}
-                        {% if form.username.help_text %}
-                            <div class="form-text">{{ form.username.help_text|safe }}</div>
-                        {% endif %}
+                    {# Botões de Ação #}
+                    <div class="mt-4 d-flex justify-content-between"> {# Alinha botões #}
+                         {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+                         <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-danger" onclick="return confirm('Tem certeza que deseja abandonar o simulado? Seu progresso nesta questão não será salvo.');">Abandonar Simulado</a>
+                         {% if indice_atual_display == total_questoes %} {# Compara com indice base 1 #}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>Finalizar Simulado e Ver Resultado
+                            </button>
+                         {% else %}
+                            <button type="submit" class="btn btn-primary">
+                                Salvar e Próxima Questão <i class="bi bi-arrow-right-circle-fill ms-1"></i>
+                            </button>
+                         {% endif %}
                     </div>
-
-                    {# Campo Email #}
-                    <div class="mb-3">
-                        <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
-                        <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}"
-                               class="form-control {% if form.email.errors %}is-invalid{% endif %}"
-                               required {% if form.email.value %}value="{{ form.email.value }}"{% endif %}>
-                        {% if form.email.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.email.errors|striptags }}
-                            </div>
-                        {% endif %}
-                        {% if form.email.help_text %}
-                            <div class="form-text">{{ form.email.help_text|safe }}</div>
-                        {% endif %}
-                    </div>
-
-                    {# Campo Senha 1 #}
-                    <div class="mb-3">
-                         {# A label vem do UserCreationForm #}
-                        <label for="{{ form.password1.id_for_label }}" class="form-label">Senha</label>
-                        <input type="password" name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}"
-                               class="form-control {% if form.password1.errors %}is-invalid{% endif %}" required>
-                        {% if form.password1.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.password1.errors|striptags }}
-                            </div>
-                        {% endif %}
-                         {# O help_text geralmente contém as regras da senha #}
-                        {% if form.password1.help_text %}
-                            <div class="form-text">{{ form.password1.help_text|safe }}</div>
-                        {% endif %}
-                    </div>
-
-                    {# Campo Senha 2 (Confirmação) #}
-                    <div class="mb-3">
-                         {# A label vem do UserCreationForm #}
-                        <label for="{{ form.password2.id_for_label }}" class="form-label">Confirmação de senha</label>
-                        <input type="password" name="{{ form.password2.name }}" id="{{ form.password2.id_for_label }}"
-                               class="form-control {% if form.password2.errors %}is-invalid{% endif %}" required>
-                        {% if form.password2.errors %}
-                            <div class="invalid-feedback">
-                                {{ form.password2.errors|striptags }}
-                            </div>
-                        {% endif %}
-                         {% if form.password2.help_text %}
-                            <div class="form-text">{{ form.password2.help_text|safe }}</div>
-                        {% endif %}
-                    </div>
-
-                    {# --- FIM: Renderização Manual --- #}
-
-                    <button type="submit" class="btn btn-warning w-100 mt-3">Cadastrar</button>
                 </form>
+                 {# --- Fim Formulário de Resposta --- #}
 
-                <p class="mt-3 text-center">
-                    <small>Já tem uma conta? <a href="{% url 'login' %}">Faça login aqui</a>.</small>
-                </p>
+            </div> {# Fim card-body #}
+        </div> {# Fim card #}
 
-            </div>
-        </div>
-    </div>
-</div>
+    {% else %}
+        {# Mensagem se não conseguiu carregar questao na view GET #}
+        <div class="alert alert-warning">Não foi possível carregar a questão atual do simulado.</div>
+         {# <<< CORRIGIDO: Adicionado namespace 'generator:' >>> #}
+        <a href="{% url 'generator:configurar_simulado' %}" class="btn btn-primary">Configurar Novo Simulado</a>
+    {% endif %}
+
 {% endblock content %}
+
+{% block extra_js %}
+    {# Adicionar JS para timer ou outras interatividades do simulado aqui no futuro #}
+{% endblock extra_js %}
