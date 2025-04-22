@@ -28,7 +28,7 @@ class QuestionGenerationService:
 
             # 2. Configura Geração (Temperatura)
             # Usa 0.7 como padrão se não definido nas settings
-            temperature = getattr(settings, 'AI_GENERATION_TEMPERATURE', 0.7)
+            temperature = getattr(settings, 'AI_GENERATION_TEMPERATURE', 1.0)
             self.generation_config = GenerationConfig(temperature=temperature)
 
             # 3. Valida e configura o Nome do Modelo
@@ -103,82 +103,80 @@ class QuestionGenerationService:
             raise ConfigurationError(f"Erro ao processar as Configurações de Segurança da IA: {e}")
 
     # --- MÉTODO generate_questions (COM PROMPT CORRIGIDO) ---
-    def generate_questions(self, topic, num_questions, difficulty_level='medio'):
-        """Gera 1 Texto Motivador + N Itens C/E estilo Cebraspe/CESPE."""
+# Dentro da classe QuestionGenerationService em generator/services.py
+
+    # --- MÉTODO generate_questions (COM BALANCEAMENTO C/E REFORÇADO) ---
+    def generate_questions(self, topic, num_questions, difficulty_level='medio', area=None):
+        """
+        Gera 1 Texto Motivador + N Itens C/E estilo Cebraspe/CESPE,
+        considerando a área e buscando balanceamento C/E aleatório.
+        """
         if not self.model:
             raise ConfigurationError("Serviço de IA não inicializado corretamente.")
 
-        # <<< PROMPT CORRIGIDO (Guideline 1 alinhada com Formato de Saída) >>>
+        # <<< PROMPT REFINADO PARA BALANCEAMENTO E CLAREZA >>>
         prompt = (
-            f"**Persona:** Você é um examinador experiente da banca Cebraspe/CESPE, conhecido pelo rigor técnico.\n"
-            f"**Tarefa:** Gerar {num_questions} itens inéditos (Certo/Errado) sobre o tópico/contexto: '{topic}', com nível de dificuldade '{difficulty_level}'.\n"
-            f"**Estilo Cebraspe OBRIGATÓRIO:**\n"
-            # CORRIGIDO: Alinhado com o formato de saída.
-            f"1.  **Estrutura Completa:** Texto Motivador, Comando claro, Item analítico.\n"
-            f"2.  **Item Analítico e Nuance:** O Item (afirmação) NÃO PODE ser óbvio. Deve exigir análise crítica, interpretação, conhecimento de exceções, condições, jurisprudência ou detalhes específicos.\n"
-            f"3.  **EVITAR ABSOLUTOS:** RESTRINJA AO MÁXIMO o uso de termos absolutos (sempre, nunca...). Prefira condições, exceções, probabilidades (uso aceitável de absoluto apenas se for o cerne técnico).\n"
-            f"4.  **Mistura de Conceitos (Pegadinha Comum):** Se o tópico '{topic}' contiver conceitos similares mas distintos (ex: Data Lake vs Data Warehouse; Princípio X vs Princípio Y; Etapa A vs Etapa B de um processo), elabore itens que **intencionalmente misturem ou troquem características, definições ou aplicações entre eles** para gerar afirmações **ERRADAS** que testem o conhecimento preciso das diferenças. Deixe claro na justificativa qual foi a mistura feita.\n"
-            f"5.  **Indução ao Erro (com Fundamento):** Formule itens que possam levar um candidato com leitura apressada ou conhecimento incompleto ao erro, mas que possuam um gabarito e justificativa tecnicamente impecáveis.\n"
-            f"6.  **Gabarito Inequívoco:** Item DEVE ter gabarito CLARO (C ou E).\n"
-            f"7.  **Justificativa Detalhada:** Explicar o raciocínio técnico, desmontando a 'pegadinha' e justificando a resposta correta.\n\n"
-            f"**Formato ESTRITO de Saída:**\n"
-            f"Use EXATAMENTE os marcadores em negrito abaixo para CADA UM dos {num_questions} itens. Separe itens completos APENAS com '---'.\n\n"
-            f"**Texto Motivador:** [Texto curto OU 'Não aplicável'.]\n"
-            f"**Comando:** [Instrução para julgar. Ex: 'Considerando X, julgue o item.']\n"
-            f"**Item:** [A afirmação C/E analítica/desafiadora.]\n"
+            f"**Persona:** Você é um examinador experiente da banca Cebraspe/CESPE, elaborando itens inéditos e desafiadores.\n"
+            f"**Tarefa:** Gerar um conjunto de questões Certo/Errado com base nas seguintes informações:\n"
+            f"    - **Área de Conhecimento Principal:** {area.nome if area else 'Geral'}\n"
+            f"    - **Tópico/Contexto Específico:** '{topic}'\n"
+            f"    - **Nível de Dificuldade:** {difficulty_level or 'Médio'}\n" # Trata None
+            f"    - **Número Total de Itens:** {num_questions}\n"
+            f"**Estrutura OBRIGATÓRIA:**\n"
+            f"1.  **UM Texto Motivador Principal:** Crie um texto conciso (3-6 frases) que defina ou contextualize o tópico '{topic}' dentro da área '{area.nome if area else 'Geral'}'. Este texto será a base para TODOS os itens. Se o tópico já for um texto adequado, use-o. Se não for possível, escreva 'Não aplicável'.\n"
+            f"2.  **{num_questions} Itens de Julgamento:** Gere {num_questions} itens (afirmações C/E) que explorem nuances, aplicações, exceções ou consequências do conceito no motivador, relevantes para a Área.\n"
+            f"**Diretrizes para Itens:**\n"
+            f"    - **Analíticos e Não Óbvios:** Exigir análise e conhecimento de detalhes.\n"
+            f"    - **Evitar Absolutos:** RESTRINJA AO MÁXIMO termos como 'sempre', 'nunca', 'apenas'. Prefira condições/exceções.\n"
+            f"    - **Mistura de Conceitos:** Se aplicável, crie itens ERRADOS misturando conceitos similares e explique na justificativa.\n"
+            # <<< DIRETRIZ DE BALANCEAMENTO REFORÇADA >>>
+            f"    - **Balanceamento C/E Aleatório:** Para o lote total de {num_questions} itens, distribua os gabaritos 'C' e 'E' de forma **aleatória**, buscando um equilíbrio (quantidade **aproximadamente igual** de C e E). NÃO crie um padrão previsível.\n"
+            f"    - **Gabarito Inequívoco e Justificativa Técnica:** Justificativa detalhada referenciando o motivador se necessário.\n\n"
+            f"**Formato ESTRITO de Saída (SEM QUEBRAS INDESEJADAS):**\n"
+            f"Use EXATAMENTE os marcadores em negrito em linhas separadas. O Texto Motivador aparece SÓ UMA VEZ no início. Separe itens completos APENAS com uma linha contendo '---'.\n\n"
+            f"**Texto Motivador Principal:** [O texto base contextualizador AQUI.]\n\n"
+            f"**Item:** [Afirmação C/E 1 relacionada ao Motivador e à Área.]\n"
             f"**Gabarito:** [C ou E]\n"
-            f"**Justificativa:** [Explicação técnica detalhada, incluindo a explicação da mistura de conceitos se usada.]\n"
+            f"**Justificativa:** [Explicação técnica detalhada do item 1.]\n"
             f"---\n"
-            f"(Repita {num_questions} vezes)"
+            f"**Item:** [Afirmação C/E 2 relacionada ao Motivador e à Área.]\n"
+            f"**Gabarito:** [C ou E]\n"
+            f"**Justificativa:** [Explicação técnica detalhada do item 2.]\n"
+            f"---\n"
+            f"(Continue APENAS com Item/Gabarito/Justificativa para os {num_questions} itens totais)"
         )
         # <<< FIM DO PROMPT >>>
 
-        if self.safety_settings:
-            logger.info(f"SERVICE CALL (C/E Estruturado): Usando {len(self.safety_settings)} regras de segurança.")
-        else:
-            logger.info("SERVICE CALL (C/E Estruturado): Usando safety padrão.")
-
+        # O restante do método continua igual...
+        if self.safety_settings: logger.info(f"SERVICE CALL (C/E Balanceado v2): Usando {len(self.safety_settings)} regras.")
+        else: logger.info("SERVICE CALL (C/E Balanceado v2): Usando safety padrão.")
         try:
-            # Usa _model_name se existir, senão informa N/A
             model_name_info = self.model._model_name if hasattr(self.model, '_model_name') else 'N/A'
-            logger.info(f"Enviando req (C/E Estruturado) API (Modelo: {model_name_info}, Tópico: {topic[:50]}...)")
+            logger.info(f"Enviando req (C/E Balanceado v2) API (Modelo: {model_name_info}, Tópico: {topic[:50]}...)")
 
-            response = self.model.generate_content(
-                prompt,
-                generation_config=self.generation_config,
-                safety_settings=self.safety_settings
-            )
-
+            response = self.model.generate_content(prompt, generation_config=self.generation_config, safety_settings=self.safety_settings)
+            # ... (Verificação de Bloqueio como antes) ...
             first_candidate = response.candidates[0] if response.candidates else None
-
-            # Validação da Resposta da API
-            if first_candidate and hasattr(first_candidate, 'finish_reason') and first_candidate.finish_reason.name == 'SAFETY':
-                logger.warning(f"Resposta IA bloqueada por SAFETY (C/E Estruturado).")
-                raise AIResponseError(f"Geração de questões bloqueada pela API (SAFETY).")
-
-            if not first_candidate or not hasattr(first_candidate, 'content') or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
-                finish_reason = "N/A"
-                if first_candidate and hasattr(first_candidate, 'finish_reason'):
-                    finish_reason = first_candidate.finish_reason.name
-                logger.warning(f"Resposta IA vazia/inválida (C/E Estruturado). Finish Reason: {finish_reason}.")
-                raise AIResponseError(f"IA retornou resposta vazia ou inválida (Finish Reason: {finish_reason}).")
+            if first_candidate and first_candidate.finish_reason.name == 'SAFETY': logger.warning(f"Resp IA bloqueada (C/E Balanceado v2)."); raise AIResponseError(f"Geração bloqueada API.")
+            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts: finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"; logger.warning(f"Resp IA vazia (C/E Balanceado v2). Finish: {finish_reason}."); raise AIResponseError(f"IA retornou resp vazia (Finish: {finish_reason}).")
 
             generated_text = first_candidate.content.parts[0].text
-            logger.info("Texto C/E Estruturado recebido da IA. Chamando parser...")
+            logger.info("Texto C/E (Balanceado v2) recebido da IA. Chamando parser...")
+            parsed_data = self._parse_questions(generated_text) # Chama _parse_questions (que chama utils)
+            return parsed_data
+        except AIResponseError as e: raise e
+        except ParsingError as e: logger.error(f"Erro PARSING (C/E Balanceado v2): {e}", exc_info=True); raise ParsingError(f"Erro processar resposta IA (C/E): {e}")
+        except Exception as e: logger.error(f"Erro GERAL API (C/E Balanceado v2): {e}", exc_info=True); raise AIServiceError(f"Erro comunicação API (C/E): {e}")
 
-            # Chama o método interno que delega para utils.py
-            parsed_data = self._parse_questions(generated_text)
-            return parsed_data # Retorna a tupla (motivador, lista_questoes)
-
-        except AIResponseError as e: # Repassa erros específicos da IA
-            raise e
-        except ParsingError as e: # Repassa erros específicos do parsing
-            logger.error(f"Erro durante o PARSING da resposta da IA (C/E Estruturado): {e}", exc_info=True)
-            # Mantém o tipo ParsingError para tratamento específico se necessário
-            raise ParsingError(f"Erro ao processar a estrutura da resposta da IA (C/E): {e}")
-        except Exception as e: # Captura outros erros (rede, API genérica, etc.)
-            logger.error(f"Erro GERAL durante chamada à API (C/E Estruturado): {e}", exc_info=True)
-            raise AIServiceError(f"Erro na comunicação com a API (C/E): {e}")
+    # --- Método _parse_questions (DEVE chamar utils.py) ---
+    def _parse_questions(self, text: str):
+        """Delega o parsing C/E para a função especializada em utils.py."""
+        logger.debug("Service: _parse_questions chamando utils.parse_ai_response_to_questions")
+        try:
+            # A função em utils.py agora precisa retornar (motivador, lista_questoes)
+            return parse_ai_response_to_questions(text)
+        except ParsingError as e: logger.error(f"Erro retornado por parser C/E: {e}"); raise e
+        except Exception as e: logger.error(f"Erro inesperado ao chamar parser C/E: {e}", exc_info=True); raise ParsingError(f"Erro inesperado no processamento C/E: {e}")
 
     # --- Método _parse_questions (Chama utils.py) ---
     def _parse_questions(self, text: str):
