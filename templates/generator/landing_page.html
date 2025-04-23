@@ -6,84 +6,93 @@
 {% block extra_head %}
     {# CSS específico para ajustar cores de texto/ícone nos cards coloridos #}
     <style>
-        /* Estilo Geral dos Cards (sem cor de fundo base no CSS) */
+        /* Estilo Geral dos Cards */
         .card.landing-card {
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             height: 100%;
-            border: 1px solid transparent; /* Borda inicial transparente */
+            border: none; /* Remove a borda padrão */
+            border-radius: 0.5rem; /* rounded-lg */
         }
         .card.landing-card:hover {
             transform: translateY(-4px);
-            box-shadow: var(--bs-box-shadow-lg); /* Sombra maior no hover */
-            /* Opcional: Adicionar borda de destaque no hover */
-            /* border-color: rgba(255, 255, 255, 0.5); */
+            box-shadow: var(--bs-box-shadow-lg);
         }
         .card.landing-card .card-title {
             font-size: 1rem; /* text-base */
             font-weight: 600; /* font-semibold */
             margin-bottom: 0.5rem; /* mb-2 */
+            color: var(--bs-white); /* Título branco por padrão */
+        }
+        .card.landing-card .card-title i {
+            font-size: 1.5rem; /* Tamanho do ícone */
+            margin-right: 0.5rem; /* Espaço à direita */
+            vertical-align: middle; /* Alinha ícone com texto */
+            opacity: 0.8;
+            color: inherit; /* Herda cor do título */
         }
         .card.landing-card .card-text {
             font-size: 0.8rem; /* Ligeiramente menor que small */
             flex-grow: 1; /* Ocupa espaço disponível */
             margin-bottom: 1rem; /* mb-4, espaço antes do botão */
             opacity: 0.9; /* Leve transparência no texto */
-        }
-        .card.landing-card .icon {
-            font-size: 1.1rem; /* Tamanho do ícone */
-            margin-right: 0.5rem; /* mr-2 */
-            opacity: 0.9;
+            color: var(--bs-light-text-emphasis); /* Cor clara por padrão */
         }
         .card.landing-card .btn {
             font-size: 0.75rem; /* text-xs */
             padding: 0.375rem 0.75rem; /* py-1.5 px-3 */
             align-self: flex-start; /* Alinha botão à esquerda */
             margin-top: auto; /* Empurra para baixo */
+            font-weight: 500;
+            border: none;
         }
 
-        /* Ajustes de cor de texto para contraste nos cards coloridos */
-        .card.bg-primary .card-title,
-        .card.bg-primary .card-text,
-        .card.bg-primary .icon { color: var(--bs-white); }
-        .card.bg-primary .btn { color: var(--bs-primary); background-color: var(--bs-white); border-color: var(--bs-white); }
-        .card.bg-primary .btn:hover { background-color: #e9ecef; border-color: #e9ecef; color: var(--bs-primary);}
+        /* Cores de fundo e ajustes de texto/botão (Inspirado na imagem) */
+        .card-ce { background-color: var(--bs-primary); } /* Azul */
+        .card-ce .btn { color: var(--bs-primary-text-emphasis); background-color: var(--bs-primary-bg-subtle); }
+        .card-ce .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
-        .card.bg-info .card-title,
-        .card.bg-info .card-text,
-        .card.bg-info .icon { color: var(--bs-dark); } /* Texto escuro no ciano */
-        .card.bg-info .btn { color: var(--bs-white); background-color: var(--bs-primary); border-color: var(--bs-primary); } /* Botão azul */
-        .card.bg-info .btn:hover { background-color: #0b5ed7; border-color: #0a58ca;}
+        .card-disc { background-color: var(--bs-info); } /* Azul Claro (Info) */
+        .card-disc .card-title, .card-disc .card-text, .card-disc .card-title i { color: var(--bs-dark-text-emphasis); } /* Texto escuro */
+        .card-disc .btn { color: var(--bs-info-text-emphasis); background-color: var(--bs-info-bg-subtle); }
+        .card-disc .btn:hover { background-color: rgba(0, 0, 0, 0.1); }
 
-        .card.bg-warning .card-title,
-        .card.bg-warning .card-text,
-        .card.bg-warning .icon { color: var(--bs-dark); } /* Texto escuro no amarelo */
-        .card.bg-warning .btn { color: var(--bs-dark); background-color: #ffca2c; border-color: #ffc720;} /* Botão amarelo um pouco mais escuro */
-         .card.bg-warning .btn:hover { background-color: #ffc107; border-color: #ffbb00;}
+        .card-simulado { background-color: var(--bs-warning); } /* Amarelo */
+        .card-simulado .card-title, .card-simulado .card-text, .card-simulado .card-title i { color: var(--bs-dark-text-emphasis); } /* Texto escuro */
+        .card-simulado .btn { color: var(--bs-warning-text-emphasis); background-color: var(--bs-warning-bg-subtle); }
+        .card-simulado .btn:hover { background-color: rgba(0, 0, 0, 0.1); }
 
-        .card.bg-success .card-title,
-        .card.bg-success .card-text,
-        .card.bg-success .icon { color: var(--bs-white); }
-        .card.bg-success .btn { color: var(--bs-success); background-color: var(--bs-white); border-color: var(--bs-white); }
-        .card.bg-success .btn:hover { background-color: #e9ecef; border-color: #e9ecef; color: var(--bs-success);}
+        .card-dashboard { background-color: var(--bs-success); } /* Verde */
+        .card-dashboard .btn { color: var(--bs-success-text-emphasis); background-color: var(--bs-success-bg-subtle); }
+        .card-dashboard .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
-         /* Ajustes para modo claro (se necessário, mas as cores base do Bootstrap já se adaptam) */
-         /*
-         [data-bs-theme="light"] .card.bg-info .card-title, ... { color: var(--bs-dark); }
-         [data-bs-theme="light"] .card.bg-warning .card-title, ... { color: var(--bs-dark); }
-         */
+        /* Card do Jogo (Verde também, como o Dashboard na imagem) */
+        .card-games { background-color: var(--bs-danger); }
+        .card-games .card-title i { color: var(--bs-white); opacity: 0.8; }
+        .card-games .btn { color: var(--bs-success-text-emphasis); background-color: var(--bs-success-bg-subtle); }
+        .card-games .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
     </style>
 {% endblock extra_head %}
 
-{% block content %}
+{% block content %} {# Bloco content começa aqui #}
     <div class="text-center mb-5">
-        <h1 class="display-6 fw-semibold main-title mb-2">Bem-vindo ao CESPE GENERATOR</h1>
-        <p class="lead fs-6 subtitle">Selecione uma opção abaixo.</p>
+        <h1 class="display-6 fw-semibold text-body-emphasis mb-2">Bem-vindo ao CESPE GENERATOR</h1>
+        <p class="lead fs-6 text-body-secondary col-lg-8 mx-auto">
+            Selecione uma opção abaixo.
+        </p>
          {% if error_message %}
              <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
                  {{ error_message }}
                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
              </div>
+         {% endif %}
+         {% if messages %}
+             {% for message in messages %}
+             <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                 {{ message }}
+                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+             </div>
+             {% endfor %}
          {% endif %}
     </div>
 
@@ -92,22 +101,19 @@
 
         {# Card 1: Gerador C/E #}
         <div class="col">
-            {# Adiciona bg-primary e text-white. Remove landing-card se não for mais necessário #}
-            <div class="card landing-card bg-primary text-white shadow-sm {% if not service_initialized %}opacity-50{% endif %}">
+            <div class="card landing-card card-ce shadow-sm">
                 <div class="card-body d-flex flex-column p-3">
-                    <div class="w-full mb-auto text-start">
+                    <div class="w-full mb-auto text-start"> {# Alinha texto à esquerda #}
                         <h3 class="card-title d-flex align-items-center">
                             <i class="bi bi-check2-square icon"></i>
                             Gerador C/E por Tópico
                         </h3>
-                        {# Descrição visível #}
                         <p class="card-text">
                             Crie questões de Certo ou Errado (estilo Cebraspe) a partir de um tópico específico e nível de dificuldade.
                         </p>
                     </div>
-                    <div class="mt-3 align-self-start">
-                        {# Botão com estilo ajustado #}
-                        <a href="{% url 'generator:generate_questions' %}" class="btn btn-light btn-sm {% if not service_initialized %}disabled{% endif %}">
+                    <div class="mt-3 align-self-start"> {# Botão alinhado à esquerda #}
+                        <a href="{% url 'generator:generate_questions' %}" class="btn">
                             Acessar Gerador C/E
                         </a>
                     </div>
@@ -117,10 +123,9 @@
 
         {# Card 2: Gerador Discursiva #}
         <div class="col">
-             {# Adiciona bg-info e text-dark #}
-            <div class="card landing-card bg-info text-dark shadow-sm {% if not service_initialized %}opacity-50{% endif %}">
+            <div class="card landing-card card-disc shadow-sm">
                 <div class="card-body d-flex flex-column p-3">
-                    <div class="w-full mb-auto text-start">
+                     <div class="w-full mb-auto text-start">
                         <h3 class="card-title d-flex align-items-center">
                              <i class="bi bi-pencil-square icon"></i>
                             Gerador de Questão Discursiva
@@ -130,8 +135,7 @@
                         </p>
                     </div>
                      <div class="mt-3 align-self-start">
-                         {# Botão com estilo ajustado #}
-                         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-primary btn-sm {% if not service_initialized %}disabled{% endif %}">
+                         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn">
                             Acessar Gerador de Questão
                         </a>
                     </div>
@@ -141,10 +145,9 @@
 
         {# Card 3: Configurar Simulado #}
         <div class="col">
-            {# Adiciona bg-warning e text-dark #}
-            <div class="card landing-card bg-warning text-dark shadow-sm {% if not service_initialized %}disabled-card{% endif %}">
+            <div class="card landing-card card-simulado shadow-sm">
                 <div class="card-body d-flex flex-column p-3">
-                    <div class="w-full mb-auto text-start">
+                     <div class="w-full mb-auto text-start">
                         <h3 class="card-title d-flex align-items-center">
                             <i class="bi bi-sliders icon"></i>
                             Configurar Simulado
@@ -154,8 +157,7 @@
                         </p>
                     </div>
                      <div class="mt-3 align-self-start">
-                         {# Botão com estilo ajustado #}
-                        <a href="{% url 'generator:configurar_simulado' %}" class="btn btn-dark btn-sm {% if not service_initialized %}disabled{% endif %}">
+                        <a href="{% url 'generator:configurar_simulado' %}" class="btn">
                             Configurar Simulado
                         </a>
                     </div>
@@ -165,8 +167,7 @@
 
         {# Card 4: Dashboard #}
         <div class="col">
-             {# Adiciona bg-success e text-white #}
-            <div class="card landing-card bg-success text-white shadow-sm">
+            <div class="card landing-card card-dashboard shadow-sm">
                 <div class="card-body d-flex flex-column p-3">
                      <div class="w-full mb-auto text-start">
                          <h3 class="card-title d-flex align-items-center">
@@ -178,8 +179,7 @@
                         </p>
                      </div>
                      <div class="mt-3 align-self-start">
-                         {# Botão com estilo ajustado #}
-                         <a href="{% url 'generator:dashboard' %}" class="btn btn-light btn-sm">
+                         <a href="{% url 'generator:dashboard' %}" class="btn">
                             Acessar Dashboard
                         </a>
                     </div>
@@ -187,8 +187,34 @@
             </div>
         </div>
 
+    </div> {# Fim da row dos cards principais #}
+
+    {# --- Card para o Hub de Jogos --- #}
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card landing-card card-games shadow-sm"> {# Usa a classe de cor do jogo #}
+                <div class="card-body d-flex flex-column p-3">
+                    <div class="w-full mb-auto text-start">
+                        <h3 class="card-title d-flex align-items-center">
+                            <i class="bi bi-joystick icon"></i>
+                            Hub de Jogos
+                        </h3>
+                        <p class="card-text">
+                            Teste seus conhecimentos! Arraste os algoritmos de Machine Learning para suas categorias corretas.
+                        </p>
+                    </div>
+                    <div class="mt-3 align-self-start">
+                        <a href="{% url 'generator:games_hub' %}" class="btn">
+                            Ver Jogos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-{% endblock content %}
+    {# --- Fim do Card do Jogo --- #}
+
+{% endblock content %} {# Bloco content termina aqui #}
 
 {% block extra_js %}
 {# Nenhum JS extra necessário aqui para esta funcionalidade #}

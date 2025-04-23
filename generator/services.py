@@ -102,9 +102,6 @@ class QuestionGenerationService:
             # Levanta ConfigurationError pois afeta a configuração do serviço
             raise ConfigurationError(f"Erro ao processar as Configurações de Segurança da IA: {e}")
 
-    # --- MÉTODO generate_questions (COM PROMPT CORRIGIDO) ---
-# Dentro da classe QuestionGenerationService em generator/services.py
-
     # --- MÉTODO generate_questions (COM BALANCEAMENTO C/E REFORÇADO) ---
     def generate_questions(self, topic, num_questions, difficulty_level='medio', area=None):
         """
@@ -146,8 +143,7 @@ class QuestionGenerationService:
             f"(Continue APENAS com Item/Gabarito/Justificativa para os {num_questions} itens totais)"
         )
         # <<< FIM DO PROMPT >>>
-
-        # O restante do método continua igual...
+        
         if self.safety_settings: logger.info(f"SERVICE CALL (C/E Balanceado v2): Usando {len(self.safety_settings)} regras.")
         else: logger.info("SERVICE CALL (C/E Balanceado v2): Usando safety padrão.")
         try:

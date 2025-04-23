@@ -849,6 +849,30 @@ def resultado_simulado_view(request):
     return render(request, 'generator/resultado_simulado.html', context)
 # --- FIM NOVA VIEW ---
 
+# --- VIEW PARA O HUB DE JOGOS ---
+@login_required
+def games_hub_view(request):
+    """Renderiza a página que lista os jogos disponíveis."""
+    context, _, _ = _get_base_context_and_service()
+    available_games = [
+        {
+            'name': 'Arrastar e Soltar: Algoritmos ML',
+            'description': 'Associe algoritmos como SVM, KNN e K-Means às suas categorias.',
+            'url_name': 'generator:drag_drop_ml_game',
+            'icon': 'bi-arrows-move'
+        },
+    ]
+    context['games'] = available_games
+    # <<< CORREÇÃO: Aponta para o template dentro da pasta 'jogos' >>>
+    return render(request, 'generator/jogos/games_hub.html', context)
+
+# --- VIEW PARA O JOGO DE ARRASTAR E SOLTAR ---
+@login_required
+def drag_drop_ml_game_view(request):
+    """Renderiza a página do jogo de arrastar e soltar sobre algoritmos de ML."""
+    context, _, _ = _get_base_context_and_service()
+    # <<< CORREÇÃO: Aponta para o template dentro da pasta 'jogos' >>>
+    return render(request, 'generator/jogos/game_drag_drop_ml.html', context)
 
 
 # --- Função de Teste (Mantida) ---

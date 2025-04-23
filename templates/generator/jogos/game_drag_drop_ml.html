@@ -1,0 +1,249 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Jogo: Categorias de Algoritmos de ML{% endblock title %}
+
+{% block extra_head %}
+    {# Fonte Inter (já no base.html) #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos específicos do jogo minimalista */
+        .draggable-item {
+            padding: 0.75rem;
+            border-radius: 0.375rem; /* rounded */
+            box-shadow: var(--bs-box-shadow-sm);
+            cursor: grab;
+            border: 1px solid var(--bs-border-color-translucent);
+            text-align: center;
+            font-weight: 500; /* fw-medium */
+            font-size: 0.85rem; /* Texto um pouco menor */
+            transition: background-color 0.2s ease-in-out, border 0.2s ease-in-out, opacity 0.2s ease-in-out;
+            user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+            /* Cores aplicadas via JS */
+        }
+        .dragging {
+            opacity: 0.5;
+            border: 2px dashed var(--bs-secondary);
+        }
+        .drop-zone {
+            min-height: 200px; /* Aumenta altura mínima */
+            padding: 0.75rem; /* Reduz padding */
+            border-radius: 0.5rem; /* rounded-lg */
+            border: 2px dashed var(--bs-border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: var(--bs-tertiary-bg);
+            transition: background-color 0.2s ease-in-out, border 0.2s ease-in-out;
+            overflow-y: auto;
+            max-height: 450px; /* Aumenta altura máxima */
+        }
+        .drop-zone h3 {
+            font-weight: 600; /* fw-semibold */
+            color: var(--bs-secondary-color);
+            margin-bottom: 1rem;
+            width: 100%;
+            text-align: center;
+            position: sticky;
+            top: -1px; /* Ajuste para colar no topo */
+            background-color: var(--bs-tertiary-bg);
+            padding: 0.5rem 0; /* Padding vertical no título */
+            z-index: 10;
+            font-size: 0.9rem; /* Título menor */
+            border-bottom: 1px solid var(--bs-border-color); /* Linha abaixo do título */
+        }
+        .drop-zone .draggable-item {
+             margin-bottom: 0.5rem;
+             width: 95%; /* Itens quase da largura da zona */
+             font-size: 0.8rem; /* Texto do item menor dentro da zona */
+        }
+        .drag-over {
+            border-color: var(--bs-primary);
+            background-color: var(--bs-primary-bg-subtle);
+        }
+        .item-incorrect {
+             border: 2px solid var(--bs-danger) !important;
+        }
+        .feedback-item { margin-bottom: 0.25rem; }
+        #algorithms-container {
+            border: 1px solid var(--bs-border-color); /* Adiciona borda ao container de algoritmos */
+            border-radius: 0.5rem;
+            background-color: var(--bs-tertiary-bg);
+        }
+         #algorithms-container h2 {
+             font-size: 0.9rem; /* Título menor */
+             border-bottom: 1px solid var(--bs-border-color);
+             background-color: var(--bs-tertiary-bg); /* Garante fundo */
+         }
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+    {# Removido container bg-body e shadow principal #}
+    <h1 class="h4 fw-normal text-center text-body-emphasis mb-3">Jogo: Categorias de Algoritmos</h1>
+    <p class="text-center text-body-secondary mb-4 small">Arraste cada algoritmo para a coluna da sua categoria correta.</p>
+
+    <div class="row g-3"> {# g-3 para espaçamento menor #}
+
+        <div class="col-lg-3">
+            <div id="algorithms-container" class="p-3" style="max-height: 600px; overflow-y: auto;">
+                <h2 class="fw-semibold text-center mb-3 sticky-top pb-2 z-10">Algoritmos</h2>
+                <div id="draggable-list" class="vstack gap-2"> {# vstack para empilhar com gap #}
+                    {# Itens sem classes de cor - JS aplicará #}
+                    <div id="item-arvore" draggable="true" class="draggable-item" data-concept="supervised">Árvores de Decisão</div>
+                    <div id="item-randomforest" draggable="true" class="draggable-item" data-concept="supervised">Random Forests</div>
+                    <div id="item-reglog" draggable="true" class="draggable-item" data-concept="supervised">Regressão Logística</div>
+                    <div id="item-reglinear" draggable="true" class="draggable-item" data-concept="supervised">Regressão Linear</div>
+                    <div id="item-knn" draggable="true" class="draggable-item" data-concept="supervised">KNN</div>
+                    <div id="item-svm" draggable="true" class="draggable-item" data-concept="supervised">SVM</div>
+                    <div id="item-naivebayes" draggable="true" class="draggable-item" data-concept="supervised">Naive Bayes</div>
+                    <div id="item-ann" draggable="true" class="draggable-item" data-concept="supervised">Redes Neurais Artificiais (ANN)</div>
+                    <div id="item-anomalia" draggable="true" class="draggable-item" data-concept="unsupervised">Detecção de Anomalias</div>
+                    <div id="item-pca" draggable="true" class="draggable-item" data-concept="unsupervised">Análise de Componentes Principais (PCA)</div>
+                    <div id="item-apriori" draggable="true" class="draggable-item" data-concept="unsupervised">Regras de Associação (Apriori)</div>
+                    <div id="item-em" draggable="true" class="draggable-item" data-concept="unsupervised">Algoritmo Expectation-Maximization (EM)</div>
+                    <div id="item-hierarquico" draggable="true" class="draggable-item" data-concept="unsupervised">Agrupamento Hierárquico</div>
+                    <div id="item-gmm" draggable="true" class="draggable-item" data-concept="unsupervised">Gaussian Mixture Models (GMM)</div>
+                    <div id="item-dbscan" draggable="true" class="draggable-item" data-concept="unsupervised">DBSCAN</div>
+                    <div id="item-kmeans" draggable="true" class="draggable-item" data-concept="unsupervised">K-means</div>
+                    <div id="item-tsne" draggable="true" class="draggable-item" data-concept="unsupervised">Algoritmo t-SNE</div>
+                    <div id="item-ppo" draggable="true" class="draggable-item" data-concept="reinforcement">PPO (Proximal Policy Optimization)</div>
+                    <div id="item-sarsa" draggable="true" class="draggable-item" data-concept="reinforcement">SARSA</div>
+                    <div id="item-a2c" draggable="true" class="draggable-item" data-concept="reinforcement">A2C (Advantage Actor-Critic)</div>
+                    <div id="item-policygradient" draggable="true" class="draggable-item" data-concept="reinforcement">Policy Gradient Methods</div>
+                    <div id="item-actorcritic" draggable="true" class="draggable-item" data-concept="reinforcement">Actor-Critic Methods</div>
+                    <div id="item-qlearning" draggable="true" class="draggable-item" data-concept="reinforcement">Q-learning</div>
+                    <div id="item-ddpg" draggable="true" class="draggable-item" data-concept="reinforcement">DDPG</div>
+                    <div id="item-dqn" draggable="true" class="draggable-item" data-concept="reinforcement">Deep Q Network (DQN)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="row g-3"> {# Row interna para as 3 colunas de drop #}
+                <div class="col-md-4">
+                    <div id="zone-supervised" class="drop-zone h-100" data-category="supervised">
+                        <h3>Supervisionado</h3>
+                        </div>
+                </div>
+                <div class="col-md-4">
+                    <div id="zone-unsupervised" class="drop-zone h-100" data-category="unsupervised">
+                        <h3>Não Supervisionado</h3>
+                        </div>
+                </div>
+                <div class="col-md-4">
+                    <div id="zone-reinforcement" class="drop-zone h-100" data-category="reinforcement">
+                        <h3>Por Reforço</h3>
+                        </div>
+                </div>
+            </div>
+        </div>
+
+    </div> {# Fim da row principal #}
+
+    <div class="mt-4 text-center"> {# Margem menor #}
+        <button id="check-button" class="btn btn-primary btn-sm me-2">Verificar</button> {# Botão menor #}
+        <button id="reset-button" class="btn btn-secondary btn-sm">Reiniciar</button> {# Botão menor #}
+        <div id="feedback-message" class="mt-3 small fw-medium"></div> {# Fonte menor #}
+        <div id="error-details" class="mt-2 text-danger small"></div>
+    </div>
+
+{% endblock content %}
+
+
+{% block extra_js %}
+    <script>
+        // Seleciona elementos
+        const draggables = document.querySelectorAll('.draggable-item');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const algorithmsContainer = document.getElementById('algorithms-container').querySelector('#draggable-list');
+        const checkButton = document.getElementById('check-button');
+        const resetButton = document.getElementById('reset-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const errorDetails = document.getElementById('error-details');
+
+        let draggedItem = null;
+
+        // --- Cores Aleatórias ---
+        const colorClasses = [
+            // Tons claros (bg-100, text-700/800, border-300)
+            'bg-red-100 text-red-800 border-red-300', 'bg-orange-100 text-orange-800 border-orange-300',
+            'bg-amber-100 text-amber-800 border-amber-300', 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'bg-lime-100 text-lime-800 border-lime-300', 'bg-green-100 text-green-800 border-green-300',
+            'bg-emerald-100 text-emerald-800 border-emerald-300', 'bg-teal-100 text-teal-800 border-teal-300',
+            'bg-cyan-100 text-cyan-800 border-cyan-300', 'bg-sky-100 text-sky-800 border-sky-300',
+            'bg-blue-100 text-blue-800 border-blue-300', 'bg-indigo-100 text-indigo-800 border-indigo-300',
+            'bg-violet-100 text-violet-800 border-violet-300', 'bg-purple-100 text-purple-800 border-purple-300',
+            'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', 'bg-pink-100 text-pink-800 border-pink-300',
+            'bg-rose-100 text-rose-800 border-rose-300',
+             // Tons médios (bg-200, text-800/900, border-400)
+            'bg-red-200 text-red-900 border-red-400', 'bg-orange-200 text-orange-900 border-orange-400',
+            'bg-amber-200 text-amber-900 border-amber-400', 'bg-yellow-200 text-yellow-900 border-yellow-400',
+            'bg-lime-200 text-lime-900 border-lime-400', 'bg-green-200 text-green-900 border-green-400',
+            'bg-emerald-200 text-emerald-900 border-emerald-400', 'bg-teal-200 text-teal-900 border-teal-400',
+            'bg-cyan-200 text-cyan-900 border-cyan-400', 'bg-sky-200 text-sky-900 border-sky-400',
+            'bg-blue-200 text-blue-900 border-blue-400', 'bg-indigo-200 text-indigo-900 border-indigo-400',
+            'bg-violet-200 text-violet-900 border-violet-400', 'bg-purple-200 text-purple-900 border-purple-400',
+            'bg-fuchsia-200 text-fuchsia-900 border-fuchsia-400', 'bg-pink-200 text-pink-900 border-pink-400',
+            'bg-rose-200 text-rose-900 border-rose-400'
+        ];
+
+        function shuffleArray(array) { /* ... como antes ... */
+            for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; }
+        }
+
+        function applyRandomColors() {
+            const shuffledColors = [...colorClasses];
+            shuffleArray(shuffledColors);
+            const colorPrefixes = ['bg-', 'text-', 'border-'];
+            draggables.forEach(item => {
+                 const currentClasses = item.className.split(' ');
+                 const nonColorClasses = currentClasses.filter(cls => !colorPrefixes.some(prefix => cls.startsWith(prefix)));
+                 item.className = nonColorClasses.join(' ');
+            });
+            draggables.forEach((item, index) => {
+                const colorIndex = index % shuffledColors.length;
+                item.classList.add(...shuffledColors[colorIndex].split(' '));
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', applyRandomColors);
+
+        // --- Lógica de Arrastar (Drag) ---
+        draggables.forEach(draggable => { /* ... como antes ... */
+            draggable.addEventListener('dragstart', (e) => { draggedItem = e.target; setTimeout(() => { e.target.classList.add('dragging'); }, 0); e.dataTransfer.setData('text/plain', e.target.id); e.dataTransfer.effectAllowed = 'move'; });
+            draggable.addEventListener('dragend', (e) => { if (e.target && e.target.classList) { e.target.classList.remove('dragging'); } draggedItem = null; });
+        });
+
+        // --- Lógica de Soltar (Drop) ---
+        dropZones.forEach(zone => { /* ... como antes ... */
+            zone.addEventListener('dragenter', (e) => { e.preventDefault(); const targetZone = e.target.closest('.drop-zone'); if (targetZone) targetZone.classList.add('drag-over'); });
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+            zone.addEventListener('dragleave', (e) => { const targetZone = e.target.closest('.drop-zone'); if (targetZone && !targetZone.contains(e.relatedTarget)) { targetZone.classList.remove('drag-over'); } });
+            zone.addEventListener('drop', (e) => { e.preventDefault(); const targetZone = e.target.closest('.drop-zone'); if (!targetZone) return; targetZone.classList.remove('drag-over'); if (draggedItem) { targetZone.appendChild(draggedItem); draggedItem.classList.remove('item-incorrect'); } draggedItem = null; });
+        });
+
+        // --- Lógica de Verificação ---
+        checkButton.addEventListener('click', () => { /* ... como antes ... */
+            let correctCount = 0; let totalPlaced = 0; const errors = [];
+            draggables.forEach(item => item.classList.remove('item-incorrect')); errorDetails.innerHTML = '';
+            dropZones.forEach(zone => { const zoneCategory = zone.dataset.category; const droppedItems = zone.querySelectorAll('.draggable-item'); droppedItems.forEach(item => { totalPlaced++; const itemConcept = item.dataset.concept; if (itemConcept === zoneCategory) { correctCount++; } else { item.classList.add('item-incorrect'); errors.push(`'${item.textContent}' está na categoria errada.`); } }); });
+            const totalItems = draggables.length; const itemsStillInContainer = algorithmsContainer.querySelectorAll('.draggable-item').length;
+            feedbackMessage.className = 'mt-3 small fw-medium'; // Reset e aplica estilo menor
+            if (itemsStillInContainer > 0) { feedbackMessage.textContent = `Arraste todos os ${totalItems} algoritmos.`; feedbackMessage.classList.add('text-warning');
+            } else if (correctCount === totalItems) { feedbackMessage.textContent = 'Parabéns! Tudo correto!'; feedbackMessage.classList.add('text-success');
+            } else { feedbackMessage.textContent = `Correto: ${correctCount}/${totalItems}. Verifique os itens em vermelho.`; feedbackMessage.classList.add('text-danger'); if (errors.length > 0) { errorDetails.innerHTML = errors.map(err => `<p class="feedback-item">${err}</p>`).join(''); } }
+        });
+
+        // --- Lógica de Reiniciar ---
+        resetButton.addEventListener('click', () => { /* ... como antes ... */
+            draggables.forEach(draggable => { algorithmsContainer.appendChild(draggable); draggable.classList.remove('item-incorrect'); });
+            feedbackMessage.textContent = ''; feedbackMessage.className = 'mt-3 small fw-medium'; errorDetails.innerHTML = '';
+            applyRandomColors();
+        });
+
+    </script>
+{% endblock extra_js %}
