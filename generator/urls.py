@@ -25,6 +25,8 @@ urlpatterns = [
     # <<< URL FALTANTE ADICIONADA AQUI >>>
     path('jogos/', views.games_hub_view, name='games_hub'),
     path('jogo/arrastar-soltar/ml/', views.drag_drop_ml_game_view, name='drag_drop_ml_game'), # URL do jogo específico
+    path('jogo/scratch-js/', views.scratch_js_view, name='scratch_js_game'),
+
 
     # URL de Teste
     path('test-print/', views.test_print_view, name='test_print'),

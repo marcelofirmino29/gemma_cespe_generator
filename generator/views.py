@@ -875,6 +875,13 @@ def drag_drop_ml_game_view(request):
     return render(request, 'generator/jogos/game_drag_drop_ml.html', context)
 
 
+@login_required # Ou remova se for público
+def scratch_js_view(request):
+    """Renderiza a página estilo Scratch para aprender JS."""
+    context, _, _ = _get_base_context_and_service()
+    # A lógica principal será no frontend (HTML/JS)
+    return render(request, 'generator/jogos/scratch_js_learning.html', context)
+
 # --- Função de Teste (Mantida) ---
 @login_required
 def test_print_view(request):

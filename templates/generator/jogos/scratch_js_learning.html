@@ -1,0 +1,343 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Aprendendo JavaScript com Blockly{% endblock title %}
+
+{% block extra_head %}
+    {# 1. Incluir os scripts principais do Blockly #}
+    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    {# Incluir o gerador de código JavaScript do Blockly #}
+    <script src="https://unpkg.com/blockly/javascript_compressed.js"></script>
+    {# Incluir mensagens em Português (opcional, mas recomendado) #}
+    <script src="https://unpkg.com/blockly/msg/pt-br.js"></script>
+
+    <style>
+        /* Estilos para layout e Blockly */
+        .blockly-container {
+            display: flex;
+            height: calc(100vh - 180px); /* Altura ajustável */
+            min-height: 600px; /* Altura mínima maior */
+            gap: 1rem;
+        }
+        /* Área onde o Blockly será injetado */
+        #blocklyDiv {
+            flex-grow: 1; /* Ocupa a maior parte do espaço */
+            height: 100%;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+        }
+        /* Área do Palco/Saída */
+        .stage-area {
+            flex: 0 0 300px; /* Largura fixa */
+            height: 100%;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            background-color: var(--bs-tertiary-bg);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* Scroll se necessário */
+        }
+         .stage-header {
+            font-size: 0.9rem; font-weight: 600; color: var(--bs-secondary-color);
+            padding-bottom: 0.5rem; margin-bottom: 0.75rem; flex-shrink: 0;
+            text-align: center; border-bottom: 1px solid var(--bs-border-color);
+         }
+         .stage-output {
+             flex-grow: 1;
+             background-color: white;
+             border: 1px solid var(--bs-border-color-translucent);
+             border-radius: 0.375rem;
+             padding: 0.5rem;
+             font-family: monospace;
+             font-size: 0.8em;
+             color: #333;
+             overflow-y: auto;
+             margin-top: 0.5rem;
+             min-height: 100px; /* Altura mínima para saída */
+         }
+         [data-bs-theme="dark"] .stage-output {
+             background-color: #212529;
+             color: #adb5bd;
+         }
+         /* Esconde a toolbox XML padrão */
+         #toolbox {
+             display: none;
+         }
+         /* Ajusta altura do botão executar */
+         .run-button-container {
+             flex-shrink: 0; /* Evita que encolha */
+         }
+    </style>
+{% endblock extra_head %}
+
+{% block content %} {# Bloco content começa aqui #}
+
+    <h1 class="h4 fw-normal text-center mb-3">Aprendendo JavaScript com Blocos (Blockly)</h1>
+    <p class="text-center text-body-secondary small mb-4">Use a caixa de ferramentas para arrastar blocos para a área de trabalho e clique em 'Executar'.</p>
+
+    {# Container principal para Blockly e Palco #}
+    <div class="blockly-container">
+
+        {# 2. Div onde o workspace do Blockly será renderizado #}
+        {# A paleta de blocos (toolbox) será definida no JS a partir do XML abaixo #}
+        <div id="blocklyDiv"></div>
+
+        {# Área do Palco/Saída (mantida) #}
+        <aside class="stage-area">
+            <h2 class="stage-header">Palco / Saída</h2>
+            <div class="text-center mb-2 run-button-container">
+                <button id="run-button" class="btn btn-success btn-sm">
+                    <i class="bi bi-play-fill"></i> Executar Código
+                </button>
+            </div>
+            <div id="stage-output" class="stage-output">
+                (A saída do código executado aparecerá aqui ou no console)
+            </div>
+        </aside>
+
+    </div> {# Fim .blockly-container #}
+
+    {# 3. Definição da Toolbox (Caixa de Ferramentas) em XML #}
+    <xml xmlns="https://developers.google.com/blockly/xml" id="toolbox" style="display: none">
+        {# Categorias de Blocos #}
+        <category name="Lógica" colour="%{BKY_LOGIC_HUE}">
+            <block type="controls_if"></block>
+            <block type="logic_compare"></block>
+            <block type="logic_operation"></block>
+            <block type="logic_negate"></block>
+            <block type="logic_boolean"></block>
+        </category>
+        <category name="Loops" colour="%{BKY_LOOPS_HUE}">
+            <block type="controls_repeat_ext">
+                <value name="TIMES">
+                    <shadow type="math_number">
+                        <field name="NUM">10</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="controls_whileUntil"></block>
+        </category>
+        <category name="Matemática" colour="%{BKY_MATH_HUE}">
+            <block type="math_number">
+                <field name="NUM">123</field>
+            </block>
+            <block type="math_arithmetic"></block>
+            <block type="math_random_int">
+                 <value name="FROM"><shadow type="math_number"><field name="NUM">1</field></shadow></value>
+                 <value name="TO"><shadow type="math_number"><field name="NUM">100</field></shadow></value>
+            </block>
+        </category>
+        <category name="Texto" colour="%{BKY_TEXTS_HUE}">
+            <block type="text"></block>
+            <block type="text_print"></block>
+             <block type="text_prompt_ext">
+                <value name="TEXT">
+                    <shadow type="text">
+                        <field name="TEXT">Digite algo:</field>
+                    </shadow>
+                </value>
+            </block>
+        </category>
+        <category name="Variáveis" colour="%{BKY_VARIABLES_HUE}" custom="VARIABLE"></category>
+        <category name="Funções" colour="%{BKY_PROCEDURES_HUE}" custom="PROCEDURE"></category>
+        {# Categoria Customizada para Ações da Página #}
+        <category name="Ações da Página" colour="#9966FF"> {# Roxo (Looks) #}
+            <block type="alert_block"></block>
+            <block type="change_background_block"></block>
+            <block type="write_to_output_block"></block>
+        </category>
+    </xml>
+
+{% endblock content %} {# Bloco content termina aqui #}
+
+
+{% block extra_js %} {# Bloco extra_js começa aqui #}
+<script>
+    // Espera o DOM carregar completamente
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- Definição de Blocos Personalizados ---
+        // Bloco para alert()
+        Blockly.defineBlocksWithJsonArray([{
+          "type": "alert_block",
+          "message0": "mostrar alerta %1",
+          "args0": [
+            {
+              "type": "input_value", // Espera um bloco conectado aqui
+              "name": "MESSAGE",
+              "check": "String" // Aceita apenas blocos de texto
+            }
+          ],
+          "previousStatement": null, // Pode conectar acima
+          "nextStatement": null, // Pode conectar abaixo
+          "colour": "#9966FF", // Cor roxa (Looks)
+          "tooltip": "Exibe uma caixa de alerta com a mensagem.",
+          "helpUrl": ""
+        }]);
+
+        // Gerador de código JS para o bloco alert()
+        javascript.javascriptGenerator.forBlock['alert_block'] = function(block, generator) {
+          var msg = generator.valueToCode(block, 'MESSAGE', javascript.Order.NONE) || "''"; // Pega o código do bloco conectado ou string vazia
+          var code = `alert(${msg});\n`; // Gera o código alert()
+          return code;
+        };
+
+         // Bloco para mudar cor de fundo da saída
+        Blockly.defineBlocksWithJsonArray([{
+          "type": "change_background_block",
+          "message0": "mudar cor do fundo da saída para %1",
+          "args0": [
+            {
+              "type": "input_value",
+              "name": "COLOR",
+              "check": "String"
+            }
+          ],
+          "previousStatement": null,
+          "nextStatement": null,
+          "colour": "#9966FF", // Roxo (Looks)
+          "tooltip": "Muda a cor de fundo da área de Saída.",
+          "helpUrl": ""
+        }]);
+
+         // Gerador de código JS para mudar cor
+        javascript.javascriptGenerator.forBlock['change_background_block'] = function(block, generator) {
+          var color = generator.valueToCode(block, 'COLOR', javascript.Order.NONE) || "'white'"; // Default branco
+          // Acessa o elemento de saída diretamente
+          var code = `document.getElementById('stage-output').style.backgroundColor = ${color};\n`;
+          return code;
+        };
+
+        // Bloco para escrever na área de saída
+        Blockly.defineBlocksWithJsonArray([{
+          "type": "write_to_output_block",
+          "message0": "escrever na saída %1",
+          "args0": [
+            {
+              "type": "input_value",
+              "name": "TEXT",
+              // Aceita qualquer tipo para converter para string
+            }
+          ],
+          "previousStatement": null,
+          "nextStatement": null,
+          "colour": "#9966FF", // Roxo (Looks)
+          "tooltip": "Escreve um valor na área de Saída.",
+          "helpUrl": ""
+        }]);
+
+        // Gerador de código JS para escrever na saída
+        javascript.javascriptGenerator.forBlock['write_to_output_block'] = function(block, generator) {
+          var text = generator.valueToCode(block, 'TEXT', javascript.Order.NONE) || "''";
+          // Cria um elemento <p> e adiciona à saída
+          // Usar innerHTML pode ser um risco se o texto vier do usuário, mas aqui vem dos blocos.
+          // Uma abordagem mais segura seria usar textContent e criar nós de texto.
+          var code = `
+            try {
+              const outputDiv = document.getElementById('stage-output');
+              const p = document.createElement('p');
+              p.textContent = ${text}; // Converte o valor para texto
+              outputDiv.appendChild(p);
+              outputDiv.scrollTop = outputDiv.scrollHeight; // Rola para o final
+            } catch (e) { console.error("Erro ao escrever na saída:", e); }
+          \n`;
+          return code;
+        };
+
+
+        // --- Inicialização do Blockly ---
+        const blocklyDiv = document.getElementById('blocklyDiv');
+        const toolbox = document.getElementById('toolbox'); // Pega a definição XML da toolbox
+        const stageOutput = document.getElementById('stage-output');
+        const runButton = document.getElementById('run-button');
+
+        // Configurações do Workspace Blockly
+        const workspace = Blockly.inject(blocklyDiv, {
+            toolbox: toolbox, // Usa a toolbox definida no XML
+            grid: { // Adiciona grade de fundo
+                spacing: 20,
+                length: 3,
+                colour: '#ccc',
+                snap: true
+            },
+            trashcan: true, // Adiciona lixeira
+            zoom: { // Controles de zoom
+                controls: true,
+                wheel: true,
+                startScale: 1.0,
+                maxScale: 3,
+                minScale: 0.3,
+                scaleSpeed: 1.2
+            },
+            move: { // Controles de scroll/drag
+                scrollbars: true,
+                drag: true,
+                wheel: false // Desabilita scroll do mouse na área principal se wheel zoom estiver ativo
+            }
+        });
+
+        // --- Lógica de Execução ---
+        runButton.addEventListener('click', () => {
+            // Limpa a saída anterior
+            stageOutput.innerHTML = '';
+            stageOutput.style.backgroundColor = ''; // Reseta cor de fundo
+            console.clear(); // Limpa console do navegador
+
+            // Gera o código JavaScript a partir dos blocos no workspace
+            let code = '';
+            try {
+                // Define o gerador de código JavaScript
+                const jsGenerator = javascript.javascriptGenerator;
+                jsGenerator.INFINITE_LOOP_TRAP = '  Blockly.loopTrap(%1);\n'; // Proteção contra loop infinito
+                code = jsGenerator.workspaceToCode(workspace);
+                console.log("Código Gerado:\n", code); // Mostra código gerado no console
+                stageOutput.innerHTML += '<pre class="text-muted small"><code>// Código Gerado:\n' + escapeHtml(code) + '</code></pre><hr>'; // Mostra código na saída
+            } catch (e) {
+                console.error("Erro ao gerar código:", e);
+                stageOutput.innerHTML = `<p class="text-danger">Erro ao gerar código: ${e.message}</p>`;
+                return;
+            }
+
+            // Executa o código gerado (com try-catch e new Function)
+            if (code) {
+                stageOutput.innerHTML += '<p class="text-primary small">--- Iniciando Execução ---</p>';
+                try {
+                    // Adiciona uma função auxiliar para escrever na saída (disponível para o código gerado)
+                    const logToOutput = (message) => {
+                         const p = document.createElement('p');
+                         p.textContent = String(message); // Garante que é string
+                         stageOutput.appendChild(p);
+                         stageOutput.scrollTop = stageOutput.scrollHeight;
+                    };
+                    // Cria a função com o código gerado, passando a função auxiliar
+                    // A função 'Blockly' com 'loopTrap' é injetada pelo gerador de código
+                    const executableFunction = new Function('logToOutput', 'Blockly', code);
+                    // Executa a função
+                    executableFunction(logToOutput, { loopTrap: (id) => { /* Implementar checagem de loop infinito se necessário */ } });
+
+                    stageOutput.innerHTML += '<p class="text-success small">--- Execução Concluída ---</p>';
+                } catch (e) {
+                    console.error("Erro durante a execução:", e);
+                    stageOutput.innerHTML += `<p class="text-danger">Erro durante a execução: ${e.message}</p>`;
+                }
+            } else {
+                 stageOutput.innerHTML += '<p class="text-secondary small">Nenhum código para executar.</p>';
+            }
+             // Rola a saída para o final
+             stageOutput.scrollTop = stageOutput.scrollHeight;
+        });
+
+        // Função auxiliar para escapar HTML (evitar XSS ao mostrar código gerado)
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+         }
+
+    });
+</script>
+{% endblock extra_js %} {# Bloco extra_js termina aqui #}

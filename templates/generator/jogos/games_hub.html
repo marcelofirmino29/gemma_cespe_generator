@@ -63,32 +63,46 @@
     {% endif %}
 
     {# Lista de Jogos Disponíveis (SEM CARDS) #}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {# Grid responsivo #}
-        {% for game in games %}
-            <div class="col d-flex align-items-stretch"> {# align-items-stretch para altura igual #}
-                {# Usando div simples com classe .game-item #}
-                <div class="game-item w-100">
-                     <div class="text-center"> {# Centraliza ícone e título #}
-                         <i class="bi {{ game.icon|default:'bi-joystick' }} game-icon"></i>
-                         <h2 class="h6 mb-2 fw-medium">{{ game.name }}</h2> {# Título menor #}
-                     </div>
-                     <p class="game-description text-center"> {# Descrição centralizada #}
-                         {{ game.description }}
-                     </p>
-                     {# Link para o jogo específico #}
-                     <a href="{% url game.url_name %}" class="btn btn-success btn-sm">Jogar</a> {# Botão menor #}
-                </div>
+    {# Ajustado para 2 colunas em MD e LG para melhor visualização com poucos jogos #}
+    <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center">
+
+        {# Jogo 1: Arrastar e Soltar ML #}
+        <div class="col d-flex align-items-stretch">
+            <div class="game-item w-100">
+                 <div class="text-center">
+                     <i class="bi bi-arrows-move game-icon"></i> {# Ícone ajustado #}
+                     <h2 class="h6 mb-2 fw-medium">Arrastar e Soltar: Algoritmos ML</h2>
+                 </div>
+                 <p class="game-description text-center">
+                     Associe algoritmos como SVM, KNN e K-Means às suas categorias (Supervisionado, Não Supervisionado, Por Reforço).
+                 </p>
+                 {# Link para o jogo específico #}
+                 <a href="{% url 'generator:drag_drop_ml_game' %}" class="btn btn-success btn-sm">Jogar</a>
             </div>
-        {% empty %}
-            <div class="col-12">
-                <div class="alert alert-secondary text-center small">Nenhum jogo disponível no momento.</div>
+        </div>
+
+        {# # Jogo 2:  Card para o Jogo Scratch JS #}
+        <div class="col d-flex align-items-stretch">
+            <div class="game-item w-100">
+                 <div class="text-center">
+                     <i class="bi bi-puzzle-fill game-icon"></i> {# Ícone diferente #}
+                     <h2 class="h6 mb-2 fw-medium">Aprendendo JS com Blocos</h2>
+                 </div>
+                 <p class="game-description text-center">
+                     Explore conceitos básicos de JavaScript arrastando e soltando blocos de código (estilo Scratch).
+                 </p>
+                 {# Link para o jogo específico #}
+                 <a href="{% url 'generator:scratch_js_game' %}" class="btn btn-success btn-sm">Jogar</a>
             </div>
-        {% endfor %}
+        </div>
+
+        {# Adicione outros jogos aqui no futuro, seguindo o mesmo padrão #}
+
     </div>
 
     {# Botão para voltar #}
     <div class="text-center mt-5">
-        <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">Voltar ao Início</a> {# Botão menor #}
+        <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">Voltar ao Início</a>
     </div>
 
 {% endblock content %}
