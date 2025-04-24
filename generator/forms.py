@@ -10,7 +10,6 @@ from .models import AreaConhecimento, Topico
 logger = logging.getLogger(__name__)
 
 # --- DEFINIÇÕES GLOBAIS DE CHOICES ---
-# <<< LISTA DE ÁREAS ATUALIZADA PARA CONCURSOS >>>
 AREA_CHOICES = [
     # O campo ModelChoiceField adicionará '---------' automaticamente se 'empty_label' for usado
     # ou se required=False. Deixaremos a lista começar direto com as áreas.
@@ -51,8 +50,8 @@ DIFFICULTY_CHOICES = [
 ]
 
 COMPLEXITY_CHOICES = [
-    ('Intermediária', 'Intermediária'),
     ('Simples', 'Simples'),
+    ('Intermediária', 'Intermediária'),
     ('Complexa', 'Complexa'),
 ]
 
@@ -60,11 +59,6 @@ LANGUAGE_CHOICES = [
     ('pt-br', 'Português (Brasil)'),
     ('en', 'Inglês'),
 ]
-# --- FIM CHOICES ---
-
-
-# --- Formulário Gerador C/E ---
-
 
 # --- Formulário Gerador C/E (ATUALIZADO) ---
 class QuestionGeneratorForm(forms.Form):
@@ -118,8 +112,8 @@ class QuestionGeneratorForm(forms.Form):
     def clean_topic(self):
         topic = self.cleaned_data.get('topic', '').strip()
         # <<< Validação de comprimento mínimo restaurada >>>
-        if len(topic) < 10:
-            raise ValidationError("Tópico/Contexto muito curto (mín. 10 caracteres).")
+        if len(topic) < 4:
+            raise ValidationError("Tópico/Contexto muito curto (mín. 4 caracteres).")
         return topic
 
     def clean_num_questions(self):
@@ -165,7 +159,6 @@ class DiscursiveExamForm(forms.Form):
             raise ValidationError("O tópico/contexto base deve ser preenchido.")
         return text
 
-
 # --- Formulário para Geração de Resposta Modelo Discursiva ---
 class DiscursiveAnswerForm(forms.Form):
     essay_prompt = forms.CharField(label="Comando da Questão Discursiva", widget=forms.Textarea(attrs={'rows': 5, 'placeholder': 'Insira o enunciado...', 'class': 'form-control'}), required=True, help_text="Seja claro.")
@@ -185,7 +178,6 @@ class DiscursiveAnswerForm(forms.Form):
             raise ValidationError("O comando da questão discursiva deve ser preenchido.")
         return prompt
 
-
 # --- Formulário de Cadastro de Usuário ---
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, label="E-mail", help_text="Um e-mail válido, por favor.")
@@ -197,7 +189,6 @@ class CustomUserCreationForm(UserCreationForm):
         if email:
             email = email.lower()
         return email
-
 
 # --- Formulário de Configuração do Simulado (COM FILTRO DE ÁREA E TÓPICO) ---
 class SimuladoConfigForm(forms.Form):

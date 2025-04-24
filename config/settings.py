@@ -30,11 +30,29 @@ AI_GENERATION_TEMPERATURE = 1.0
 AI_MAX_QUESTIONS_PER_REQUEST = 20
 
 # Configurações de Segurança para a API Google AI (Usando Strings)
+# Em settings.py
+
 GOOGLE_AI_SAFETY_SETTINGS = [
-    {"category": "HARM_CATEGORY_HARASSMENT",       "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_HATE_SPEECH",      "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT","threshold": "BLOCK_NONE"},
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        # <<< ALTERADO PARA O MAIS FORTE >>>
+        "threshold": "BLOCK_LOW_AND_ABOVE",
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        # <<< ALTERADO PARA O MAIS FORTE >>>
+        "threshold": "BLOCK_LOW_AND_ABOVE",
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        # Mantenha como estava ou ajuste também se necessário
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE", # Ou BLOCK_LOW_AND_ABOVE
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+         # Mantenha como estava ou ajuste também se necessário
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE", # Ou BLOCK_LOW_AND_ABOVE
+    },
 ]
 
 # Verifica se a chave da API foi carregada (ESSENCIAL)
