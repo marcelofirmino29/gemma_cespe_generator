@@ -404,3 +404,61 @@ class QuestionGenerationService:
             raise AIServiceError(f"Erro na comunicação com a API (Disc. Eval Rigor): {e}")
 
 # --- FIM DA CLASSE ---
+
+    # --- <<< NOVO MÉTODO: get_ai_response >>> ---
+    def get_ai_response(self, user_prompt: str) -> str:
+        """
+        Envia um prompt genérico do usuário para a IA e retorna a resposta textual.
+        Aplica filtros de segurança e palavras proibidas.
+        """
+        if not self.model:
+            raise ConfigurationError("Serviço de IA não inicializado corretamente.")
+        if not user_prompt:
+            raise ValueError("O prompt do usuário não pode ser vazio.")
+
+        # Pode adicionar um prefixo/contexto se desejar, ou usar o prompt direto
+        # Ex: prompt = f"Responda à seguinte pergunta de forma clara e concisa:\n\n{user_prompt}"
+        prompt = user_prompt # Usando o prompt direto por enquanto
+
+        if self.safety_settings: logger.info(f"SERVICE CALL (Ask AI): Usando {len(self.safety_settings)} regras.")
+        else: logger.info("SERVICE CALL (Ask AI): Usando safety padrão.")
+        try:
+            model_name_info = self.model._model_name if hasattr(self.model, '_model_name') else 'N/A'
+            logger.info(f"Enviando req (Ask AI) API (Modelo: {model_name_info}, Prompt: {prompt[:100]}...)")
+
+            response = self.model.generate_content(
+                prompt,
+                generation_config=self.generation_config,
+                safety_settings=self.safety_settings
+            )
+
+            # Verificação de Bloqueio SAFETY
+            first_candidate = response.candidates[0] if response.candidates else None
+            if first_candidate and hasattr(first_candidate, 'finish_reason') and first_candidate.finish_reason.name == 'SAFETY':
+                logger.warning(f"Resposta IA bloqueada por SAFETY (Ask AI).")
+                raise AIResponseError(f"Resposta bloqueada pela API (SAFETY).")
+
+            if not first_candidate or not hasattr(first_candidate, 'content') or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts:
+                finish_reason = "N/A"
+                if first_candidate and hasattr(first_candidate, 'finish_reason'):
+                    finish_reason = first_candidate.finish_reason.name
+                logger.warning(f"Resposta IA vazia/inválida (Ask AI). Finish Reason: {finish_reason}.")
+                raise AIResponseError(f"IA retornou resposta vazia ou inválida (Finish Reason: {finish_reason}).")
+
+            generated_text = first_candidate.content.parts[0].text
+            logger.info("Texto (Ask AI) recebido da IA. Verificando filtro...")
+
+            # # CHAMA O FILTRO PERSONALIZADO
+            # self._check_forbidden_words(generated_text, "Pergunte à IA")
+
+            logger.info("Texto passou no filtro.")
+            return generated_text
+
+        except AIResponseError as e: # Repassa erros específicos da IA ou do filtro
+            raise e
+        except Exception as e: # Captura outros erros
+            logger.error(f"Erro GERAL durante chamada à API (Ask AI): {e}", exc_info=True)
+            raise AIServiceError(f"Erro na comunicação com a API (Ask AI): {e}")
+    # --- <<< FIM NOVO MÉTODO >>> ---
+
+# --- FIM DA CLASSE ---

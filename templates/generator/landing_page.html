@@ -71,6 +71,11 @@
         .card-games .btn { color: var(--bs-success-text-emphasis); background-color: var(--bs-success-bg-subtle); }
         .card-games .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
+        /* Cor para o card "Pergunte à IA" */
+        .card-ask-ai { background-color: var(--bs-info-bg-subtle); } 
+        .card-ask-ai .btn { color: var(--bs-secondary-text-emphasis); background-color: var(--bs-secondary-bg-subtle); }
+        .card-ask-ai .btn:hover { background-color: rgba(114, 76, 4, 0.3); }
+
     </style>
 {% endblock extra_head %}
 
@@ -189,30 +194,51 @@
 
     </div> {# Fim da row dos cards principais #}
 
-    {# --- Card para o Hub de Jogos --- #}
-    <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8">
-            <div class="card landing-card card-games shadow-sm"> {# Usa a classe de cor do jogo #}
+    {# --- Linha para Jogo e Pergunte à IA --- #}
+    {# Ajustado para centralizar 2 cards #}
+    <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center">
+
+        {# Card Hub de Jogos #}
+        <div class="col-lg-4 col-md-6"> {# Ajustado para caber 2 em LG/MD #}
+            <div class="card landing-card card-games shadow-sm">
+                <div class="card-body d-flex flex-column p-3">
+                    <div class="w-full mb-auto text-start">
+                        <h3 class="card-title d-flex align-items-center"> <i class="bi bi-joystick icon"></i> Hub de Jogos </h3>
+                        <p class="card-text"> Teste seus conhecimentos com jogos interativos sobre os temas estudados. </p>
+                    </div>
+                    <div class="mt-3 align-self-start">
+                        <a href="{% url 'generator:games_hub' %}" class="btn"> Ver Jogos </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# <<< ADICIONADO: Card Pergunte à IA >>> #}
+        <div class="col-lg-4 col-md-6"> {# Ajustado para caber 2 em LG/MD #}
+            <div class="card landing-card card-ask-ai shadow-sm">
                 <div class="card-body d-flex flex-column p-3">
                     <div class="w-full mb-auto text-start">
                         <h3 class="card-title d-flex align-items-center">
-                            <i class="bi bi-joystick icon"></i>
-                            Hub de Jogos
+                            <i class="bi bi-chat-dots-fill icon"></i>
+                            Pergunte à IA
                         </h3>
                         <p class="card-text">
-                            Teste seus conhecimentos! Arraste os algoritmos de Machine Learning para suas categorias corretas.
+                            Faça perguntas abertas, peça resumos, explicações ou gere textos sobre qualquer assunto.
                         </p>
                     </div>
                     <div class="mt-3 align-self-start">
-                        <a href="{% url 'generator:games_hub' %}" class="btn">
-                            Ver Jogos
+                        <a href="{% url 'generator:ask_ai' %}" class="btn">
+                            Acessar Pergunte à IA
                         </a>
                     </div>
                 </div>
             </div>
         </div>
+        {# <<< FIM DA ADIÇÃO >>> #}
+
     </div>
-    {# --- Fim do Card do Jogo --- #}
+    {# --- Fim da Linha de Jogo/Pergunte à IA --- #}
+
 
 {% endblock content %} {# Bloco content termina aqui #}
 

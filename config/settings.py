@@ -77,6 +77,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Nosso App:
     'generator',
+    'markdownify.apps.MarkdownifyConfig',
+
 ]
 
 MIDDLEWARE = [

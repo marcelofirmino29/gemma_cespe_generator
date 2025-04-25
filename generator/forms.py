@@ -234,3 +234,25 @@ class SimuladoConfigForm(forms.Form):
         cleaned_data = super().clean()
         # Não há validações adicionais específicas para este formulário no momento
         return cleaned_data
+    
+    # --- NOVO FORMULÁRIO: Pergunte à IA ---
+class AskAIForm(forms.Form):
+    user_question = forms.CharField(
+        label="Sua Pergunta",
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'placeholder': 'Digite sua pergunta ou comando para a IA...',
+            'class': 'form-control'
+        }),
+        required=True,
+        help_text="Seja claro e específico na sua pergunta."
+    )
+    # Poderíamos adicionar opções aqui (ex: modelo a usar, temperatura), mas começaremos simples.
+
+    def clean_user_question(self):
+        question = self.cleaned_data.get('user_question', '').strip()
+        if len(question) < 5:
+            raise ValidationError("Sua pergunta parece muito curta. Tente ser mais específico.")
+        # Adicionar outras validações se necessário
+        return question
+# --- FIM NOVO FORMULÁRIO ---

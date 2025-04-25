@@ -26,7 +26,9 @@ urlpatterns = [
     path('jogo/arrastar-soltar/ml/', views.drag_drop_ml_game_view, name='drag_drop_ml_game'),
     path('jogo/scratch-js/', views.scratch_js_view, name='scratch_js_game'),
     path('jogo/word_search_lgpd_game', views.word_search_lgpd_view, name='word_search_lgpd_game'),
-    # <<< FIM DA ADIÇÃO >>>
+
+    # Módulo de Perguntas
+    path('pergunte-ia/', views.ask_ai_view, name='ask_ai'),
 
     # URL de Teste
     path('test-print/', views.test_print_view, name='test_print'),

@@ -1,0 +1,202 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+{% load markdownify %}
+
+{% block title %}Pergunte à IA - Gerador IA{% endblock title %}
+
+{% block extra_head %}
+    <style>
+        /* Font family similar ao Google Sans (você pode precisar importar essa fonte) */
+        body {
+            font-family: 'Roboto', sans-serif; /* Substitua por 'Google Sans' se disponível */
+        }
+
+        /* Container principal centralizado */
+        .ask-ai-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 90%; /* Deixa mais fluido em telas maiores */
+            border-radius: 8px;
+            /* Fundo branco ou levemente acinzentado como o Google */
+            background-color: var(--bs-body-bg); /* Usa o fundo padrão do Bootstrap para fluidez */
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1); /* Sutil sombra como a do Google */
+        }
+
+        /* Título "Pergunte à IA" */
+        .ask-ai-title {
+            font-size: 2.5rem;
+            font-weight: 500; /* Um pouco menos negrito que o padrão */
+            color: var(--bs-heading-color); /* Cor dos títulos do Bootstrap */
+            margin-bottom: 1.5rem;
+        }
+
+        /* Descrição abaixo do título */
+        .ask-ai-description {
+            color: var(--bs-body-secondary); /* Cor secundária do texto do Bootstrap */
+            margin-bottom: 2rem;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        /* Formulário de Pergunta */
+        .ask-ai-form {
+            width: 100%;
+            max-width: 600px; /* Largura máxima para o formulário */
+            margin-bottom: 2rem;
+        }
+
+        .ask-ai-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Estilização da textarea como a barra de pesquisa do Google */
+        #id_user_question {
+            flex-grow: 1;
+            padding: 0.8rem 1.2rem;
+            padding-left: 2.5rem; /* Espaço para o ícone */
+            border: 1px solid #dfe1e5; /* Borda sutil */
+            border-radius: 24px; /* Borda arredondada estilo Google */
+            font-size: 1rem;
+            line-height: 1.5;
+            outline: none;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05); /* Sutil sombra no input */
+            transition: box-shadow 0.2s ease;
+        }
+
+        #id_user_question:focus {
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada no foco */
+            border-color: #4285f4; /* Cor azul de foco do Google */
+        }
+
+        #id_user_question::placeholder {
+            color: #9aa0a6; /* Cor do placeholder do Google */
+        }
+
+        .ask-ai-search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9aa0a6;
+        }
+
+        /* Oculta o label padrão do Django */
+        label[for='id_user_question'] {
+            display: none;
+        }
+
+        /* Botão de Envio */
+        .ask-ai-submit-button {
+            background-color: #4285f4; /* Azul do Google */
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-left: 1rem; /* Espaçamento do input */
+        }
+
+        .ask-ai-submit-button:hover {
+            background-color: #357ae8; /* Azul mais escuro no hover */
+        }
+
+        /* Contêiner para a resposta da IA */
+        .ai-response-container {
+            width: 100%;
+            max-width: 800px; /* Largura máxima para a resposta */
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            background-color: var(--bs-tertiary-bg); /* Fundo da resposta */
+            border: 1px solid var(--bs-border-color);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .ai-response-title {
+            font-size: 1.2rem;
+            color: var(--bs-heading-color);
+            margin-bottom: 1rem;
+        }
+
+        .ai-response-box {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--bs-body-color);
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Estilos para elementos Markdown dentro da resposta */
+        .ai-response-box h1, .ai-response-box h2, .ai-response-box h3 {
+            color: var(--bs-heading-color);
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+        }
+        .ai-response-box h1 { font-size: 1.8rem; }
+        .ai-response-box h2 { font-size: 1.6rem; }
+        .ai-response-box h3 { font-size: 1.4rem; }
+        .ai-response-box p { margin-bottom: 1rem; }
+        .ai-response-box ul, .ai-response-box ol { margin-left: 1.5rem; margin-bottom: 1rem; padding-left: 1rem;}
+        .ai-response-box li { margin-bottom: 0.5rem; }
+        .ai-response-box code { font-size: 0.9rem; background-color: var(--bs-code-bg); color: var(--bs-code-color); padding: 0.2rem 0.4rem; border-radius: 4px; }
+        .ai-response-box pre { background-color: var(--bs-code-bg); color: var(--bs-code-color); padding: 1rem; border-radius: 6px; overflow-x: auto; margin-bottom: 1rem; }
+        .ai-response-box blockquote { border-left: 0.25rem solid var(--bs-blockquote-border-color); padding-left: 1rem; margin-left: 0; color: var(--bs-blockquote-color); font-style: italic; }
+        .ai-response-box a { color: var(--bs-link-color); text-decoration: none; font-weight: 500; }
+        .ai-response-box a:hover { text-decoration: underline; color: var(--bs-link-hover-color); }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+{% endblock extra_head %}
+
+{% block content %}
+    <div class="ask-ai-container">
+        <h1 class="ask-ai-title">Pergunte à IA</h1>
+        <p class="ask-ai-description">Faça sua pergunta para obter respostas e insights.</p>
+
+        {# Mensagens #}
+        {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small w-100 mb-3"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
+        {% if error_message and not form.errors %} <div class="alert alert-danger small w-100 mb-3">{{ error_message }}</div> {% endif %}
+
+        {# Formulário de Pergunta #}
+        <form method="post" action="{% url 'generator:ask_ai' %}" class="ask-ai-form">
+            {% csrf_token %}
+            <div class="ask-ai-input-group mb-3">
+                <svg class="ask-ai-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                    <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z" clip-rule="evenodd" />
+                </svg>
+                {{ form.user_question }}
+                <button type="submit" class="ask-ai-submit-button">Pesquisar</button>
+            </div>
+            {% if form.user_question.help_text %}<div class="form-text text-muted small text-center">{{ form.user_question.help_text|safe }}</div>{% endif %}
+            {% if form.user_question.errors %}<div class="invalid-feedback d-block">{{ form.user_question.errors|striptags }}</div>{% endif %}
+        </form>
+
+        {# Exibição da Resposta da IA #}
+        {% if ai_response %}
+            <div class="ai-response-container">
+                <h2 class="ai-response-title">Resposta:</h2>
+                {% if user_question %}
+                    <p class="text-muted small"><em>Para a pergunta: "{{ user_question|truncatechars:100 }}"</em></p>
+                {% endif %}
+                <div class="ai-response-box">
+                    {{ ai_response|markdownify|safe }}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+{# Nenhum JS extra necessário para renderizar markdown com django-markdownify #}
+{% endblock extra_js %}

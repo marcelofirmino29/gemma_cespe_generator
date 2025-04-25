@@ -12,7 +12,7 @@ from datetime import datetime # Garanta que datetime está importado
 #from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Importa Formulários
-from .forms import QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, CustomUserCreationForm
+from .forms import QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, AskAIForm, CustomUserCreationForm
 # Importa Serviço e Exceções
 from .services import QuestionGenerationService
 from .exceptions import ( GeneratorError, ConfigurationError, AIServiceError, AIResponseError, ParsingError )
@@ -888,6 +888,47 @@ def word_search_lgpd_view(request):
     """Renderiza a página do jogo de caça-palavras sobre LGPD."""
     context, _, _ = _get_base_context_and_service()
     return render(request, 'generator/jogos/game_word_search_lgpd.html', context)
+
+# --- NOVA VIEW: Pergunte à IA ---
+@login_required
+def ask_ai_view(request):
+    """Exibe um formulário para o usuário fazer uma pergunta e mostra a resposta da IA."""
+    context, service, service_initialized = _get_base_context_and_service()
+    ai_response = None
+    user_question = None # Para exibir a pergunta feita
+
+    if request.method == 'POST':
+        form = AskAIForm(request.POST)
+        if form.is_valid():
+            user_question = form.cleaned_data['user_question']
+            logger.info(f"User '{request.user.username}' perguntou: '{user_question[:100]}...'")
+
+            if service_initialized and service:
+                try:
+                    # Chama um método genérico no serviço (precisaremos criar)
+                    ai_response = service.get_ai_response(user_question)
+                    logger.info("Resposta da IA recebida com sucesso.")
+                    # Limpa o formulário após sucesso
+                    form = AskAIForm() # Cria um novo form vazio
+                except (AIResponseError, AIServiceError, Exception) as e:
+                    logger.error(f"Erro ao obter resposta da IA: {e}", exc_info=True)
+                    messages.error(request, f"Erro ao comunicar com a IA: {e}")
+                    # Mantém o form preenchido com a pergunta que deu erro
+            else:
+                messages.error(request, "Serviço de IA indisponível.")
+                # Mantém o form preenchido
+        else:
+            logger.warning(f"Formulário 'Pergunte à IA' inválido: {form.errors.as_json()}")
+            # O form com erros será passado para o contexto abaixo
+    else: # GET Request
+        form = AskAIForm()
+
+    context['form'] = form
+    context['ai_response'] = ai_response
+    context['user_question'] = user_question # Passa a pergunta feita para exibição
+
+    return render(request, 'generator/ask_ai.html', context)
+# --- FIM NOVA VIEW ---
 
 # --- Função de Teste (Mantida) ---
 @login_required
