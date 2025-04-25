@@ -1,0 +1,93 @@
+# Arquivo .dockerignore para Projeto Django
+
+# Git / Versionamento
+.git
+.gitignore
+
+# Docker (geralmente não precisa destes arquivos dentro da imagem)
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.yaml
+
+# Ambientes Virtuais Python
+venv
+.venv
+env
+ENV
+*/env/
+*/venv/
+*/.venv/
+
+# Bytecode e Cache Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Artefatos de build/distribuição Python
+dist/
+build/
+*.egg
+wheels/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Arquivos específicos de SO
+.DS_Store
+Thumbs.db
+
+# Arquivos de configuração de IDE
+.idea/
+.vscode/
+*.iml
+
+# Segredos e Configurações Locais (use variáveis de ambiente ou Secret Manager)
+.env*
+*.env
+local_settings.py
+settings_local.py
+config.local.yaml
+
+# Banco de Dados Local (ex: SQLite para desenvolvimento)
+*.sqlite3
+db.sqlite3
+*.sql
+
+# Arquivos de Log
+*.log
+logs/
+
+# Testes e Cobertura
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Arquivos de Mídia (se gerenciados externamente, como Cloud Storage)
+# Descomente se seus arquivos de mídia não precisam estar na imagem
+# media/
+# mediafiles/
+
+# Arquivos Estáticos Coletados Localmente
+# Se você às vezes roda collectstatic localmente, ignore o diretório STATIC_ROOT
+# para não copiar arquivos antigos para a imagem antes do collectstatic no Dockerfile.
+# Substitua 'staticfiles' pelo valor do seu STATIC_ROOT se for diferente.
+# staticfiles/
+
+# Dependências de Frontend (se você usa Node.js/npm/yarn no projeto)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos temporários de editores
+*~
+*.swp
+*.swo
