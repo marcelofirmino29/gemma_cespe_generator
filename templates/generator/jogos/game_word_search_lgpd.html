@@ -1,0 +1,177 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Caça-Palavras: LGPD{% endblock title %}
+
+{% block extra_head %}
+<style>
+    /* Estilos como antes... */
+    .word-search-container-prova { }
+    #word-search-grid { display: grid; border: 2px solid var(--bs-border-color-translucent); background-color: var(--bs-body-bg); padding: 0.5rem; border-radius: 0.25rem; aspect-ratio: 1 / 1; max-width: 550px; width: 100%; box-shadow: var(--bs-box-shadow-sm); }
+    .grid-cell { display: flex; justify-content: center; align-items: center; font-family: monospace; font-size: clamp(0.8rem, 2vw, 1.25rem); font-weight: bold; text-transform: uppercase; cursor: pointer; user-select: none; background-color: transparent; transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out; }
+    .grid-cell.selected { background-color: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); }
+    .grid-cell.found { background-color: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
+    .grid-cell.found.selected { background-color: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
+    /* <<< NOVO: Estilo para palavras reveladas >>> */
+    .grid-cell.revealed {
+        background-color: var(--bs-info-bg-subtle); /* Azul claro para reveladas */
+        color: var(--bs-info-text-emphasis);
+        /* Sobrescreve 'found' se for revelada */
+    }
+    .grid-cell.revealed.selected {
+         background-color: var(--bs-info-bg-subtle);
+         color: var(--bs-info-text-emphasis);
+    }
+
+    #clue-list-container { padding: 1rem 1.5rem; border: 1px solid var(--bs-border-color); border-radius: 0.5rem; background-color: var(--bs-tertiary-bg); height: 100%; }
+    #clue-list-container h2 { font-size: 0.95rem; font-weight: 600; color: var(--bs-secondary-color); padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--bs-border-color); text-align: center; }
+    #clue-list { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; }
+    #clue-list li { margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1px dotted var(--bs-border-color-translucent); color: var(--bs-body-color); transition: color 0.2s, text-decoration 0.2s; line-height: 1.4; }
+    #clue-list li:last-child { border-bottom: none; margin-bottom: 0; }
+    #clue-list li.found { color: var(--bs-success); font-weight: 500; }
+    #clue-list li .clue-number { font-weight: bold; margin-right: 0.5em; color: var(--bs-emphasis-color); }
+    #clue-list li.found .clue-number { color: var(--bs-success); }
+    .controls { margin-top: 1.5rem; text-align: center; }
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1 class="h5 fw-normal text-center mb-2">Caça-Palavras: Termos da LGPD</h1>
+    <p class="text-center text-body-secondary small mb-4">Encontre as palavras na grade usando as definições como pista. Clique e arraste para selecionar.</p>
+
+    <div class="row g-4 word-search-container-prova">
+        <div class="col-md-7 col-lg-8 order-md-1">
+            <div id="word-search-grid">
+                 <div class="d-flex justify-content-center align-items-center h-100"> <div class="spinner-border text-primary spinner-border-sm" role="status"> <span class="visually-hidden">Carregando...</span> </div> </div>
+            </div>
+             <div class="controls d-md-none mt-3">
+                {# <<< ADICIONADO Botão Resolver/Desistir para SM >>> #}
+                <button id="reveal-btn-sm" class="btn btn-outline-warning btn-sm me-2">Mostrar Respostas</button>
+                <button id="reset-game-btn-sm" class="btn btn-outline-secondary btn-sm">Reiniciar Jogo</button>
+            </div>
+        </div>
+
+        <div class="col-md-5 col-lg-4 order-md-2">
+            <div id="clue-list-container">
+                <h2 class="text-center">Pistas</h2>
+                <ul id="clue-list"></ul>
+                <p id="found-counter" class="small text-muted text-center mt-3 mb-0">Encontradas: 0 / 0</p>
+            </div>
+             <div class="controls d-none d-md-block">
+                 {# <<< ADICIONADO Botão Resolver/Desistir para MD+ >>> #}
+                 <button id="reveal-btn-md" class="btn btn-outline-warning btn-sm me-2">Mostrar Respostas</button>
+                 <button id="reset-game-btn-md" class="btn btn-outline-secondary btn-sm">Reiniciar Jogo</button>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const termsData = [ /* ... lista de termos como antes ... */
+        { word: 'DADOS', clue: 'Informação relacionada a pessoa natural identificada ou identificável.' }, { word: 'TITULAR', clue: 'Pessoa natural a quem os dados pessoais se referem.' }, { word: 'CONTROLADOR', clue: 'Pessoa ou entidade que determina meios e finalidades do tratamento.' }, { word: 'OPERADOR', clue: 'Pessoa ou entidade que realiza o tratamento em nome do controlador.' }, { word: 'ANPD', clue: 'Órgão responsável por fiscalizar e garantir o cumprimento da LGPD. (Sigla)' }, { word: 'CONSENTIMENTO', clue: 'Manifestação livre, informada e inequívoca pela qual o titular concorda com o tratamento.' }, { word: 'FINALIDADE', clue: 'Propósito específico para o qual os dados são tratados.' }, { word: 'NECESSIDADE', clue: 'Tratamento limitado ao mínimo necessário para a finalidade.' }, { word: 'DIREITOS', clue: 'Garantias do titular sobre seus dados (acesso, correção, etc.).' }, { word: 'SANCOES', clue: 'Penalidades aplicadas pela ANPD em caso de descumprimento.' }, { word: 'RELATORIO', clue: 'Documento de impacto à proteção de dados pessoais (RIPD).' }, { word: 'IMPACTO', clue: 'Avaliação dos riscos que o tratamento pode gerar (parte do RIPD).' }, { word: 'TRANSFERENCIA', clue: 'Envio de dados pessoais para fora do território nacional.' }, { word: 'SEGURANCA', clue: 'Medidas técnicas e administrativas para proteger os dados.' }, { word: 'PRIVACIDADE', clue: 'Direito fundamental à proteção da vida privada e dos dados.' }, { word: 'ANONIMIZACAO', clue: 'Técnica que impede a identificação do titular do dado.' }, { word: 'TRATAMENTO', clue: 'Qualquer operação com dados: coleta, uso, acesso, etc.' }, { word: 'SENSIVEL', clue: 'Dado sobre origem racial, saúde, vida sexual, biometria, etc.' }, { word: 'ENCARREGADO', clue: 'Pessoa indicada para atuar como canal de comunicação (DPO).' }, { word: 'BASESLEGAIS', clue: 'Hipóteses que autorizam o tratamento de dados.' }
+    ].map(item => ({ ...item, word: item.word.toUpperCase() }));
+
+    const words = termsData.map(item => item.word);
+    const clues = termsData;
+    const gridSize = 15;
+    const gridElement = document.getElementById('word-search-grid');
+    const clueListElement = document.getElementById('clue-list');
+    const foundCounterElement = document.getElementById('found-counter');
+    const resetButtons = document.querySelectorAll('#reset-game-btn-sm, #reset-game-btn-md');
+    // <<< NOVO: Seleciona os botões de revelar >>>
+    const revealButtons = document.querySelectorAll('#reveal-btn-sm, #reveal-btn-md');
+
+    let grid = [];
+    let wordLocations = {};
+    let foundWords = new Set();
+    let isSelecting = false;
+    let selection = [];
+    let startCell = null;
+    let gameEnded = false; // Flag para controlar o fim do jogo
+
+    // --- Funções de Geração da Grade (sem alterações) ---
+    function fillGridWithRandomLetters() { /* ... */ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; for (let r = 0; r < gridSize; r++) { for (let c = 0; c < gridSize; c++) { if (!grid[r][c]) { grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)]; } } } }
+    function placeWord(word) { /* ... */ const directions = [ { dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }, { dr: 0, dc: -1 }, { dr: -1, dc: 0 }, { dr: 1, dc: -1 }, { dr: -1, dc: 1 }, { dr: -1, dc: -1 } ]; const len = word.length; let placed = false; let attempts = 0; while (!placed && attempts < 150) { attempts++; const direction = directions[Math.floor(Math.random() * directions.length)]; const startRow = Math.floor(Math.random() * gridSize); const startCol = Math.floor(Math.random() * gridSize); let canPlace = true; let currentLocations = []; for (let i = 0; i < len; i++) { const r = startRow + i * direction.dr; const c = startCol + i * direction.dc; if (r < 0 || r >= gridSize || c < 0 || c >= gridSize) { canPlace = false; break; } if (grid[r][c] && grid[r][c] !== word[i]) { canPlace = false; break; } currentLocations.push({ row: r, col: c }); } if (canPlace) { wordLocations[word] = []; for (let i = 0; i < len; i++) { const loc = currentLocations[i]; grid[loc.row][loc.col] = word[i]; wordLocations[word].push(loc); } placed = true; } } if (!placed) console.warn(`Não foi possível colocar: ${word}`); return placed; }
+    function renderGrid() { /* ... */ gridElement.innerHTML = ''; gridElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`; gridElement.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`; for (let r = 0; r < gridSize; r++) { for (let c = 0; c < gridSize; c++) { const cell = document.createElement('div'); cell.classList.add('grid-cell'); cell.dataset.row = r; cell.dataset.col = c; cell.textContent = grid[r][c]; cell.addEventListener('mousedown', handleMouseDown); cell.addEventListener('mouseover', handleMouseOver); gridElement.appendChild(cell); } } }
+    function renderClueList() { /* ... */ clueListElement.innerHTML = ''; const shuffledClues = [...clues]; shuffleArray(shuffledClues); shuffledClues.forEach((item, index) => { const li = document.createElement('li'); li.id = `clue-for-${item.word}`; li.innerHTML = `<span class="clue-number">${index + 1}.</span> ${item.clue}`; if (foundWords.has(item.word)) { li.classList.add('found'); } clueListElement.appendChild(li); }); updateFoundCounter(); }
+    function shuffleArray(array) { /* ... */ for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+    function updateFoundCounter() { /* ... */ foundCounterElement.textContent = `Encontradas: ${foundWords.size} / ${words.length}`; }
+
+    // ---- Lógica de Seleção ----
+    function handleMouseDown(e) { if (gameEnded || e.target.classList.contains('found')) return; isSelecting = true; selection = []; clearSelectionClasses(); startCell = { row: parseInt(e.target.dataset.row), col: parseInt(e.target.dataset.col) }; selectCell(e.target); document.addEventListener('mouseup', handleMouseUp); }
+    function handleMouseOver(e) { if (!isSelecting || gameEnded || e.target.classList.contains('found')) return; const currentRow = parseInt(e.target.dataset.row); const currentCol = parseInt(e.target.dataset.col); clearSelectionClasses(); selection = []; const dr = Math.sign(currentRow - startCell.row); const dc = Math.sign(currentCol - startCell.col); if (dr === 0 || dc === 0 || Math.abs(currentRow - startCell.row) === Math.abs(currentCol - startCell.col)) { let r = startCell.row; let c = startCell.col; while (true) { const cellElement = gridElement.querySelector(`.grid-cell[data-row="${r}"][data-col="${c}"]`); if (cellElement && !cellElement.classList.contains('found')) { selectCell(cellElement); } else { break; } if (r === currentRow && c === currentCol) break; r += dr; c += dc; } } else { const startElement = gridElement.querySelector(`.grid-cell[data-row="${startCell.row}"][data-col="${startCell.col}"]`); if(startElement) selectCell(startElement); } }
+    function handleMouseUp() { if (!isSelecting || gameEnded) return; isSelecting = false; document.removeEventListener('mouseup', handleMouseUp); checkSelectedWord(); }
+    function selectCell(cellElement) { cellElement.classList.add('selected'); selection.push({ row: parseInt(cellElement.dataset.row), col: parseInt(cellElement.dataset.col), element: cellElement, letter: cellElement.textContent }); }
+    function clearSelectionClasses() { selection.forEach(cellData => { if (cellData.element && !cellData.element.classList.contains('found')) { cellData.element.classList.remove('selected'); } }); }
+    function checkSelectedWord() { /* ... como antes, mas verifica gameEnded ... */ if (gameEnded || selection.length === 0) return; let selectedWordForward = selection.map(cell => cell.letter).join(''); let selectedWordBackward = selection.map(cell => cell.letter).reverse().join(''); let wordFound = false; let foundWordName = null; if (words.includes(selectedWordForward) && !foundWords.has(selectedWordForward)) { wordFound = true; foundWordName = selectedWordForward; } else if (words.includes(selectedWordBackward) && !foundWords.has(selectedWordBackward)) { wordFound = true; foundWordName = selectedWordBackward; selection.reverse(); } if (wordFound) { foundWords.add(foundWordName); selection.forEach(cellData => { cellData.element.classList.remove('selected'); cellData.element.classList.add('found'); }); const listItem = document.getElementById(`clue-for-${foundWordName}`); if (listItem) { listItem.classList.add('found'); } updateFoundCounter(); if (foundWords.size === words.length) { gameEnded = true; setTimeout(() => { alert('Parabéns! Você encontrou todas as palavras!'); }, 300); } } else { clearSelectionClasses(); } selection = []; }
+
+    // <<< NOVA FUNÇÃO: Revelar Respostas >>>
+    function revealAllWords() {
+        if (gameEnded) return; // Não faz nada se já terminou
+        gameEnded = true; // Marca o jogo como terminado
+        isSelecting = false; // Para qualquer seleção em andamento
+        clearSelectionClasses(); // Limpa seleção visual atual
+        selection = [];
+
+        words.forEach(word => {
+            if (!foundWords.has(word)) {
+                const locations = wordLocations[word];
+                if (locations) {
+                    locations.forEach(loc => {
+                        const cellElement = gridElement.querySelector(`.grid-cell[data-row="${loc.row}"][data-col="${loc.col}"]`);
+                        if (cellElement) {
+                            cellElement.classList.add('revealed'); // Adiciona classe para destacar reveladas
+                        }
+                    });
+                }
+                // Marca na lista também
+                const listItem = document.getElementById(`clue-for-${word}`);
+                if (listItem) {
+                    listItem.classList.add('found'); // Reutiliza a classe 'found' para a lista
+                }
+                foundWords.add(word); // Adiciona ao set de encontradas
+            }
+        });
+        updateFoundCounter(); // Atualiza contador para mostrar todas
+        alert('Todas as palavras foram reveladas!');
+    }
+
+    // Função para inicializar/reiniciar o jogo
+    function initGame() {
+        grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(null));
+        wordLocations = {};
+        foundWords.clear();
+        selection = [];
+        isSelecting = false;
+        startCell = null;
+        gameEnded = false; // Reseta flag de fim de jogo
+
+        let successfullyPlaced = 0;
+        words.forEach(word => { if(placeWord(word)) successfullyPlaced++; });
+        console.log(`Colocadas: ${successfullyPlaced}/${words.length}`);
+
+        fillGridWithRandomLetters();
+        renderGrid();
+        renderClueList(); // Renderiza a lista de PISTAS
+    }
+
+    // Evento do botão reiniciar
+    resetButtons.forEach(button => {
+        button.addEventListener('click', initGame);
+    });
+
+    // <<< NOVO: Evento do botão revelar >>>
+    revealButtons.forEach(button => {
+        button.addEventListener('click', revealAllWords);
+    });
+
+
+    // Inicializa o jogo
+    initGame();
+
+});
+</script>
+{% endblock extra_js %}

@@ -22,11 +22,11 @@ urlpatterns = [
     path('simulado/resultado/', views.resultado_simulado_view, name='resultado_simulado'),
 
     # URLs do Módulo Jogos
-    # <<< URL FALTANTE ADICIONADA AQUI >>>
     path('jogos/', views.games_hub_view, name='games_hub'),
-    path('jogo/arrastar-soltar/ml/', views.drag_drop_ml_game_view, name='drag_drop_ml_game'), # URL do jogo específico
+    path('jogo/arrastar-soltar/ml/', views.drag_drop_ml_game_view, name='drag_drop_ml_game'),
     path('jogo/scratch-js/', views.scratch_js_view, name='scratch_js_game'),
-
+    path('jogo/word_search_lgpd_game', views.word_search_lgpd_view, name='word_search_lgpd_game'),
+    # <<< FIM DA ADIÇÃO >>>
 
     # URL de Teste
     path('test-print/', views.test_print_view, name='test_print'),

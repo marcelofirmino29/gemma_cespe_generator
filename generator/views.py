@@ -882,6 +882,13 @@ def scratch_js_view(request):
     # A lógica principal será no frontend (HTML/JS)
     return render(request, 'generator/jogos/scratch_js_learning.html', context)
 
+# --- VIEW PARA O JOGO CAÇA-PALAVRAS LGPD ---
+@login_required
+def word_search_lgpd_view(request):
+    """Renderiza a página do jogo de caça-palavras sobre LGPD."""
+    context, _, _ = _get_base_context_and_service()
+    return render(request, 'generator/jogos/game_word_search_lgpd.html', context)
+
 # --- Função de Teste (Mantida) ---
 @login_required
 def test_print_view(request):
