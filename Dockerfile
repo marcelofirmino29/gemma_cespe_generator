@@ -42,7 +42,7 @@ EXPOSE 8000
 
 # Comando para rodar a aplicação (Gunicorn/WSGI)
 # Verifique se 'docling_django.wsgi:application' é o caminho correto
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "docling_django.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "gemma-cespe-generator.wsgi:application"]
 
 # Exemplo alternativo usando Uvicorn para ASGI
 # CMD ["uvicorn", "docling_django.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
