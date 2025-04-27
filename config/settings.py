@@ -17,15 +17,12 @@ load_dotenv(dotenv_path=dotenv_path)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-fallback-key-change-me')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# Lê a variável de ambiente DJANGO_DEBUG. Se não existir, assume 'True'.
-# Converte para booleano: DEBUG será True se DJANGO_DEBUG for diferente de 'False'.
-# Para produção, defina DJANGO_DEBUG=False no seu .env
 DEBUG = False
 
 #ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-ALLOWED_HOSTS = ['*'] # Mantenha como estava ou ajuste conforme necessário para produção
+ALLOWED_HOSTS = ['https://generator-v1-2-754311810435.us-central1.run.app','*'] # Mantenha como estava ou ajuste conforme necessário para produção
+CSRF_TRUSTED_ORIGINS = ['https://generator-v1-2-754311810435.us-central1.run.app'] 
 
 
 # --- Configurações da IA ---
