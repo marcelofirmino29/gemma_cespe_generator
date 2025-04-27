@@ -17,7 +17,7 @@ COPY . .
 
 # --- Database Migrations ---
 # Executa as migrations antes de criar o superuser ou iniciar o servidor
-RUN python manage.py migrate
+# RUN python manage.py migrate
 
 # --- Default Runtime Command ---
 CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
