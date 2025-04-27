@@ -35,4 +35,8 @@ urlpatterns = [
 
     # --- URL de Registro (geralmente no final) ---
     path('accounts/register/', views.register_view, name='register'),
+
+# --- URLs de Área ---
+    path('areas/', views.area_list_view, name='area_list'),
+    path('areas/nova/', views.add_area_view, name='add_area'),
 ]

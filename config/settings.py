@@ -18,9 +18,14 @@ load_dotenv(dotenv_path=dotenv_path)
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-fallback-key-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+# Lê a variável de ambiente DJANGO_DEBUG. Se não existir, assume 'True'.
+# Converte para booleano: DEBUG será True se DJANGO_DEBUG for diferente de 'False'.
+# Para produção, defina DJANGO_DEBUG=False no seu .env
+DEBUG = False
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+#ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+
+ALLOWED_HOSTS = ['*'] # Mantenha como estava ou ajuste conforme necessário para produção
 
 
 # --- Configurações da IA ---
@@ -30,29 +35,11 @@ AI_GENERATION_TEMPERATURE = 1.0
 AI_MAX_QUESTIONS_PER_REQUEST = 20
 
 # Configurações de Segurança para a API Google AI (Usando Strings)
-# Em settings.py
-
 GOOGLE_AI_SAFETY_SETTINGS = [
-    {
-        "category": "HARM_CATEGORY_HARASSMENT",
-        # <<< ALTERADO PARA O MAIS FORTE >>>
-        "threshold": "BLOCK_LOW_AND_ABOVE",
-    },
-    {
-        "category": "HARM_CATEGORY_HATE_SPEECH",
-        # <<< ALTERADO PARA O MAIS FORTE >>>
-        "threshold": "BLOCK_LOW_AND_ABOVE",
-    },
-    {
-        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        # Mantenha como estava ou ajuste também se necessário
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE", # Ou BLOCK_LOW_AND_ABOVE
-    },
-    {
-        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-         # Mantenha como estava ou ajuste também se necessário
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE", # Ou BLOCK_LOW_AND_ABOVE
-    },
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_LOW_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_LOW_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
 ]
 
 # Verifica se a chave da API foi carregada (ESSENCIAL)
@@ -60,10 +47,7 @@ if not GOOGLE_API_KEY:
     if not DEBUG:
          raise ImproperlyConfigured("FATAL: GOOGLE_API_KEY não definida nas variáveis de ambiente (.env).")
     else:
-         print("\n\n******************************************************")
-         print("AVISO: GOOGLE_API_KEY não definida. A geração de questões falhará.")
-         print("Crie um arquivo .env na raiz do projeto com GOOGLE_API_KEY=SUA_CHAVE")
-         print("******************************************************\n\n")
+         print("\n\nAVISO: GOOGLE_API_KEY não definida. A geração de questões falhará.\nCrie um arquivo .env na raiz do projeto com GOOGLE_API_KEY=SUA_CHAVE\n")
 
 
 # Application definition
@@ -74,15 +58,20 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
-    # Nosso App:
+    # Whitenoise (opcional aqui, mas útil para runserver_nostatic)
+    # 'whitenoise.runserver_nostatic', # Descomente se quiser testar em dev
+    'django.contrib.staticfiles', # Deve vir DEPOIS de whitenoise se runserver_nostatic for usado
+    # Nossos Apps:
     'generator',
     'markdownify.apps.MarkdownifyConfig',
-
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # <<< ADICIONADO WHITENOISE MIDDLEWARE AQUI >>>
+    # Deve vir logo após SecurityMiddleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    # <<< FIM ADIÇÃO WHITENOISE >>>
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -112,7 +101,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-#Database
+# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -120,20 +109,7 @@ DATABASES = {
     }
 }
 
-# # Database
-# DATABASES = {
-#     'default': {
-#         'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
-#         'NAME': os.getenv('DATABASE_NAME', 'seu_projeto_db'),
-#         'USER': os.getenv('DATABASE_USER', 'seu_usuario_db'),
-#         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'sua_senha_db'),
-#         'HOST': os.getenv('DATABASE_HOST', 'seu_host_db'),
-#         'PORT': os.getenv('DATABASE_PORT', '5432'),
-#     }
-# }
-
 # Password validation
-# É recomendado adicionar os validadores padrão aqui:
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
@@ -151,25 +127,25 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-# STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# <<< ADICIONADO: Configuração de armazenamento para Whitenoise >>>
+# Usa armazenamento otimizado que adiciona compressão e cache eterno
+# Apenas ativo quando DEBUG = False
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# <<< FIM ADIÇÃO WHITENOISE >>>
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # --- Configurações de Autenticação ---
-
-# Redirecionamento após Logout (Já estava ok)
 LOGOUT_REDIRECT_URL = '/'
-
-# <<< LINHA ADICIONADA ABAIXO >>>
-# Redirecionamento após Login
 LOGIN_REDIRECT_URL = '/' # Redireciona para a URL raiz (landing page)
 
 
 # --- Configuração de Logging ---
 LOGGING = {
-    # ... (Configuração de Logging como antes) ...
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
@@ -177,10 +153,12 @@ LOGGING = {
         'simple': {'format': '{levelname} {message}', 'style': '{',},
     },
     'handlers': {
-        'console': {'level': 'DEBUG', 'class': 'logging.StreamHandler', 'formatter': 'simple'},
+        'console': {'level': 'DEBUG' if DEBUG else 'INFO', 'class': 'logging.StreamHandler', 'formatter': 'simple'},
     },
     'loggers': {
         'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False,},
         'generator': {'handlers': ['console'], 'level': 'DEBUG', 'propagate': False,},
+         # Adiciona logger para Whitenoise para ver mensagens (opcional)
+        'whitenoise': {'handlers': ['console'], 'level': 'INFO', 'propagate': False,},
     },
 }

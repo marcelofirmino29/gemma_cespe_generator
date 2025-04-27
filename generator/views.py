@@ -12,7 +12,7 @@ from datetime import datetime # Garanta que datetime está importado
 #from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Importa Formulários
-from .forms import QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, AskAIForm, CustomUserCreationForm
+from .forms import QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, AskAIForm, AreaConhecimentoForm, CustomUserCreationForm
 # Importa Serviço e Exceções
 from .services import QuestionGenerationService
 from .exceptions import ( GeneratorError, ConfigurationError, AIServiceError, AIResponseError, ParsingError )
@@ -929,6 +929,46 @@ def ask_ai_view(request):
 
     return render(request, 'generator/ask_ai.html', context)
 # --- FIM NOVA VIEW ---
+
+# --- VIEWS PARA GERENCIAMENTO DE ÁREAS DE CONHECIMENTO ---
+
+@login_required # Apenas usuários logados podem ver/gerenciar
+def area_list_view(request):
+    """Lista todas as Áreas de Conhecimento cadastradas."""
+    context, _, _ = _get_base_context_and_service()
+    areas = AreaConhecimento.objects.all() # Busca todas as áreas
+    context['areas'] = areas
+    return render(request, 'generator/area_list.html', context)
+
+@login_required
+def add_area_view(request):
+    """Exibe o formulário para adicionar uma nova Área e processa a submissão."""
+    context, _, _ = _get_base_context_and_service()
+
+    if request.method == 'POST':
+        form = AreaConhecimentoForm(request.POST)
+        if form.is_valid():
+            nova_area = form.save(commit=False) # Cria o objeto mas não salva ainda
+            # Poderia associar o usuário que criou, se quisesse:
+            # nova_area.criado_por = request.user
+            nova_area.save() # Salva no banco
+            nome_area = form.cleaned_data.get('nome')
+            messages.success(request, f"Área '{nome_area}' adicionada com sucesso!")
+            logger.info(f"Nova Área de Conhecimento adicionada: '{nome_area}' por {request.user.username}")
+            # Redireciona para a lista de áreas após salvar
+            return redirect('generator:area_list')
+        else:
+            # Se o form for inválido, ele será re-renderizado com os erros
+            logger.warning(f"Tentativa inválida de adicionar Área: {form.errors.as_json()}")
+            messages.error(request, "Erro ao adicionar área. Verifique o formulário.")
+    else: # GET request
+        form = AreaConhecimentoForm() # Cria um formulário vazio
+
+    context['form'] = form
+    context['titulo_pagina'] = "Adicionar Nova Área de Conhecimento" # Título para o template
+    # Reutiliza o template do formulário
+    return render(request, 'generator/area_form.html', context)
+
 
 # --- Função de Teste (Mantida) ---
 @login_required

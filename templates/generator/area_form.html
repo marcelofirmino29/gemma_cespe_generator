@@ -1,0 +1,82 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{# Bloco title corretamente fechado #}
+{% block title %}{{ titulo_pagina|default:"Gerenciar Área" }} - Gerador IA{% endblock title %}
+
+{# Bloco extra_head (opcional neste template, mas pode ser definido se necessário) #}
+{% block extra_head %}
+    {# Adicione CSS específico para este formulário aqui, se houver #}
+    <style>
+        /* Estilo minimalista para o formulário */
+        .form-label {
+            font-weight: 500; /* fw-medium */
+        }
+        .form-text {
+            font-size: 0.875em; /* small */
+        }
+        .btn-sm { /* Garante que os botões sejam pequenos */
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+    </style>
+{% endblock extra_head %}
+
+{# Bloco content corretamente fechado #}
+{% block content %}
+    <h1 class="h4 fw-normal mb-4">{{ titulo_pagina|default:"Gerenciar Área de Conhecimento" }}</h1>
+
+    {# Mensagens #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# Removido card para estilo minimalista #}
+    <div class="mb-5 p-3 border rounded bg-body-tertiary"> {# Div com fundo e borda #}
+        <form method="post"> {# Action é a URL atual #}
+            {% csrf_token %}
+
+            {# Exibe erros gerais do formulário #}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {# Renderiza o campo 'nome' do formulário #}
+            <div class="mb-3">
+                <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>
+                {{ form.nome }} {# Renderiza o widget TextInput #}
+                {% if form.nome.help_text %}
+                    <div class="form-text text-muted">{{ form.nome.help_text|safe }}</div>
+                {% endif %}
+                {% if form.nome.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.nome.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success btn-sm">Salvar Área</button>
+                {# Garante que a tag url está correta #}
+                <a href="{% url 'generator:area_list' %}" class="btn btn-outline-secondary btn-sm ms-2">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock content %}
+
+{# Bloco extra_js (opcional neste template, mas pode ser definido se necessário) #}
+{% block extra_js %}
+    {# Adicione JS específico para esta página aqui, se houver #}
+{% endblock extra_js %}

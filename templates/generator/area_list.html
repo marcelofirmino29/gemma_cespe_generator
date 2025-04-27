@@ -1,0 +1,56 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{# Bloco title corretamente fechado #}
+{% block title %}Áreas de Conhecimento - Gerador IA{% endblock title %}
+
+{# Bloco extra_head (opcional neste template, mas pode ser definido se necessário) #}
+{% block extra_head %}
+    {# Adicione CSS específico para esta página aqui, se houver #}
+{% endblock extra_head %}
+
+{# Bloco content corretamente fechado #}
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 fw-normal mb-0">Áreas de Conhecimento</h1>
+        {# Garante que a tag url está correta #}
+        <a href="{% url 'generator:add_area' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle-fill me-1"></i> Adicionar Nova Área
+        </a>
+    </div>
+
+    {# Mensagens (com if/endif e for/endfor corretos) #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# Listagem de áreas (com if/endif e for/endfor corretos) #}
+    {% if areas %}
+        <div class="list-group shadow-sm">
+            {% for area in areas %}
+                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <span>{{ area.nome }}</span>
+                    {# Botões Editar/Deletar (comentados) #}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-secondary text-center small">Nenhuma área de conhecimento cadastrada ainda.</div>
+    {% endif %}
+
+    <div class="mt-4 text-center">
+         {# Garante que a tag url está correta #}
+        <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-secondary btn-sm">Voltar ao Dashboard</a>
+    </div>
+
+{% endblock content %}
+
+{# Bloco extra_js (opcional neste template, mas pode ser definido se necessário) #}
+{% block extra_js %}
+    {# Adicione JS específico para esta página aqui, se houver #}
+{% endblock extra_js %}

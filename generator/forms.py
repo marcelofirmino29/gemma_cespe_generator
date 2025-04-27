@@ -247,7 +247,38 @@ class AskAIForm(forms.Form):
         required=True,
         help_text="Seja claro e específico na sua pergunta."
     )
-    # Poderíamos adicionar opções aqui (ex: modelo a usar, temperatura), mas começaremos simples.
+
+# --- NOVO FORMULÁRIO: Adicionar/Editar Área de Conhecimento ---
+class AreaConhecimentoForm(forms.ModelForm):
+    class Meta:
+        model = AreaConhecimento
+        fields = ['nome'] # Apenas o campo 'nome' será editável pelo usuário
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg', # Input maior
+                'placeholder': 'Ex: Direito Administrativo'
+            })
+        }
+        labels = {
+            'nome': 'Nome da Nova Área de Conhecimento', # Label mais descritivo
+        }
+        help_texts = {
+            'nome': 'O nome deve ser único.',
+        }
+
+    def clean_nome(self):
+        nome = self.cleaned_data.get('nome')
+        if nome:
+            # Verifica se já existe uma área com o mesmo nome (ignorando maiúsculas/minúsculas)
+            # Exclui o próprio objeto se estiver a editar (instance.pk existe)
+            query = AreaConhecimento.objects.filter(nome__iexact=nome)
+            if self.instance and self.instance.pk:
+                query = query.exclude(pk=self.instance.pk)
+            if query.exists():
+                raise ValidationError("Já existe uma Área de Conhecimento com este nome.")
+        return nome
+# --- FIM NOVO FORMULÁRIO ---
+
 
     def clean_user_question(self):
         question = self.cleaned_data.get('user_question', '').strip()

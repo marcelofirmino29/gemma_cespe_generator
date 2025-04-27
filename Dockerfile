@@ -1,48 +1,41 @@
-# Dockerfile para Aplicação Django (Plataforma Especificada)
+FROM python:3.12-alpine
 
-# --- Estágio Builder (Opcional, mas bom para compilar dependências) ---
-# <<< Adicionado --platform >>>
-FROM --platform=linux/amd64 python:3.12-slim as builder
-
-WORKDIR /wheels_build
-
-# Instala dependências de build se necessário (ex: para compilar pacotes C)
-# RUN apt-get update && apt-get install -y build-essential ...
-
-COPY requirements.txt .
-# Baixa as dependências como wheels (para a plataforma especificada)
-RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
-
-
-# --- Estágio Final ---
-# <<< Adicionado --platform >>>
-FROM --platform=linux/amd64 python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app
+# --- Superuser Credentials ---
+# Define build arguments for credentials. These MUST be passed during build.
+# Defaulting to empty strings is just a placeholder.
+ARG SU_USERNAME=""
+ARG SU_EMAIL=""
+ARG SU_PASSWORD=""
 
-# Copia as dependências pré-compiladas como wheels do estágio builder
-COPY --from=builder /wheels /wheels
+# --- System Dependencies ---
+# Instala dependências do sistema
+RUN apk add --no-cache gcc musl-dev libffi-dev python3-dev build-base postgresql-dev
 
-# Instala as dependências a partir dos wheels locais
-# Garante que está instalando para a mesma plataforma linux/amd64
-RUN pip install --no-cache /wheels/*
+WORKDIR /generator
 
-# Copia o restante do código da aplicação
+# --- Python Dependencies ---
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# --- Application Code ---
 COPY . .
 
-# Coleta arquivos estáticos (se usar WhiteNoise)
-# Descomente e ajuste se necessário
-# RUN python manage.py collectstatic --noinput
+# --- Database Migrations ---
+# Executa as migrations antes de criar o superuser ou iniciar o servidor
+RUN python manage.py migrate
 
-# Expõe a porta
-EXPOSE 8000
+# --- Create Superuser ---
+# Uses the build arguments passed via --build-arg
+# The --noinput flag tells createsuperuser to use environment variables.
+# IMPORTANT: This runs during the IMAGE BUILD. Consider security implications.
+RUN echo "Attempting to create superuser '${SU_USERNAME}'..." && \
+    export DJANGO_SUPERUSER_USERNAME=${SU_USERNAME} && \
+    export DJANGO_SUPERUSER_EMAIL=${SU_EMAIL} && \
+    export DJANGO_SUPERUSER_PASSWORD=${SU_PASSWORD} && \
+    python manage.py createsuperuser --noinput || \
+    echo "Superuser already exists or DB not ready/accessible during build, continuing..."
 
-# Comando para rodar a aplicação (Gunicorn/WSGI)
-# Verifique se 'docling_django.wsgi:application' é o caminho correto
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "gemma-cespe-generator.wsgi:application"]
-
-# Exemplo alternativo usando Uvicorn para ASGI
-# CMD ["uvicorn", "docling_django.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+# --- Default Runtime Command ---
+CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
