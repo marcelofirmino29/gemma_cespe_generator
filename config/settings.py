@@ -98,13 +98,33 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
+# # Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+        'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
+        'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
+        'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
+        'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
+        'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
     }
 }
+
+# Validação em produção
+if not DEBUG:
+    if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
+    if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
+    if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
+    if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
