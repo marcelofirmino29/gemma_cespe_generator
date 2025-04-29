@@ -72,9 +72,52 @@
         .card-games .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
         /* Cor para o card "Pergunte à IA" */
-        .card-ask-ai { background-color: var(--bs-info-bg-subtle); } 
+        .card-ask-ai { background-color: var(--bs-info-bg-subtle); }
         .card-ask-ai .btn { color: var(--bs-secondary-text-emphasis); background-color: var(--bs-secondary-bg-subtle); }
         .card-ask-ai .btn:hover { background-color: rgba(114, 76, 4, 0.3); }
+
+        /* --- Estilos para a Nuvem de Palavras --- */
+        #wordCloudContainer {
+            width: 90%; /* Ajustado para largura maior */
+            max-width: 800px; /* Largura máxima aumentada */
+            min-height: 250px; /* Altura mínima ajustada */
+            border: 1px solid var(--bs-border-color-translucent); /* Usa variável Bootstrap para borda */
+            border-radius: 0.5rem; /* Cantos arredondados */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.6rem; /* Espaçamento entre palavras aumentado */
+            padding: 1.5rem; /* Espaçamento interno aumentado */
+            margin: 3rem auto; /* Margem aumentada */
+            background-color: var(--bs-tertiary-bg); /* Usa variável Bootstrap para fundo */
+            box-shadow: var(--bs-box-shadow-sm); /* Sombra suave Bootstrap */
+        }
+        .word-cloud-item {
+            /* cursor: default; */ /* Removido para usar cursor-pointer */
+            cursor: pointer; /* <<< RE-ADICIONADO: Indica que é clicável */
+            transition: transform 0.2s ease-in-out, color 0.2s ease-in-out; /* Adiciona transição de cor */
+            display: inline-block;
+            padding: 0.1rem 0.3rem; /* Pequeno padding interno */
+            border-radius: 0.25rem; /* Cantos levemente arredondados para as palavras */
+            line-height: 1.2; /* Ajuste na altura da linha */
+            text-decoration: none; /* <<< RE-ADICIONADO: Remove sublinhado se virar link */
+        }
+        .word-cloud-item:hover {
+            transform: scale(1.15); /* Aumenta um pouco mais o zoom */
+            text-decoration: underline; /* <<< RE-ADICIONADO: Sublinha no hover */
+            /* Pode adicionar uma cor de hover se desejar, ex: color: var(--bs-primary); */
+        }
+        /* Font sizes using custom CSS classes (adjust as needed) */
+        .wc-size-1 { font-size: 0.8rem; }
+        .wc-size-2 { font-size: 1rem; }
+        .wc-size-3 { font-size: 1.25rem; }
+        .wc-size-4 { font-size: 1.5rem; }
+        .wc-size-5 { font-size: 1.75rem; }
+        .wc-size-6 { font-size: 2rem; }
+
+        /* Colors using Bootstrap text color classes (adjust as needed) */
+        /* Ex: text-primary, text-secondary, text-success, text-danger, text-warning, text-info, text-dark */
 
     </style>
 {% endblock extra_head %}
@@ -83,14 +126,9 @@
     <div class="text-center mb-5">
         <h1 class="display-6 fw-semibold text-body-emphasis mb-2">Bem-vindo ao CESPE GENERATOR</h1>
         <p class="lead fs-6 text-body-secondary col-lg-8 mx-auto">
-            Selecione uma opção abaixo.
+            Selecione uma opção abaixo ou clique em um tópico em destaque. {# Texto atualizado #}
         </p>
-         {% if error_message %}
-             <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
-                 {{ error_message }}
-                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-             </div>
-         {% endif %}
+         {# --- Exibição de Mensagens (Django Messages Framework) --- #}
          {% if messages %}
              {% for message in messages %}
              <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
@@ -99,11 +137,17 @@
              </div>
              {% endfor %}
          {% endif %}
+         {# --- Exibição de Erro Específico (se passado no contexto) --- #}
+         {% if error_message %}
+             <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                 {{ error_message }}
+                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+             </div>
+         {% endif %}
     </div>
 
     {# Grid com 4 colunas em telas grandes, 2 em médias, 1 em pequenas #}
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4 mb-5">
-
         {# Card 1: Gerador C/E #}
         <div class="col">
             <div class="card landing-card card-ce shadow-sm">
@@ -191,12 +235,23 @@
                 </div>
             </div>
         </div>
-
     </div> {# Fim da row dos cards principais #}
+
+    {# --- Seção da Nuvem de Palavras --- #}
+    <div class="text-center mb-4 mt-5"> {# Adiciona um título opcional para a nuvem #}
+        <h2 class="fw-semibold text-body-emphasis">Tópicos em Destaque</h2>
+    </div>
+    <div id="wordCloudContainer">
+        {# As palavras serão inseridas aqui pelo JavaScript #}
+        {# Mensagem de carregamento ou se não houver palavras #}
+        <span class="text-muted">Carregando palavras...</span>
+    </div>
+    {# --- Fim da Seção da Nuvem de Palavras --- #}
+
 
     {# --- Linha para Jogo e Pergunte à IA --- #}
     {# Ajustado para centralizar 2 cards #}
-    <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center">
+    <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center mt-5 mb-5"> {# Adiciona margem superior #}
 
         {# Card Hub de Jogos #}
         <div class="col-lg-4 col-md-6"> {# Ajustado para caber 2 em LG/MD #}
@@ -213,7 +268,7 @@
             </div>
         </div>
 
-        {# <<< ADICIONADO: Card Pergunte à IA >>> #}
+        {# Card Pergunte à IA #}
         <div class="col-lg-4 col-md-6"> {# Ajustado para caber 2 em LG/MD #}
             <div class="card landing-card card-ask-ai shadow-sm">
                 <div class="card-body d-flex flex-column p-3">
@@ -234,7 +289,6 @@
                 </div>
             </div>
         </div>
-        {# <<< FIM DA ADIÇÃO >>> #}
 
     </div>
     {# --- Fim da Linha de Jogo/Pergunte à IA --- #}
@@ -243,5 +297,134 @@
 {% endblock content %} {# Bloco content termina aqui #}
 
 {% block extra_js %}
-{# Nenhum JS extra necessário aqui para esta funcionalidade #}
+{# Inclui os dados das palavras do contexto Django de forma segura #}
+{{ word_cloud_data|json_script:"word-cloud-data" }}
+
+{# Guarda a URL base do 'ask_ai' para o JS usar #}
+<script>
+    const askAiBaseUrl = "{% url 'generator:ask_ai' %}";
+</script>
+
+{# Script completo para a nuvem de palavras clicável #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Configuração da Nuvem de Palavras ---
+
+        // 1. Pega os dados das palavras do script gerado pelo Django
+        const wordsDataElement = document.getElementById('word-cloud-data');
+        let words = [];
+        if (wordsDataElement) {
+            try {
+                // Analisa o JSON contido no elemento de script
+                words = JSON.parse(wordsDataElement.textContent);
+            } catch (e) {
+                console.error("Erro ao analisar os dados da nuvem de palavras:", e);
+                words = ["Erro", "nos", "dados"]; // Fallback
+            }
+        } else {
+            console.warn("Elemento 'word-cloud-data' não encontrado. Verifique se a view está passando os dados.");
+            words = ["Dados", "não", "encontrados"]; // Fallback
+        }
+
+        // Verifica se 'words' é um array. Se não for (ex: veio vazio ou erro), define como array vazio.
+        if (!Array.isArray(words)) {
+            console.warn("Os dados da nuvem de palavras não são um array:", words);
+            words = [];
+        }
+
+        // 2. Cores possíveis para as palavras (usando classes Bootstrap)
+        const colors = [
+            'text-primary', 'text-secondary', 'text-success', 'text-danger',
+            'text-warning', 'text-info', 'text-dark', 'text-primary-emphasis',
+            'text-success-emphasis', 'text-info-emphasis'
+            // Adicione mais classes de cor do Bootstrap se desejar
+        ];
+
+        // 3. Tamanhos de fonte possíveis (usando classes CSS definidas no <style>)
+        const fontSizes = [
+            'wc-size-1', 'wc-size-2', 'wc-size-3', 'wc-size-4', 'wc-size-5', 'wc-size-6'
+        ];
+
+        // --- Lógica para Gerar a Nuvem ---
+
+        const container = document.getElementById('wordCloudContainer');
+
+        // Limpa a mensagem de 'Carregando...' ou conteúdo anterior
+        if (container) {
+            container.innerHTML = ''; // Remove o conteúdo inicial
+        } else {
+            console.error("Container da nuvem de palavras ('wordCloudContainer') não encontrado no HTML!");
+            return; // Aborta se o container não existe
+        }
+
+
+        // Função para obter um elemento aleatório de um array
+        function getRandomElement(arr) {
+            if (!arr || arr.length === 0) return ''; // Retorna string vazia se array for inválido
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // Embaralha as palavras para uma distribuição mais aleatória
+        // (Se a ordem do banco for importante, remova esta linha)
+        if (words.length > 0) { // Só embaralha se houver palavras
+             words.sort(() => Math.random() - 0.5);
+        }
+
+
+        // Itera sobre cada palavra na lista vinda do Django
+        words.forEach(wordText => {
+            // Validação simples para garantir que wordText é uma string não vazia
+            if (typeof wordText !== 'string' || wordText.trim() === '') {
+                console.warn("Item inválido ou vazio nos dados da nuvem:", wordText);
+                return; // Pula este item
+            }
+
+            const wordElement = document.createElement('span'); // Usar span para aplicar estilos e evento de clique
+
+            // Adiciona a classe base e classes aleatórias de cor e tamanho
+            const randomColor = getRandomElement(colors);
+            const randomSize = getRandomElement(fontSizes);
+
+            wordElement.classList.add('word-cloud-item'); // Classe com cursor: pointer e hover
+            if (randomColor) wordElement.classList.add(randomColor);
+            if (randomSize) wordElement.classList.add(randomSize);
+            // Adiciona peso da fonte Bootstrap (opcional, pode ser 'fw-semibold', etc.)
+            wordElement.classList.add('fw-medium');
+
+            const cleanWordText = wordText.trim(); // Guarda a palavra limpa
+            wordElement.textContent = cleanWordText; // Usa a palavra do banco (remove espaços extras)
+
+            // Evento de clique para redirecionar
+            wordElement.addEventListener('click', function() {
+                // <<< ALTERAÇÃO APLICADA AQUI >>>
+                // Constrói a pergunta para a IA com o contexto
+                const question = `Defina ${cleanWordText} no contexto de Tecnologia da Informação`;
+                // Codifica a pergunta para ser segura na URL
+                const encodedQuestion = encodeURIComponent(question);
+                // Constrói a URL final usando a base e o parâmetro
+                // Verifica se askAiBaseUrl foi definido corretamente
+                if (typeof askAiBaseUrl !== 'undefined' && askAiBaseUrl) {
+                    const targetUrl = `${askAiBaseUrl}?question=${encodedQuestion}`;
+                    // Redireciona o navegador
+                    window.location.href = targetUrl;
+                } else {
+                    console.error("A variável 'askAiBaseUrl' não está definida. Verifique se a tag {% url 'generator:ask_ai' %} está correta e acessível.");
+                }
+            });
+
+            container.appendChild(wordElement);
+        });
+
+        // Adiciona uma mensagem se não houver palavras após o processamento
+        if (container.childElementCount === 0) {
+             // Verifica se o erro original era sobre dados não encontrados
+             if (wordsDataElement === null || !Array.isArray(JSON.parse(wordsDataElement.textContent || '[]'))){
+                  container.textContent = 'Erro ao carregar tópicos.';
+             } else {
+                  container.textContent = 'Nenhum tópico em destaque no momento.';
+             }
+             container.classList.add('text-muted', 'text-center', 'fst-italic', 'p-4'); // Adiciona padding
+        }
+    });
+</script>
 {% endblock extra_js %}

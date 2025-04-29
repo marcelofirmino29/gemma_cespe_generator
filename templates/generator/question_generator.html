@@ -1,12 +1,43 @@
 {% extends 'generator/base.html' %}
 {% load static %}
 
-{% block title %}Gerador C/E - Gerador IA{% endblock title %}
+{% block title %}Filtro de Questões C/E - Gerador IA{% endblock title %}
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
     <style>
-        /* Estilos como definidos anteriormente, adaptados para minimalista */
+        /* Estilos base */
+        .nav-tabs .nav-link {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+            border-bottom: none;
+            color: var(--bs-secondary-color);
+            background-color: var(--bs-tertiary-bg);
+            border-color: var(--bs-border-color);
+            padding: 0.5rem 1rem;
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--bs-primary);
+            background-color: var(--bs-body-bg); /* Fundo do corpo para aba ativa */
+            border-color: var(--bs-border-color);
+            border-bottom-color: var(--bs-body-bg); /* Esconde a borda inferior */
+            font-weight: 600;
+        }
+        .filters-container {
+            border: 1px solid var(--bs-border-color);
+            border-top: none; /* Remove borda superior pois as abas já têm */
+            padding: 1.5rem;
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            background-color: var(--bs-body-bg); /* Fundo do corpo */
+        }
+        .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; /* Menor margem */ }
+        .form-control, .form-select { font-size: 0.9rem; /* Tamanho de fonte padrão para inputs */ }
+        .form-control-sm, .form-select-sm { font-size: 0.85rem; } /* Mantém sm se usado */
+        .form-text { font-size: 0.75rem; /* Texto de ajuda menor */ }
+        .btn-filter-action { font-size: 0.9rem; }
+
+        /* Estilos específicos dos resultados (mantidos) */
         .ce-result-feedback { min-height: 1.5em; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); margin-top: 0.75rem; }
         .ce-result-feedback:empty { display: none; }
         .verify-ce-btn { font-size: 0.8rem; }
@@ -21,90 +52,160 @@
              border-width: 1px;
              border-style: solid;
              border-radius: 0.375rem;
-             /* border-success e border-danger serão adicionadas dinamicamente */
         }
-        /* Garante que labels fiquem acima dos campos */
-        label { display: block; margin-bottom: 0.25rem; }
-        /* Garante que o help text fique abaixo */
-        .form-text { width: 100%; }
 
+        /* Estilo para o formulário rápido */
+        #addAreaQuickFormContainer {
+            margin-top: 0.5rem; /* Espaço acima, abaixo do dropdown */
+        }
+        #addAreaQuickFormGenerator .input-group-text,
+        #addAreaQuickFormGenerator .form-control-sm,
+        #addAreaQuickFormGenerator .btn-sm {
+             font-size: 0.8rem; /* Deixa os elementos internos menores */
+        }
+        /* Ajuste para textarea (tópico) */
+        #{{ form.topic.id_for_label }} {
+            min-height: 80px; /* Altura mínima para o campo tópico */
+        }
     </style>
 {% endblock extra_head %}
 
 {% block content %}
 
-    {# Removido header principal da página #}
-    {# {% if local_time %}...{% endif %} #}
-
     {# Mensagens #}
     {% if not service_initialized %} <div class="alert alert-danger"><strong>Atenção:</strong> Serviço de IA indisponível.</div> {% endif %}
     {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
 
-    {# Formulário de Geração C/E (Layout simplificado) #}
-    <div class="mb-4"> {# Espaçamento inferior #}
-        <h1 class="h4 mb-3 fw-normal">Gerar Novas Questões C/E</h1> {# Título simplificado #}
-        <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="{{ form.topic.id_for_label }}" class="form-label small fw-medium">{{ form.topic.label }}</label>
-                {{ form.topic }}
-                {% if form.topic.help_text %}<div class="form-text text-muted small">{{ form.topic.help_text|safe }}</div>{% endif %}
-                {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
+    {# --- Abas de Navegação --- #}
+    <ul class="nav nav-tabs mb-0" id="mainTabs" role="tablist">
+       <li class="nav-item" role="presentation">
+         {# Link/Aba Ativa para Gerador C/E #}
+         <a class="nav-link active" href="{% url 'generator:generate_questions' %}" id="objetivas-tab" role="tab" aria-selected="true">Gerador C/E</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         {# Link para Gerador Discursiva #}
+         <a class="nav-link" href="{% url 'generator:generate_discursive_exam' %}">Gerador Discursiva</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         {# Link para Configurar Simulado #}
+         <a class="nav-link" href="{% url 'generator:configurar_simulado' %}">Configurar Simulado</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         {# Link para Dashboard #}
+         <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a>
+       </li>
+       {# Adicione outras abas principais se desejar #}
+    </ul>
+    {# --- Fim Abas de Navegação --- #}
+
+
+    {# Container dos Filtros - Aba Objetivas #}
+    <div class="tab-content" id="questionTypeTabContent">
+      <div class="tab-pane fade show active" id="objetivas-panel" role="tabpanel" aria-labelledby="objetivas-tab">
+        <div class="filters-container shadow-sm">
+
+            {# Formulário principal envolve toda a área de filtros #}
+            <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
+                {% csrf_token %}
+
+                {# Linha principal dos filtros #}
+                <div class="row g-3"> {# g-3 para espaçamento entre colunas #}
+
+                    {# Coluna Esquerda: Tópico/Contexto #}
+                    <div class="col-lg-6">
+                        <label for="{{ form.topic.id_for_label }}" class="form-label fw-medium">{{ form.topic.label|default:"Tópico ou Contexto para Questões C/E" }}</label>
+                        {{ form.topic }} {# Renderiza o campo de tópico aqui #}
+                        {% if form.topic.help_text %}<div class="form-text text-muted mt-1">{{ form.topic.help_text|safe }}</div>{% endif %}
+                        {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
+                    </div>
+
+                    {# Coluna Direita: Número, Dificuldade, Área #}
+                    <div class="col-lg-6">
+                        <div class="row g-3"> {# Nova row para alinhar os 3 campos #}
+                             {# Número de Questões #}
+                             <div class="col-md-4">
+                                 <label for="{{ form.num_questions.id_for_label }}" class="form-label fw-medium">{{ form.num_questions.label|default:"Nº Questões" }}</label>
+                                 {{ form.num_questions }}
+                                 {% if form.num_questions.help_text %}<div class="form-text text-muted mt-1">{{ form.num_questions.help_text|safe }}</div>{% endif %}
+                                 {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
+                             </div>
+
+                            {# Dificuldade #}
+                            <div class="col-md-4">
+                                 <label for="{{ form.difficulty_level.id_for_label }}" class="form-label fw-medium">{{ form.difficulty_level.label|default:"Dificuldade" }}</label>
+                                 {{ form.difficulty_level }}
+                                 {% if form.difficulty_level.help_text %}<div class="form-text text-muted mt-1">{{ form.difficulty_level.help_text|safe }}</div>{% endif %}
+                                 {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
+                            </div>
+
+                            {# Área de Formação #}
+                            <div class="col-md-4">
+                                <label for="{{ form.area.id_for_label }}" class="form-label fw-medium">{{ form.area.label|default:"Área (Opcional)" }}</label>
+                                {{ form.area }}
+                                {% if form.area.help_text %}<div class="form-text text-muted mt-1">{{ form.area.help_text|safe }}</div>{% endif %}
+                                {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
+
+                                {# Seção de Botões de Ação (Alinhados à direita) #}
+                                <div class="d-flex justify-content-end gap-2 mt-4">
+                                     {# Botão Limpar (tipo reset para limpar o form HTML principal) #}
+                                    <button type="reset" class="btn btn-outline-secondary btn-sm btn-filter-action"><i class="bi bi-x-lg"></i> Limpar</button>
+                                    {# Botão Gerar Questões (com IDs e spans para o JS) #}
+                                    <button type="submit" class="btn btn-primary btn-sm btn-filter-action" id="submit-button" {% if not service_initialized %} disabled {% endif %}>
+                                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner"></span>
+                                        <span id="button-text"><i class="bi bi-funnel-fill"></i> Gerar Questões</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div> {# Fim da row interna #}
+                    </div> {# Fim da Coluna Direita #}
+                </div> {# Fim da row principal dos filtros #}
+            </form> {# Fim do form principal #}
+            {# --- Formulário Rápido de Área --- #}
+            <div id="addAreaQuickFormContainer" class="mt-2">
+                {# Este form é separado e submete para outra URL #}
+                <form id="addAreaQuickFormGenerator" method="post" action="{% url 'generator:add_area_quick_from_generator' %}" >
+                    {% csrf_token %}
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control form-control-sm" name="nome" placeholder="Não encontrou a área? Adicione-a." required maxlength="100" aria-label="Nome da nova área">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    </div>
+                </form>
             </div>
-            <div class="row g-2 mb-3"> {# g-2 para menos espaço #}
-                <div class="col-md-4 col-lg-3">
-                    <label for="{{ form.num_questions.id_for_label }}" class="form-label small fw-medium">{{ form.num_questions.label }}</label>
-                    {{ form.num_questions }}
-                    {% if form.num_questions.help_text %}<div class="form-text text-muted small">{{ form.num_questions.help_text|safe }}</div>{% endif %}
-                    {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
-                </div>
-                <div class="col-md-4 col-lg-3">
-                    <label for="{{ form.difficulty_level.id_for_label }}" class="form-label small fw-medium">{{ form.difficulty_level.label }}</label>
-                    {{ form.difficulty_level }}
-                    {% if form.difficulty_level.help_text %}<div class="form-text text-muted small">{{ form.difficulty_level.help_text|safe }}</div>{% endif %}
-                    {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
-                </div>
-                <div class="col-md-4 col-lg-6"> {# Área ocupa mais espaço #}
-                    <label for="{{ form.area.id_for_label }}" class="form-label small fw-medium">{{ form.area.label }}</label>
-                    {{ form.area }}
-                    {% if form.area.help_text %}<div class="form-text text-muted small">{{ form.area.help_text|safe }}</div>{% endif %}
-                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm" id="submit-button" {% if not service_initialized %} disabled {% endif %}> {# Botão menor #}
-                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner"></span>
-                <span id="button-text">Gerar Questões</span>
-            </button>
-        </form>
+            {# --- FIM: Formulário Rápido de Área --- #}
+        </div> {# Fim filters-container #}
+      </div> {# Fim tab-pane objetivas #}
+
+      {# Painel da aba Discursivas #}
+      <div class="tab-pane fade" id="discursivas-panel" role="tabpanel" aria-labelledby="discursivas-tab">
+         <div class="filters-container p-5 text-center text-muted">
+             Filtros para questões discursivas ainda não implementados.
+         </div>
+      </div>
+    </div> {# Fim tab-content #}
+
+    {# Mensagem de rodapé (como na imagem) #}
+    <div class="alert alert-secondary mt-4 small text-center">
+        Use os filtros acima para gerar novas questões C/E.
     </div>
 
-    {# Mensagem de erro geral da Geração #}
-    {% if error_message and service_initialized and not form.errors and not questions %}
-        <div class="alert alert-warning alert-dismissible fade show small" role="alert">
-             Falha ao gerar questões: {{ error_message }}
-             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endif %}
 
-    {# Bloco para exibir as questões recém-geradas #}
-    {% if questions %} {# Verifica se a lista 'questions' não é None/vazia #}
+    {# Bloco para exibir as questões recém-geradas (mantido abaixo dos filtros) #}
+    {% if questions %}
         <hr class="my-4">
-        <div class="mt-4"> {# Container simples #}
-
-            {# Exibição do Texto Motivador #}
+        <div class="mt-4">
             {% if main_motivador %}
             <div class="motivador-text">
-                <h2 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador</h2> {# Título menor #}
+                <h2 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador</h2>
                 <div class="small">{{ main_motivador|linebreaksbr }}</div>
             </div>
             {% endif %}
-
-             <h2 class="h5 mb-3 fw-normal">Itens Gerados para Julgamento:</h2> {# Título simplificado #}
-
+             <h2 class="h5 mb-3 fw-normal">Itens Gerados para Julgamento:</h2>
+             {# Este form é para validar as respostas exibidas #}
              <form method="post" action="{% url 'generator:validate_answers' %}" id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}">
                 {% csrf_token %}
-                {% for item in questions %} {# Itera sobre a lista de questões #}
-                    {# Removido card, usando div simples com borda #}
+                {% for item in questions %}
                     <div class="question-item-minimal" id="question-item-{{ item.id }}">
                         <p class="mb-2"><strong>Item {{ forloop.counter }}:</strong></p>
                         <p class="ms-3">{{ item.texto_comando|linebreaksbr }}</p>
@@ -117,45 +218,31 @@
                                 <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="errado_{{ item.id }}" value="E" required>
                                 <label class="form-check-label small" for="errado_{{ item.id }}">Errado</label>
                             </div>
+                            {# Botão Verificar Item - Funcionalidade depende de ce_validator.js #}
                             <button type="button" class="btn btn-outline-info btn-sm ms-md-auto mt-2 mt-md-0 verify-ce-btn" data-questao-id="{{ item.id }}">
                                 <i class="bi bi-check-lg"></i> Verificar Item
                             </button>
                         </div>
-                        <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ item.id }}">
-                            {# Feedback AJAX #}
-                        </div>
+                        <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ item.id }}"></div>
                     </div>
                     <input type="hidden" name="questao_id_{{ forloop.counter0 }}" value="{{ item.id }}">
                     <input type="hidden" name="index_{{ forloop.counter0 }}" value="{{ forloop.counter0 }}">
                 {% empty %}
                      <div class="alert alert-info" role="alert">Nenhuma questão gerada ou encontrada neste lote.</div>
                 {% endfor %}
-
-                <!-- {# Botão Verificar Todas (se houver questões) #}
-                {% if questions %}
-                   <button type="submit" class="btn btn-primary btn-sm mt-3" id="validate-all-btn">Verificar Respostas</button> {# Botão menor #}
-                 {% endif %} -->
-            </form>
-
-            {# Paginação REMOVIDA #}
-
+                </form>
          </div>
-    {# Mensagem se GET e não há questões recentes na sessão #}
-    {% elif request.method == 'GET' and not error_message %}
-         <div class="alert alert-secondary mt-4 small">Use o formulário acima para gerar novas questões C/E.</div>
-    {% endif %} {# Fim if questions #}
+    {% endif %}
 
-     {# Seção de Resultados da VALIDAÇÃO GERAL (se a view 'validate_answers' renderizar esta página) #}
+     {# Seção de Resultados da VALIDAÇÃO GERAL #}
      {% if results %}
          <hr class="my-4">
          <div class="results-validation mt-4">
-             <h2 class="h5 mb-3 fw-normal">Resultado da Verificação:</h2> {# Título simplificado #}
-             {% if error_message and not performance %} <div class="alert alert-danger small">... Erro ...</div> {% endif %}
-
+             <h2 class="h5 mb-3 fw-normal">Resultado da Verificação:</h2>
+             {% if error_message and not performance %} <div class="alert alert-danger small">{{ error_message }}</div> {% endif %}
              {% for result in results %}
-                 {# Removido card, usando div simples com borda e classe de sucesso/erro #}
                  <div class="question-item-minimal {% if result.correct %}border-success{% else %}border-danger{% endif %}">
-                     <div class="small"> {# Todo conteúdo pequeno #}
+                     <div class="small">
                          <p class="mb-1"><strong>Item:</strong> {{ result.afirmacao|linebreaksbr }}</p>
                          <p class="mb-1">
                              Sua Resposta: <span class="fw-bold {% if result.correct %}text-success{% else %}text-danger{% endif %}">{{ result.user_answer }}</span>
@@ -174,10 +261,9 @@
                      </div>
                  </div>
              {% endfor %}
-
              {% if performance %}
-                 <div class="performance-summary mt-4 p-3 rounded bg-body-secondary text-center small"> {# Texto pequeno #}
-                     <h3 class="h6">Resumo do Desempenho</h3> {# Título menor #}
+                 <div class="performance-summary mt-4 p-3 rounded bg-body-secondary text-center small">
+                     <h3 class="h6">Resumo do Desempenho</h3>
                      <p class="mb-1">Total: {{ performance.total }} | Acertos: <span class="text-success">{{ performance.correct }}</span> | Erros: <span class="text-danger">{{ performance.incorrect }}</span></p>
                      <p class="mb-0 fw-bold">Score Líquido: {{ performance.score }} ({{ performance.percentage }}% de acerto)</p>
                  </div>
@@ -189,6 +275,8 @@
 
 
 {% block extra_js %}
+    {# Script do spinner reativado #}
     <script src="{% static 'generator/js/question_generator_scripts.js' %}" defer></script>
+    {# Script de validação AJAX reativado #}
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
 {% endblock extra_js %}

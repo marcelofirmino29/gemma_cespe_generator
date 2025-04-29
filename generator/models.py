@@ -134,3 +134,27 @@ class Avaliacao(models.Model):
     data_avaliacao = models.DateTimeField(auto_now_add=True, verbose_name="Data da Avaliação")
     class Meta: verbose_name = "Avaliação"; verbose_name_plural = "Avaliações"
     def __str__(self): return f"Avaliação da Tentativa #{self.tentativa.id} por {self.tentativa.usuario.username}"
+
+
+class PalavraChave(models.Model):
+    """
+    Modelo para armazenar palavras-chave ou tópicos para a nuvem de palavras.
+    """
+    texto = models.CharField(
+        max_length=100,
+        unique=True, # Garante que cada palavra seja única
+        verbose_name="Palavra/Tópico"
+    )
+    # Opcional: Adicionar um campo de frequência se quiser controlar o tamanho na nuvem
+    # frequencia = models.PositiveIntegerField(default=1, verbose_name="Frequência")
+    # Opcional: Adicionar data de criação/atualização
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.texto
+
+    class Meta:
+        verbose_name = "Palavra-chave"
+        verbose_name_plural = "Palavras-chave"
+        ordering = ['texto'] # Ordena alfabeticamente por padrão

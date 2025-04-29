@@ -63,7 +63,7 @@
                             </a>
                         </li>
                         {% if user.is_authenticated %}
-                         <li class="nav-item">
+                         <!-- <li class="nav-item">
                              <a class="nav-link {% if request.resolver_match.view_name == 'generator:dashboard' %}active{% endif %}" href="{% url 'generator:dashboard' %}">
                                  <i class="bi bi-graph-up me-1"></i>Meu Desempenho
                              </a>
@@ -82,7 +82,7 @@
                              <a class="nav-link {% if request.resolver_match.view_name == 'generator:generate_discursive_exam' %}active{% endif %}" href="{% url 'generator:generate_discursive_exam' %}">
                                  <i class="bi bi-pencil-square me-1"></i>Gerar Discursiva
                              </a>
-                         </li>
+                         </li> -->
                          <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.view_name == 'generator:generate_discursive_exam' %}active{% endif %}" href="{% url 'generator:games_hub' %}">
                                 <i class="bi bi-joystick icon me-1"></i>Hub de Jogos
@@ -93,11 +93,11 @@
                                 <i class="bi bi-chat-dots-fill"></i>Pergunte à IA
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'area_list' or request.resolver_match.url_name == 'add_area' %}active{% endif %}" href="{% url 'generator:area_list' %}">
                                 <i class="bi bi-tags-fill"></i>Gerenciar Áreas
                             </a>
-                        </li>
+                        </li> -->
                    </ul>
                         {% endif %}
                     </ul>

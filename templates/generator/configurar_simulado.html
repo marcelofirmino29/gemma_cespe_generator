@@ -7,14 +7,42 @@
     {# Link para CSS externo (se houver) #}
     {# <link rel="stylesheet" href="{% static 'generator/css/config_simulado_styles.css' %}"> #}
     <style>
+        /* Estilos base (copiados/adaptados de question_generator) */
+        .nav-tabs .nav-link {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+            border-bottom: none;
+            color: var(--bs-secondary-color);
+            background-color: var(--bs-tertiary-bg);
+            border-color: var(--bs-border-color);
+            padding: 0.5rem 1rem;
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--bs-primary);
+            background-color: var(--bs-body-bg);
+            border-color: var(--bs-border-color);
+            border-bottom-color: var(--bs-body-bg);
+            font-weight: 600;
+        }
+        .content-container { /* Similar ao filters-container */
+            border: 1px solid var(--bs-border-color);
+            border-top: none;
+            padding: 1.5rem;
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            background-color: var(--bs-body-bg);
+        }
         /* Estilos mínimos para espaçamento, se necessário */
         label { display: block; margin-bottom: 0.25rem; }
+        .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; }
+        .form-control, .form-select { font-size: 0.9rem; }
+        .form-control-sm, .form-select-sm { font-size: 0.85rem; }
+        .form-text { font-size: 0.75rem; width: 100%; }
+
     </style>
 {% endblock extra_head %}
 
 {% block content %}
-    {# Removido header principal #}
-    {# {% if local_time %}...{% endif %} #}
 
     {# Mensagens #}
     {% if messages %}
@@ -26,59 +54,90 @@
         {% endfor %}
     {% endif %}
 
-    {# Removido card envolvente #}
-    <div class="mb-5"> {# Adiciona margem inferior geral #}
-        <h1 class="h4 mb-3 fw-normal">Configurar Novo Simulado C/E</h1> {# Título simplificado #}
-        <form method="post" action="{% url 'generator:configurar_simulado' %}">
-            {% csrf_token %}
+    {# Abas de Navegação (Adaptadas para o contexto de configurar simulado) #}
+    <ul class="nav nav-tabs mb-0" id="configTab" role="tablist">
+       {# Links inativos para outras páginas principais #}
+       <li class="nav-item" role="presentation">
+         <a class="nav-link" href="{% url 'generator:generate_questions' %}">Gerador C/E</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         <a class="nav-link" href="{% url 'generator:generate_discursive_exam' %}">Gerador Discursiva</a>
+       </li>
+       {# Aba ativa para configurar simulado #}
+       <li class="nav-item" role="presentation">
+         <span class="nav-link active" id="config-simulado-tab" role="tab" aria-selected="true">Configurar Simulado</span>
+       </li>
+       <li class="nav-item" role="presentation">
+         <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a>
+       </li>
+    </ul>
 
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger py-2 small"> {# Erro pequeno #}
-                    {% for error in form.non_field_errors %} {{ error }} {% endfor %}
-                </div>
-            {% endif %}
+    {# Container Principal #}
+    <div class="tab-content" id="configTabContent">
+      <div class="tab-pane fade show active" id="config-simulado-panel" role="tabpanel" aria-labelledby="config-simulado-tab">
+        <div class="content-container shadow-sm"> {# Usa a classe content-container #}
 
-            <div class="row g-3 mb-3"> {# Linha para os filtros #}
-                {# Número de Questões C/E #}
-                <div class="col-md-6 col-lg-3">
-                    <label for="{{ form.num_ce.id_for_label }}" class="form-label small">{{ form.num_ce.label }}</label>
-                    {{ form.num_ce }}
-                    {% if form.num_ce.help_text %}<div class="form-text text-muted small">{{ form.num_ce.help_text|safe }}</div>{% endif %}
-                    {% if form.num_ce.errors %}<div class="invalid-feedback d-block">{{ form.num_ce.errors|striptags }}</div>{% endif %}
-                </div>
+            <div class="mb-4"> {# Adiciona margem inferior geral #}
+                <h1 class="h4 mb-3 fw-normal">Configurar Novo Simulado C/E</h1> {# Título simplificado #}
+                <form method="post" action="{% url 'generator:configurar_simulado' %}">
+                    {% csrf_token %}
 
-                {# Área #}
-                <div class="col-md-6 col-lg-3">
-                    <label for="{{ form.area.id_for_label }}" class="form-label small">{{ form.area.label }}</label>
-                    {{ form.area }}
-                    {% if form.area.help_text %}<div class="form-text text-muted small">{{ form.area.help_text|safe }}</div>{% endif %}
-                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
-                </div>
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small"> {# Erro pequeno #}
+                            {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+                        </div>
+                    {% endif %}
 
-                 {# Dificuldade C/E #}
-                <div class="col-md-6 col-lg-3">
-                    <label for="{{ form.dificuldade_ce.id_for_label }}" class="form-label small">{{ form.dificuldade_ce.label }}</label>
-                    {{ form.dificuldade_ce }}
-                    {% if form.dificuldade_ce.help_text %}<div class="form-text text-muted small">{{ form.dificuldade_ce.help_text|safe }}</div>{% endif %}
-                    {% if form.dificuldade_ce.errors %}<div class="invalid-feedback d-block">{{ form.dificuldade_ce.errors|striptags }}</div>{% endif %}
-                </div>
+                    <div class="row g-3 mb-3"> {# Linha para os filtros #}
+                        {# Número de Questões C/E #}
+                        <div class="col-md-6 col-lg-3">
+                            <label for="{{ form.num_ce.id_for_label }}" class="form-label small">{{ form.num_ce.label }}</label>
+                            {{ form.num_ce }}
+                            {% if form.num_ce.help_text %}<div class="form-text text-muted small">{{ form.num_ce.help_text|safe }}</div>{% endif %}
+                            {% if form.num_ce.errors %}<div class="invalid-feedback d-block">{{ form.num_ce.errors|striptags }}</div>{% endif %}
+                        </div>
 
-                {# Tópico #}
-                <div class="col-md-6 col-lg-3">
-                    <label for="{{ form.topico.id_for_label }}" class="form-label small">{{ form.topico.label }}</label>
-                    {{ form.topico }}
-                    {% if form.topico.help_text %}<div class="form-text text-muted small">{{ form.topico.help_text|safe }}</div>{% endif %}
-                    {% if form.topico.errors %}<div class="invalid-feedback d-block">{{ form.topico.errors|striptags }}</div>{% endif %}
-                </div>
-            </div> {# Fim da row g-3 #}
+                        {# Área #}
+                        <div class="col-md-6 col-lg-3">
+                            <label for="{{ form.area.id_for_label }}" class="form-label small">{{ form.area.label }}</label>
+                            {{ form.area }}
+                            {% if form.area.help_text %}<div class="form-text text-muted small">{{ form.area.help_text|safe }}</div>{% endif %}
+                            {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
+                        </div>
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary btn-sm"> {# Botão menor #}
-                    <i class="bi bi-play-circle-fill me-1"></i> Iniciar Simulado
-                </button>
-                 <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm ms-2">Cancelar</a> {# Botão menor #}
+                         {# Dificuldade C/E #}
+                        <div class="col-md-6 col-lg-3">
+                            <label for="{{ form.dificuldade_ce.id_for_label }}" class="form-label small">{{ form.dificuldade_ce.label }}</label>
+                            {{ form.dificuldade_ce }}
+                            {% if form.dificuldade_ce.help_text %}<div class="form-text text-muted small">{{ form.dificuldade_ce.help_text|safe }}</div>{% endif %}
+                            {% if form.dificuldade_ce.errors %}<div class="invalid-feedback d-block">{{ form.dificuldade_ce.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        {# Tópico #}
+                        <div class="col-md-6 col-lg-3">
+                            <label for="{{ form.topico.id_for_label }}" class="form-label small">{{ form.topico.label }}</label>
+                            {{ form.topico }}
+                            {% if form.topico.help_text %}<div class="form-text text-muted small">{{ form.topico.help_text|safe }}</div>{% endif %}
+                            {% if form.topico.errors %}<div class="invalid-feedback d-block">{{ form.topico.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div> {# Fim da row g-3 #}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-sm"> {# Botão menor #}
+                            <i class="bi bi-play-circle-fill me-1"></i> Iniciar Simulado
+                        </button>
+                         <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm ms-2">Cancelar</a> {# Botão menor #}
+                    </div>
+                </form>
             </div>
-        </form>
+
+        </div> {# Fim content-container #}
+      </div> {# Fim tab-pane #}
+    </div> {# Fim tab-content #}
+
+     {# Mensagem de rodapé como na imagem de filtros #}
+    <div class="alert alert-secondary mt-4 small text-center">
+        Selecione os filtros desejados e clique em "Iniciar Simulado".
     </div>
 
 {% endblock content %}

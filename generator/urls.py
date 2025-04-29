@@ -39,4 +39,6 @@ urlpatterns = [
 # --- URLs de Área ---
     path('areas/', views.area_list_view, name='area_list'),
     path('areas/nova/', views.add_area_view, name='add_area'),
+
+    path('add-area-quick-generator/', views.add_area_quick_from_generator_view, name='add_area_quick_from_generator')
 ]

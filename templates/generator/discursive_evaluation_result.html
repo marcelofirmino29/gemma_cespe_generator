@@ -1,5 +1,6 @@
 {% extends 'generator/base.html' %}
 {% load static %}
+{% load markdownify %} {# <<< ADICIONADO: Carrega a tag markdownify #}
 
 {% block title %}Resultado da Avaliação - Gerador IA{% endblock title %}
 
@@ -14,15 +15,37 @@
             background-color: var(--bs-tertiary-bg);
             margin-bottom: 1.5rem; /* mb-4 */
         }
-        .submitted-text pre code {
-            white-space: pre-wrap;
+        /* Estilo para texto submetido e feedback (usando markdownify) */
+        .submitted-text-markdown,
+        .feedback-markdown {
+            white-space: pre-wrap; /* Mantém quebras de linha e espaços */
             word-wrap: break-word;
             font-size: 0.9em;
-            background-color: var(--bs-secondary-bg); /* Fundo leve para o código */
-            padding: 0.75rem;
-            border-radius: 0.25rem;
-            display: block; /* Garante que o pre ocupe a largura */
+            background-color: var(--bs-secondary-bg); /* Fundo leve */
+            padding: 1rem; /* Aumentado padding */
+            border-radius: 0.375rem;
+            border: 1px solid var(--bs-border-color-translucent); /* Borda suave */
+            line-height: 1.6; /* Melhora legibilidade */
         }
+        .submitted-text-markdown p,
+        .feedback-markdown p { margin-bottom: 0.5rem; }
+        .submitted-text-markdown strong,
+        .feedback-markdown strong { font-weight: 600; }
+        .submitted-text-markdown ol, .submitted-text-markdown ul,
+        .feedback-markdown ol, .feedback-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;}
+
+        /* Estilo específico para feedback bruto (quando parse falha) */
+         .raw-feedback-pre pre {
+             white-space: pre-wrap;
+             word-wrap: break-word;
+             font-size: 0.85em;
+             background-color: var(--bs-body-bg); /* Fundo diferente para destacar */
+             padding: 0.75rem;
+             border-radius: 0.25rem;
+             border: 1px dashed var(--bs-danger-border-subtle); /* Borda tracejada de aviso */
+             color: var(--bs-secondary-color); /* Cor mais suave */
+         }
+
         .score-highlight {
             font-weight: bold;
             color: var(--bs-primary); /* Ou outra cor de destaque */
@@ -46,16 +69,18 @@
             {% if submitted_exam_context %}
             <div class="mb-3">
                 <h2 class="h5 fw-normal mb-2">Questão Avaliada (Contexto)</h2>
-                <div class="submitted-text border rounded p-3 small">
-                    <pre class="mb-0"><code>{{ submitted_exam_context }}</code></pre> {# Usa <pre> para manter formatação #}
+                 {# <<< ALTERADO: Usa div com markdownify >>> #}
+                <div class="submitted-text-markdown small">
+                    {{ submitted_exam_context | markdownify }}
                 </div>
             </div>
             {% endif %}
             {% if submitted_user_answer %}
             <div class="mb-3">
                 <h2 class="h5 fw-normal mb-2">Sua Resposta (Submetida)</h2>
-                <div class="submitted-text border rounded p-3 small">
-                     <pre class="mb-0"><code>{{ submitted_user_answer }}</code></pre> {# Usa <pre> #}
+                 {# <<< ALTERADO: Usa div com markdownify >>> #}
+                <div class="submitted-text-markdown small">
+                     {{ submitted_user_answer | markdownify }}
                 </div>
             </div>
             {% endif %}
@@ -79,15 +104,18 @@
                     {% with main_feedback=parsed_scores.Comentários justification_feedback=parsed_scores.Justificativa_NC %}
                         {% if main_feedback or justification_feedback %}
                             <p class="mb-1"><strong>Feedback Descritivo:</strong></p>
-                            {% if main_feedback %}
-                                <p class="text-muted mb-2">{{ main_feedback|linebreaksbr }}</p>
-                            {% endif %}
-                            {% if justification_feedback and justification_feedback != main_feedback %}
-                                <p class="mb-1 mt-2"><strong>Justificativa NC:</strong></p>
-                                <p class="text-muted mb-0">{{ justification_feedback|linebreaksbr }}</p>
-                            {% elif not main_feedback and justification_feedback %}
-                                 <p class="text-muted mb-0">{{ justification_feedback|linebreaksbr }}</p>
-                            {% endif %}
+                             {# <<< ALTERADO: Aplica markdownify ao feedback >>> #}
+                            <div class="feedback-markdown">
+                                {% if main_feedback %}
+                                    {{ main_feedback | markdownify }}
+                                {% endif %}
+                                {% if justification_feedback and justification_feedback != main_feedback %}
+                                     <p class="mb-1 mt-2"><strong>Justificativa NC:</strong></p> {# Mantém como <p> para separação #}
+                                     {{ justification_feedback | markdownify }}
+                                {% elif not main_feedback and justification_feedback %}
+                                     {{ justification_feedback | markdownify }}
+                                {% endif %}
+                            </div>
                         {% else %}
                             <p class="text-muted mb-0">Nenhum feedback descritivo extraído.</p>
                         {% endif %}
@@ -103,7 +131,10 @@
          <div class="evaluation-section"> {# Usa mesma classe #}
              <h2 class="h5 fw-normal mb-3 text-secondary">Resultado Bruto da IA (Falha no Parsing)</h2>
              <div class="alert alert-warning small">Não foi possível extrair os dados detalhados do texto abaixo. Verifique o formato da resposta da IA ou o parser.</div>
-             <pre class="small"><code>{{ evaluation_result_text }}</code></pre> {# Usa <pre> #}
+              {# <<< ALTERADO: Usa div com classe específica para <pre> >>> #}
+             <div class="raw-feedback-pre">
+                 <pre><code>{{ evaluation_result_text }}</code></pre>
+             </div>
          </div>
     {% endif %}
 

@@ -1,5 +1,6 @@
 {% extends 'generator/base.html' %}
 {% load static %}
+{% load markdownify %} {# <<< ADICIONADO: Carrega a tag markdownify #}
 
 {% block title %}Gerador de Questão Discursiva - Gerador IA{% endblock title %}
 
@@ -7,25 +8,66 @@
     <link rel="stylesheet" href="{% static 'generator/css/exam_generator_styles.css' %}">
     {# Estilos inline mínimos para espaçamento e <pre> #}
     <style>
-        .generated-exam-text pre {
-            white-space: pre-wrap; /* Permite quebra de linha no <pre> */
+        /* Estilos base */
+        .nav-tabs .nav-link {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+            border-bottom: none;
+            color: var(--bs-secondary-color);
+            background-color: var(--bs-tertiary-bg);
+            border-color: var(--bs-border-color);
+            padding: 0.5rem 1rem;
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--bs-primary);
+            background-color: var(--bs-body-bg); /* Fundo do corpo para aba ativa */
+            border-color: var(--bs-border-color);
+            border-bottom-color: var(--bs-body-bg); /* Esconde a borda inferior */
+            font-weight: 600;
+        }
+        .filters-container {
+            border: 1px solid var(--bs-border-color);
+            border-top: none; /* Remove borda superior pois as abas já têm */
+            padding: 1.5rem;
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            background-color: var(--bs-body-bg); /* Fundo do corpo */
+        }
+        .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; /* Menor margem */ }
+        .form-control, .form-select { font-size: 0.9rem; /* Tamanho de fonte padrão para inputs */ }
+        .form-control-sm, .form-select-sm { font-size: 0.85rem; } /* Mantém sm se usado */
+        .form-text { font-size: 0.75rem; /* Texto de ajuda menor */ }
+        .btn-filter-action { font-size: 0.9rem; }
+
+        /* Estilo para o texto da questão renderizado (substitui o <pre>) */
+        .generated-exam-markdown {
+            white-space: pre-wrap; /* Mantém quebras de linha e espaços */
             word-wrap: break-word;
             background-color: var(--bs-tertiary-bg);
             padding: 1rem;
             border-radius: 0.375rem;
             border: 1px solid var(--bs-border-color);
             font-size: 0.9em; /* Texto um pouco menor */
+            line-height: 1.6; /* Melhora legibilidade */
         }
+        .generated-exam-markdown p { margin-bottom: 0.5rem; } /* Espaçamento entre parágrafos se houver */
+        .generated-exam-markdown strong { font-weight: 600; } /* Garante negrito */
+        .generated-exam-markdown ol,
+        .generated-exam-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;} /* Indentação de listas */
+
+
         /* Garante que labels fiquem acima dos campos */
         label { display: block; margin-bottom: 0.25rem; }
-        /* Garante que o help text fique abaixo */
-        .form-text { width: 100%; }
+
+         /* Ajuste para textarea (tópico) */
+        #{{ form.base_topic_or_context.id_for_label }} {
+            min-height: 80px; /* Altura mínima para o campo tópico */
+        }
+
     </style>
 {% endblock extra_head %}
 
 {% block content %}
-
-    {# Removido header principal da página #}
 
     {# Mensagens #}
     {% if not service_initialized %}
@@ -35,58 +77,98 @@
     {% endif %}
     {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
 
-    {# Formulário para gerar a QUESTÃO discursiva (Layout Ajustado) #}
-    <div class="mb-4"> {# Margem inferior #}
-         <h1 class="h4 mb-3 fw-normal">Gerar Nova Questão Discursiva</h1> {# Título simplificado #}
-        <form method="post" action="{% url 'generator:generate_discursive_exam' %}" id="discursive-exam-form" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
-            {% csrf_token %}
-            {# Campo Tópico/Contexto Base (continua ocupando largura total) #}
-            <div class="mb-3">
-                <label for="{{ form.base_topic_or_context.id_for_label }}" class="form-label small fw-medium">{{ form.base_topic_or_context.label }}</label>
-                {{ form.base_topic_or_context }}
-                {% if form.base_topic_or_context.help_text %}<small class="form-text text-muted">{{ form.base_topic_or_context.help_text }}</small>{% endif %}
-                {% if form.base_topic_or_context.errors %}<div class="invalid-feedback d-block">{{ form.base_topic_or_context.errors|striptags }}</div>{% endif %}
-            </div>
+    {# --- Abas de Navegação --- #}
+    <ul class="nav nav-tabs mb-0" id="mainTabs" role="tablist">
+       <li class="nav-item" role="presentation">
+         {# Link para Gerador C/E #}
+         <a class="nav-link" href="{% url 'generator:generate_questions' %}">Gerador C/E</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         {# Link/Aba Ativa para Gerador Discursiva #}
+         <a class="nav-link active" href="{% url 'generator:generate_discursive_exam' %}" id="discursivas-tab" role="tab" aria-selected="true">Gerador Discursiva</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         {# Link para Configurar Simulado #}
+         <a class="nav-link" href="{% url 'generator:configurar_simulado' %}">Configurar Simulado</a>
+       </li>
+       <li class="nav-item" role="presentation">
+         {# Link para Dashboard #}
+         <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a>
+       </li>
+       {# Adicione outras abas principais se desejar #}
+    </ul>
+    {# --- Fim Abas de Navegação --- #}
 
-            {# --- LINHA PARA OPÇÕES (Layout em Grade Ajustado) --- #}
-            <div class="row g-3 mb-3"> {# Usando g-3 para espaçamento padrão #}
-                {# Número de Aspectos #}
-                <div class="col-sm-6 col-md-4 col-lg-3"> {# 4 colunas em LG, 3 em MD, 2 em SM #}
-                    <label for="{{ form.num_aspects.id_for_label }}" class="form-label small fw-medium">{{ form.num_aspects.label }}</label>
-                    {{ form.num_aspects }}
-                    {% if form.num_aspects.help_text %}<small class="form-text text-muted">{{ form.num_aspects.help_text }}</small>{% endif %}
-                    {% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}
-                </div>
-                {# Área #}
-                <div class="col-sm-6 col-md-4 col-lg-3">
-                    <label for="{{ form.area.id_for_label }}" class="form-label small fw-medium">{{ form.area.label }}</label>
-                    {{ form.area }}
-                    {% if form.area.help_text %}<small class="form-text text-muted">{{ form.area.help_text }}</small>{% endif %}
-                    {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
-                </div>
-                 {# Complexidade #}
-                <div class="col-sm-6 col-md-4 col-lg-3">
-                    <label for="{{ form.complexity.id_for_label }}" class="form-label small fw-medium">{{ form.complexity.label }}</label>
-                    {{ form.complexity }}
-                    {% if form.complexity.help_text %}<small class="form-text text-muted">{{ form.complexity.help_text }}</small>{% endif %}
-                    {% if form.complexity.errors %}<div class="invalid-feedback d-block">{{ form.complexity.errors|striptags }}</div>{% endif %}
-                </div>
-                 {# Idioma #}
-                <div class="col-sm-6 col-md-12 col-lg-3"> {# Ocupa largura em MD, mas alinha em LG #}
-                    <label for="{{ form.language.id_for_label }}" class="form-label small fw-medium">{{ form.language.label }}</label>
-                    {{ form.language }}
-                    {% if form.language.help_text %}<small class="form-text text-muted">{{ form.language.help_text }}</small>{% endif %}
-                    {% if form.language.errors %}<div class="invalid-feedback d-block">{{ form.language.errors|striptags }}</div>{% endif %}
-                </div>
-            </div>
-            {# --- FIM LINHA PARA OPÇÕES --- #}
 
-            {# Botão de Geração #}
-            <button type="submit" class="btn btn-primary btn-sm" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
-                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner-discursive-exam"></span>
-                 <span id="button-text-discursive-exam">Gerar Questão</span>
-            </button>
-        </form>
+    {# Container dos Filtros - Aba Discursivas #}
+    <div class="tab-content" id="questionTypeTabContent">
+      <div class="tab-pane fade" id="objetivas-panel" role="tabpanel" aria-labelledby="objetivas-tab">
+          <div class="filters-container p-5 text-center text-muted">
+             Filtros para questões objetivas disponíveis na aba correspondente.
+         </div>
+      </div>
+      <div class="tab-pane fade show active" id="discursivas-panel" role="tabpanel" aria-labelledby="discursivas-tab">
+         <div class="filters-container shadow-sm">
+
+             {# Formulário principal #}
+            <form method="post" action="{% url 'generator:generate_discursive_exam' %}" id="discursive-exam-form" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
+                {% csrf_token %}
+
+                {# Linha principal dos filtros #}
+                <div class="row g-3">
+
+                    {# Coluna Esquerda: Tópico/Contexto #}
+                    <div class="col-lg-6">
+                        <label for="{{ form.base_topic_or_context.id_for_label }}" class="form-label fw-medium">{{ form.base_topic_or_context.label|default:"Tópico ou Contexto para Questão Discursiva" }}</label>
+                        {{ form.base_topic_or_context }}
+                        {% if form.base_topic_or_context.help_text %}<small class="form-text text-muted mt-1">{{ form.base_topic_or_context.help_text }}</small>{% endif %}
+                        {% if form.base_topic_or_context.errors %}<div class="invalid-feedback d-block">{{ form.base_topic_or_context.errors|striptags }}</div>{% endif %}
+                    </div>
+
+                    {# Coluna Direita: Nº Aspectos e Área #}
+                    <div class="col-lg-6">
+                        <div class="row g-3">
+                            {# Número de Aspectos #}
+                            <div class="col-md-6">
+                                <label for="{{ form.num_aspects.id_for_label }}" class="form-label fw-medium">{{ form.num_aspects.label|default:"Nº Aspectos" }}</label>
+                                {{ form.num_aspects }}
+                                {% if form.num_aspects.help_text %}<small class="form-text text-muted mt-1">{{ form.num_aspects.help_text }}</small>{% endif %}
+                                {% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}
+                            </div>
+
+                            {# Área #}
+                            <div class="col-md-6">
+                                <label for="{{ form.area.id_for_label }}" class="form-label fw-medium">{{ form.area.label|default:"Área (Opcional)" }}</label>
+                                {{ form.area }}
+                                {% if form.area.help_text %}<small class="form-text text-muted mt-1">{{ form.area.help_text }}</small>{% endif %}
+                                {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
+                            </div>
+                             {# Campos Complexidade e Idioma removidos do layout #}
+                        </div> {# Fim da row interna #}
+
+                         {# Botões de Ação (Alinhados à direita dentro da coluna direita) #}
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                             {# Botão Limpar #}
+                            <button type="reset" class="btn btn-outline-secondary btn-sm btn-filter-action"><i class="bi bi-x-lg"></i> Limpar</button>
+                            {# Botão Gerar Questão #}
+                            <button type="submit" class="btn btn-primary btn-sm btn-filter-action" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
+                                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner-discursive-exam"></span>
+                                 <span id="button-text-discursive-exam"><i class="bi bi-funnel-fill"></i> Gerar Questão</span>
+                            </button>
+                        </div>
+
+                    </div> {# Fim da Coluna Direita #}
+                </div> {# Fim da row principal dos filtros #}
+
+            </form> {# Fim do form principal #}
+
+         </div> {# Fim filters-container #}
+      </div> {# Fim tab-pane discursivas #}
+    </div> {# Fim tab-content #}
+
+     {# Mensagem de rodapé (como na imagem) #}
+    <div class="alert alert-secondary mt-4 small text-center">
+        Use os filtros acima para gerar novas questões discursivas.
     </div>
 
     {# Exibição de Erro Geral de Geração #}
@@ -102,11 +184,13 @@
         <hr class="my-4"> {# Separador #}
         <div class="mt-4"> {# Container simples #}
             <h2 class="h5 mb-3 fw-normal">Questão Discursiva Gerada:</h2>
-            <div class="generated-exam-text mb-3"> {# Div para aplicar estilo ao <pre> #}
-                <pre id="markdown-content">{{ discursive_exam_text }}</pre>
+             {# <<< ALTERADO: Usa DIV com filtro markdownify em vez de PRE >>> #}
+            <div class="generated-exam-markdown mb-3" id="markdown-content">
+                {{ discursive_exam_text | markdownify }}
             </div>
             <div class="text-end mb-4"> {# Botão Copiar alinhado à direita #}
-                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">Copiar Texto</button>
+                 {# <<< ALTERADO: Botão Copiar agora copia o CONTEÚDO RENDERIZADO da div >>> #}
+                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyRenderedText('markdown-content')">Copiar Texto</button>
             </div>
 
             {# Formulário para Resposta do Usuário #}
@@ -137,13 +221,17 @@
 {% block extra_js %}
     <script src="{% static 'generator/js/exam_generator_scripts.js' %}" defer></script>
     <script>
-        // Função Copiar (pode ir para exam_generator_scripts.js)
-        function copyToClipboard() {
-            const content = document.getElementById('markdown-content');
-            if (content) {
-                navigator.clipboard.writeText(content.innerText)
-                    .then(() => { alert('Texto da questão copiado!'); }) // Mensagem mais curta
+        // Função Copiar (MODIFICADA para copiar o texto renderizado da div)
+        function copyRenderedText(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                // Tenta copiar o texto como ele é exibido (preserva quebras de linha melhor que innerText)
+                navigator.clipboard.writeText(element.textContent || element.innerText)
+                    .then(() => { alert('Texto da questão copiado!'); })
                     .catch(err => { console.error('Erro ao copiar: ', err); alert('Falha ao copiar.'); });
+            } else {
+                 console.error(`Elemento com ID '${elementId}' não encontrado para cópia.`);
+                 alert('Erro: Não foi possível encontrar o texto para copiar.');
             }
         }
         // Lógica para contar palavras/linhas (assumindo que está em exam_generator_scripts.js)
