@@ -7,7 +7,7 @@
     {# Link para CSS externo (se houver) #}
     {# <link rel="stylesheet" href="{% static 'generator/css/config_simulado_styles.css' %}"> #}
     <style>
-        /* Estilos base (copiados/adaptados de question_generator) */
+        /* Estilos base (copiados/adaptados de outros templates com abas) */
         .nav-tabs .nav-link {
             border-top-left-radius: 0.375rem;
             border-top-right-radius: 0.375rem;
@@ -16,120 +16,133 @@
             background-color: var(--bs-tertiary-bg);
             border-color: var(--bs-border-color);
             padding: 0.5rem 1rem;
+            font-size: 0.9rem; /* Fonte um pouco menor nas abas */
         }
         .nav-tabs .nav-link.active {
             color: var(--bs-primary);
             background-color: var(--bs-body-bg);
             border-color: var(--bs-border-color);
-            border-bottom-color: var(--bs-body-bg);
+            border-bottom-color: var(--bs-body-bg); /* Esconde borda inferior da aba ativa */
             font-weight: 600;
         }
-        .content-container { /* Similar ao filters-container */
+        .content-container { /* Container abaixo das abas */
             border: 1px solid var(--bs-border-color);
-            border-top: none;
+            border-top: none; /* Remove borda superior para conectar com abas */
             padding: 1.5rem;
             border-bottom-left-radius: 0.375rem;
             border-bottom-right-radius: 0.375rem;
             background-color: var(--bs-body-bg);
         }
-        /* Estilos mínimos para espaçamento, se necessário */
+        /* Estilos mínimos para espaçamento no formulário */
         label { display: block; margin-bottom: 0.25rem; }
         .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; }
         .form-control, .form-select { font-size: 0.9rem; }
-        .form-control-sm, .form-select-sm { font-size: 0.85rem; }
         .form-text { font-size: 0.75rem; width: 100%; }
+        /* Ajuste para o campo de tópico ocupar mais altura */
+        #id_topic { min-height: 150px; } /* Ajuste a altura conforme necessário */
 
     </style>
 {% endblock extra_head %}
 
 {% block content %}
 
+    {# Removido header principal, navegação agora por abas #}
+
     {# Mensagens #}
     {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mb-3" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
     {% endif %}
 
-    {# Abas de Navegação (Adaptadas para o contexto de configurar simulado) #}
-    <ul class="nav nav-tabs mb-0" id="configTab" role="tablist">
-       {# Links inativos para outras páginas principais #}
+    {# --- Abas de Navegação --- #}
+    <ul class="nav nav-tabs mb-0" id="mainTabs" role="tablist">
        <li class="nav-item" role="presentation">
          <a class="nav-link" href="{% url 'generator:generate_questions' %}">Gerador C/E</a>
        </li>
        <li class="nav-item" role="presentation">
          <a class="nav-link" href="{% url 'generator:generate_discursive_exam' %}">Gerador Discursiva</a>
        </li>
-       {# Aba ativa para configurar simulado #}
        <li class="nav-item" role="presentation">
-         <span class="nav-link active" id="config-simulado-tab" role="tab" aria-selected="true">Configurar Simulado</span>
+         {# Aba ativa para configurar simulado #}
+         <button class="nav-link active" id="config-simulado-tab" data-bs-toggle="tab" data-bs-target="#config-simulado-panel" type="button" role="tab" aria-controls="config-simulado-panel" aria-selected="true">Configurar Simulado</button>
        </li>
        <li class="nav-item" role="presentation">
          <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a>
        </li>
     </ul>
 
-    {# Container Principal #}
-    <div class="tab-content" id="configTabContent">
+    {# --- Conteúdo das Abas --- #}
+    <div class="tab-content" id="mainTabsContent">
+      {# Painel da Aba Configurar Simulado (único visível nesta página) #}
       <div class="tab-pane fade show active" id="config-simulado-panel" role="tabpanel" aria-labelledby="config-simulado-tab">
-        <div class="content-container shadow-sm"> {# Usa a classe content-container #}
+        <div class="content-container shadow-sm">
 
-            <div class="mb-4"> {# Adiciona margem inferior geral #}
-                <h1 class="h4 mb-3 fw-normal">Configurar Novo Simulado C/E</h1> {# Título simplificado #}
-                <form method="post" action="{% url 'generator:configurar_simulado' %}">
-                    {% csrf_token %}
+            {# Formulário com layout inspirado na imagem #}
+            <form method="post" action="{% url 'generator:configurar_simulado' %}">
+                {% csrf_token %}
 
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger py-2 small"> {# Erro pequeno #}
-                            {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2 small">
+                        {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="row g-4"> {# Linha principal do formulário #}
+
+                    {# Coluna Esquerda: Tópico/Contexto #}
+                    <div class="col-md-7 col-lg-8">
+                        <div class="mb-3">
+                             {# Usa o widget Textarea definido no forms.py #}
+                            <label for="{{ form.topico.id_for_label }}" class="form-label small fw-medium">{{ form.topico.label }}</label>
+                            {{ form.topico }}
+                            {% if form.topico.help_text %}<div class="form-text text-muted small">{{ form.topico.help_text|safe }}</div>{% endif %}
+                            {% if form.topico.errors %}<div class="invalid-feedback d-block">{{ form.topico.errors|striptags }}</div>{% endif %}
                         </div>
-                    {% endif %}
+                    </div>
 
-                    <div class="row g-3 mb-3"> {# Linha para os filtros #}
+                    {# Coluna Direita: Opções e Botões #}
+                    <div class="col-md-5 col-lg-4">
                         {# Número de Questões C/E #}
-                        <div class="col-md-6 col-lg-3">
-                            <label for="{{ form.num_ce.id_for_label }}" class="form-label small">{{ form.num_ce.label }}</label>
+                        <div class="mb-3">
+                            <label for="{{ form.num_ce.id_for_label }}" class="form-label small fw-medium">{{ form.num_ce.label }}</label>
                             {{ form.num_ce }}
                             {% if form.num_ce.help_text %}<div class="form-text text-muted small">{{ form.num_ce.help_text|safe }}</div>{% endif %}
                             {% if form.num_ce.errors %}<div class="invalid-feedback d-block">{{ form.num_ce.errors|striptags }}</div>{% endif %}
                         </div>
 
                         {# Área #}
-                        <div class="col-md-6 col-lg-3">
-                            <label for="{{ form.area.id_for_label }}" class="form-label small">{{ form.area.label }}</label>
+                        <div class="mb-3">
+                            <label for="{{ form.area.id_for_label }}" class="form-label small fw-medium">{{ form.area.label }}</label>
                             {{ form.area }}
                             {% if form.area.help_text %}<div class="form-text text-muted small">{{ form.area.help_text|safe }}</div>{% endif %}
                             {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
                         </div>
 
                          {# Dificuldade C/E #}
-                        <div class="col-md-6 col-lg-3">
-                            <label for="{{ form.dificuldade_ce.id_for_label }}" class="form-label small">{{ form.dificuldade_ce.label }}</label>
+                        <div class="mb-3">
+                            <label for="{{ form.dificuldade_ce.id_for_label }}" class="form-label small fw-medium">{{ form.dificuldade_ce.label }}</label>
                             {{ form.dificuldade_ce }}
                             {% if form.dificuldade_ce.help_text %}<div class="form-text text-muted small">{{ form.dificuldade_ce.help_text|safe }}</div>{% endif %}
                             {% if form.dificuldade_ce.errors %}<div class="invalid-feedback d-block">{{ form.dificuldade_ce.errors|striptags }}</div>{% endif %}
                         </div>
 
-                        {# Tópico #}
-                        <div class="col-md-6 col-lg-3">
-                            <label for="{{ form.topico.id_for_label }}" class="form-label small">{{ form.topico.label }}</label>
-                            {{ form.topico }}
-                            {% if form.topico.help_text %}<div class="form-text text-muted small">{{ form.topico.help_text|safe }}</div>{% endif %}
-                            {% if form.topico.errors %}<div class="invalid-feedback d-block">{{ form.topico.errors|striptags }}</div>{% endif %}
+                        {# Botões de Ação #}
+                        <div class="mt-4 d-flex gap-2"> {# d-flex e gap para espaçar botões #}
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('config-simulado-form').reset();"> {# Botão Limpar (precisa de ID no form) #}
+                                <i class="bi bi-x-lg"></i> Limpar
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"> {# Botão principal ocupa espaço restante #}
+                                <i class="bi bi-play-circle-fill me-1"></i> Iniciar Simulado
+                            </button>
                         </div>
-                    </div> {# Fim da row g-3 #}
+                    </div> {# Fim Coluna Direita #}
 
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary btn-sm"> {# Botão menor #}
-                            <i class="bi bi-play-circle-fill me-1"></i> Iniciar Simulado
-                        </button>
-                         <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm ms-2">Cancelar</a> {# Botão menor #}
-                    </div>
-                </form>
-            </div>
+                </div> {# Fim da row principal #}
+            </form>
 
         </div> {# Fim content-container #}
       </div> {# Fim tab-pane #}
@@ -137,11 +150,18 @@
 
      {# Mensagem de rodapé como na imagem de filtros #}
     <div class="alert alert-secondary mt-4 small text-center">
-        Selecione os filtros desejados e clique em "Iniciar Simulado".
+        Use os filtros acima para gerar um novo simulado C/E.
     </div>
 
 {% endblock content %}
 
 {% block extra_js %}
-{# Nenhum JS específico para este formulário por enquanto #}
+{# Adiciona ID ao form se for usar o botão Limpar com JS #}
+<script>
+    // Adiciona ID ao formulário para o botão Limpar funcionar
+    const form = document.querySelector('form[action="{% url 'generator:configurar_simulado' %}"]');
+    if (form) {
+        form.id = 'config-simulado-form';
+    }
+</script>
 {% endblock extra_js %}
