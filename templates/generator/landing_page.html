@@ -149,10 +149,13 @@
 
 {% block content %} {# Bloco content começa aqui #}
     <div class="text-center mb-5">
-        <h1 class="display-6 fw-semibold text-body-emphasis mb-2">Bem-vindo ao CESPE GENERATOR</h1>
-        <p class="lead fs-6 text-body-secondary col-lg-8 mx-auto">
-            Selecione uma opção abaixo ou clique em um tópico em destaque.
-        </p>
+        <h1 class="display-6 fw-semibold text-body-emphasis mb-2">
+            {% if user.is_authenticated %} {# Verifica se o usuário está logado #}
+                Bem-vindo(a) ao Meu Gerador IA, {{ user.username }}! {# Exibe o nome de usuário #}
+            {% else %} {# Caso contrário #}
+                Bem-vindo ao Meu Gerador IA {# Exibe a mensagem padrão #}
+            {% endif %}
+        </h1>
          {# Mensagens #}
          {% if messages %}
              {% for message in messages %}

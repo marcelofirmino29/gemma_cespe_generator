@@ -23,9 +23,10 @@ urlpatterns = [
 
     # URLs do Módulo Jogos
     path('jogos/', views.games_hub_view, name='games_hub'),
-    path('jogo/arrastar-soltar/ml/', views.drag_drop_ml_game_view, name='drag_drop_ml_game'),
-    path('jogo/scratch-js/', views.scratch_js_view, name='scratch_js_game'),
-    path('jogo/word_search_lgpd_game', views.word_search_lgpd_view, name='word_search_lgpd_game'),
+    path('jogos/drag-drop-ml/', views.drag_drop_ml_game_view, name='game_drag_drop_ml'), # <--- CORRIGIDO
+    path('jogos/word_search_lgpd_game', views.word_search_lgpd_view, name='word_search_lgpd_game'),
+    path('jogos/aventura-dados/', views.aventura_dados_view, name='aventura_dados'),
+    path('jogos/scratch-js/', views.scratch_js_view, name='scratch_js_game'), # <--- VERIFIQUE ESTA LINHA
 
     # Módulo de Perguntas
     path('pergunte-ia/', views.ask_ai_view, name='ask_ai'),

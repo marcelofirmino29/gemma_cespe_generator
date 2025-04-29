@@ -12,20 +12,35 @@
             padding: 0.3rem 0.8rem;
             margin: 0.25rem;
             border-radius: 0.375rem; /* rounded-md */
-            border: 1px solid var(--bs-border-color-translucent); /* Usa variável Bootstrap */
-            background-color: var(--bs-tertiary-bg); /* Fundo sutil */
-            color: var(--bs-emphasis-color); /* Cor de texto padrão */
+            border: 1px solid var(--bs-border-color-translucent);
+            background-color: var(--bs-tertiary-bg);
+            color: var(--bs-emphasis-color);
             font-size: 0.8rem;
             font-weight: 500;
             cursor: grab;
-            transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+            transition: background-color 0.2s, border-color 0.2s, opacity 0.2s, box-shadow 0.2s; /* Added box-shadow transition */
             user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+            outline: none; /* Remove default outline, we'll add custom */
         }
         .draggable-tag:hover {
             border-color: var(--bs-secondary);
             background-color: var(--bs-secondary-bg);
         }
-        .dragging {
+        /* Estilo para item focado pelo teclado */
+        .draggable-tag:focus {
+            box-shadow: 0 0 0 0.2rem var(--bs-primary-border-subtle); /* Bootstrap focus ring style */
+            border-color: var(--bs-primary);
+        }
+        /* Estilo para item selecionado pelo teclado */
+        .draggable-tag.selected-by-keyboard {
+            background-color: var(--bs-primary);
+            color: var(--bs-white);
+            border-color: var(--bs-primary-dark);
+            box-shadow: 0 0 0 0.2rem var(--bs-primary-border-subtle);
+            cursor: grabbing; /* Indicate it's 'held' */
+        }
+
+        .dragging { /* Estilo para item sendo arrastado pelo mouse */
             opacity: 0.4;
             border-style: dashed;
         }
@@ -34,10 +49,17 @@
             padding: 1rem;
             border: 1px solid var(--bs-border-color);
             border-radius: 0.5rem; /* rounded-lg */
-            background-color: var(--bs-body-bg); /* Fundo do body */
+            background-color: var(--bs-body-bg);
             margin-bottom: 2rem;
             min-height: 100px;
+            outline: none; /* Remove default outline */
         }
+        /* Estilo para container focado */
+         #algorithms-source-container:focus-within { /* Use focus-within for child focus */
+             box-shadow: 0 0 0 0.2rem var(--bs-secondary-border-subtle);
+             border-color: var(--bs-secondary);
+         }
+
         /* Zonas de Soltar */
         .drop-zone {
             min-height: 300px;
@@ -49,10 +71,18 @@
             align-items: center;
             justify-content: flex-start;
             background-color: var(--bs-tertiary-bg);
-            transition: background-color 0.2s, border-color 0.2s;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; /* Added box-shadow transition */
             overflow-y: auto;
             max-height: 500px;
+            outline: none; /* Remove default outline */
         }
+        /* Estilo para zona focada */
+        .drop-zone:focus {
+             box-shadow: 0 0 0 0.2rem var(--bs-primary-border-subtle);
+             border-color: var(--bs-primary);
+             border-style: solid; /* Make border solid on focus */
+        }
+
         .drop-zone h3 {
             font-weight: 600;
             color: var(--bs-secondary-color);
@@ -69,28 +99,29 @@
         }
         /* Cores das bordas das zonas */
         #zone-supervised { border-color: var(--bs-purple); }
-        #zone-unsupervised { border-color: var(--bs-teal); } /* Usando teal */
-        #zone-reinforcement { border-color: var(--bs-warning); } /* Usando warning */
+        #zone-unsupervised { border-color: var(--bs-teal); }
+        #zone-reinforcement { border-color: var(--bs-warning); }
         #zone-deeplearning { border-color: var(--bs-pink); }
 
         .drop-zone .draggable-tag {
              margin-bottom: 0.5rem;
              width: 90%;
              font-size: 0.75rem;
-             background-color: var(--bs-body-bg); /* Fundo branco/escuro */
+             background-color: var(--bs-body-bg);
              border-color: var(--bs-border-color-translucent);
-             color: var(--bs-body-color); /* Cor de texto padrão do body */
+             color: var(--bs-body-color);
         }
+        /* Estilo para zona durante drag over do mouse */
         .drag-over {
             border-style: solid;
-            /* Usa a cor da borda da zona para o highlight (pode precisar de JS ou classes específicas) */
-            /* Exemplo básico: */
              box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-             background-color: var(--bs-primary-bg-subtle); /* Fundo sutil primário */
-             border-color: var(--bs-primary); /* Borda primária */
+             background-color: var(--bs-primary-bg-subtle);
+             border-color: var(--bs-primary);
         }
+        /* Estilo para item incorreto após verificação */
         .item-incorrect {
              border: 2px solid var(--bs-danger) !important;
+             background-color: var(--bs-danger-bg-subtle) !important; /* Add subtle background */
         }
         .feedback-item { margin-bottom: 0.25rem; }
         .counter { font-size: 0.75em; color: var(--bs-secondary-color); }
@@ -101,65 +132,67 @@
     {# Container principal do jogo (sem card externo) #}
     <div class="p-3">
         <h1 class="h4 fw-normal text-center text-body-emphasis mb-3">Jogo: Categorias de Algoritmos</h1>
-        <p class="text-center text-body-secondary mb-4 small">Arraste cada algoritmo para a coluna da sua categoria correta.</p>
+        <p class="text-center text-body-secondary mb-4 small">Arraste (ou use Tab/Enter) cada algoritmo para a coluna correta.</p> {# Instrução atualizada #}
 
-        <div id="algorithms-source-container">
-            <h2 class="text-center text-body-secondary mb-3 small fw-medium">Algoritmos (arraste daqui):</h2>
+        {# Container dos algoritmos agora também é focável #}
+        <div id="algorithms-source-container" tabindex="0" aria-label="Área de origem dos algoritmos. Pressione Enter ou Espaço aqui para soltar um algoritmo selecionado.">
+            <h2 class="text-center text-body-secondary mb-3 small fw-medium">Algoritmos (Pressione Enter/Espaço para selecionar):</h2> {# Instrução atualizada #}
             <div id="draggable-list" class="text-center">
-                {# Itens arrastáveis (sem cores fixas, JS aplicará) #}
-                <div id="item-arvore" draggable="true" class="draggable-tag" data-category="supervised">Árvores de Decisão</div>
-                <div id="item-randomforest" draggable="true" class="draggable-tag" data-category="supervised">Random Forests</div>
-                <div id="item-reglog" draggable="true" class="draggable-tag" data-category="supervised">Regressão Logística</div>
-                <div id="item-reglinear" draggable="true" class="draggable-tag" data-category="supervised">Regressão Linear</div>
-                <div id="item-knn" draggable="true" class="draggable-tag" data-category="supervised">KNN</div>
-                <div id="item-svm" draggable="true" class="draggable-tag" data-category="supervised">SVM</div>
-                <div id="item-naivebayes" draggable="true" class="draggable-tag" data-category="supervised">Naive Bayes</div>
-                <div id="item-ann-sup" draggable="true" class="draggable-tag" data-category="supervised">Redes Neurais (Supervisionado)</div>
-                <div id="item-anomalia" draggable="true" class="draggable-tag" data-category="unsupervised">Detecção de Anomalias</div>
-                <div id="item-pca" draggable="true" class="draggable-tag" data-category="unsupervised">PCA</div>
-                <div id="item-apriori" draggable="true" class="draggable-tag" data-category="unsupervised">Regras de Associação (Apriori)</div>
-                <div id="item-em" draggable="true" class="draggable-tag" data-category="unsupervised">Expectation-Maximization (EM)</div>
-                <div id="item-hierarquico" draggable="true" class="draggable-tag" data-category="unsupervised">Agrupamento Hierárquico</div>
-                <div id="item-gmm" draggable="true" class="draggable-tag" data-category="unsupervised">GMM</div>
-                <div id="item-dbscan" draggable="true" class="draggable-tag" data-category="unsupervised">DBSCAN</div>
-                <div id="item-kmeans" draggable="true" class="draggable-tag" data-category="unsupervised">K-means</div>
-                <div id="item-tsne" draggable="true" class="draggable-tag" data-category="unsupervised">t-SNE</div>
-                <div id="item-ppo" draggable="true" class="draggable-tag" data-category="reinforcement">PPO</div>
-                <div id="item-sarsa" draggable="true" class="draggable-tag" data-category="reinforcement">SARSA</div>
-                <div id="item-a2c" draggable="true" class="draggable-tag" data-category="reinforcement">A2C</div>
-                <div id="item-policygradient" draggable="true" class="draggable-tag" data-category="reinforcement">Policy Gradients</div>
-                <div id="item-actorcritic" draggable="true" class="draggable-tag" data-category="reinforcement">Actor-Critic Methods</div>
-                <div id="item-qlearning" draggable="true" class="draggable-tag" data-category="reinforcement">Q-learning</div>
-                <div id="item-ddpg" draggable="true" class="draggable-tag" data-category="reinforcement">DDPG</div>
-                <div id="item-dqn" draggable="true" class="draggable-tag" data-category="reinforcement">DQN</div>
-                <div id="item-cnns" draggable="true" class="draggable-tag" data-category="deeplearning">CNNs</div>
-                <div id="item-lstms" draggable="true" class="draggable-tag" data-category="deeplearning">LSTMs</div>
-                <div id="item-gans" draggable="true" class="draggable-tag" data-category="deeplearning">GANs</div>
-                <div id="item-rnns" draggable="true" class="draggable-tag" data-category="deeplearning">RNNs</div>
-                <div id="item-transformers" draggable="true" class="draggable-tag" data-category="deeplearning">Transformers</div>
+                {# Itens arrastáveis com tabindex="0" e aria-label #}
+                <div id="item-arvore" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: Árvores de Decisão">Árvores de Decisão</div>
+                <div id="item-randomforest" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: Random Forests">Random Forests</div>
+                <div id="item-reglog" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: Regressão Logística">Regressão Logística</div>
+                <div id="item-reglinear" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: Regressão Linear">Regressão Linear</div>
+                <div id="item-knn" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: KNN">KNN</div>
+                <div id="item-svm" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: SVM">SVM</div>
+                <div id="item-naivebayes" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: Naive Bayes">Naive Bayes</div>
+                <div id="item-ann-sup" draggable="true" class="draggable-tag" data-category="supervised" tabindex="0" aria-label="Algoritmo: Redes Neurais (Supervisionado)">Redes Neurais (Supervisionado)</div>
+                <div id="item-anomalia" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: Detecção de Anomalias">Detecção de Anomalias</div>
+                <div id="item-pca" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: PCA">PCA</div>
+                <div id="item-apriori" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: Regras de Associação (Apriori)">Regras de Associação (Apriori)</div>
+                <div id="item-em" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: Expectation-Maximization (EM)">Expectation-Maximization (EM)</div>
+                <div id="item-hierarquico" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: Agrupamento Hierárquico">Agrupamento Hierárquico</div>
+                <div id="item-gmm" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: GMM">GMM</div>
+                <div id="item-dbscan" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: DBSCAN">DBSCAN</div>
+                <div id="item-kmeans" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: K-means">K-means</div>
+                <div id="item-tsne" draggable="true" class="draggable-tag" data-category="unsupervised" tabindex="0" aria-label="Algoritmo: t-SNE">t-SNE</div>
+                <div id="item-ppo" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: PPO">PPO</div>
+                <div id="item-sarsa" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: SARSA">SARSA</div>
+                <div id="item-a2c" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: A2C">A2C</div>
+                <div id="item-policygradient" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: Policy Gradients">Policy Gradients</div>
+                <div id="item-actorcritic" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: Actor-Critic Methods">Actor-Critic Methods</div>
+                <div id="item-qlearning" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: Q-learning">Q-learning</div>
+                <div id="item-ddpg" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: DDPG">DDPG</div>
+                <div id="item-dqn" draggable="true" class="draggable-tag" data-category="reinforcement" tabindex="0" aria-label="Algoritmo: DQN">DQN</div>
+                <div id="item-cnns" draggable="true" class="draggable-tag" data-category="deeplearning" tabindex="0" aria-label="Algoritmo: CNNs">CNNs</div>
+                <div id="item-lstms" draggable="true" class="draggable-tag" data-category="deeplearning" tabindex="0" aria-label="Algoritmo: LSTMs">LSTMs</div>
+                <div id="item-gans" draggable="true" class="draggable-tag" data-category="deeplearning" tabindex="0" aria-label="Algoritmo: GANs">GANs</div>
+                <div id="item-rnns" draggable="true" class="draggable-tag" data-category="deeplearning" tabindex="0" aria-label="Algoritmo: RNNs">RNNs</div>
+                <div id="item-transformers" draggable="true" class="draggable-tag" data-category="deeplearning" tabindex="0" aria-label="Algoritmo: Transformers">Transformers</div>
             </div>
         </div>
 
         <div class="mt-4"> {# Adiciona margem acima das zonas #}
-             <h2 class="text-center text-body-secondary mb-3 small fw-medium">Tipos de Aprendizado (solte os algoritmos aqui)</h2>
+             <h2 class="text-center text-body-secondary mb-3 small fw-medium">Tipos de Aprendizado (Pressione Enter/Espaço para soltar):</h2> {# Instrução atualizada #}
              <div class="row g-3"> {# Usa row e g-3 para espaçamento #}
-                <div class="col-sm-6 col-lg-3"> {# Responsivo: 2 col em SM, 4 em LG #}
-                    <div id="zone-supervised" class="drop-zone h-100" data-category="supervised">
+                {# Zonas com tabindex="0" e aria-label #}
+                <div class="col-sm-6 col-lg-3">
+                    <div id="zone-supervised" class="drop-zone h-100" data-category="supervised" tabindex="0" aria-label="Zona de Soltar: Supervisionado">
                         <h3 data-total="8">Supervisionado <span class="counter">(0/8)</span></h3>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-3">
-                    <div id="zone-unsupervised" class="drop-zone h-100" data-category="unsupervised">
+                    <div id="zone-unsupervised" class="drop-zone h-100" data-category="unsupervised" tabindex="0" aria-label="Zona de Soltar: Não Supervisionado">
                          <h3 data-total="9">Não Supervisionado <span class="counter">(0/9)</span></h3>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-3">
-                    <div id="zone-reinforcement" class="drop-zone h-100" data-category="reinforcement">
+                    <div id="zone-reinforcement" class="drop-zone h-100" data-category="reinforcement" tabindex="0" aria-label="Zona de Soltar: Por Reforço">
                          <h3 data-total="8">Por Reforço <span class="counter">(0/8)</span></h3>
                     </div>
                 </div>
                  <div class="col-sm-6 col-lg-3">
-                    <div id="zone-deeplearning" class="drop-zone h-100" data-category="deeplearning">
+                    <div id="zone-deeplearning" class="drop-zone h-100" data-category="deeplearning" tabindex="0" aria-label="Zona de Soltar: Profundo (Deep Learning)">
                          <h3 data-total="5">Profundo (Deep Learning) <span class="counter">(0/5)</span></h3>
                     </div>
                 </div>
@@ -182,33 +215,17 @@
         // Seleciona elementos
         const draggables = document.querySelectorAll('.draggable-tag');
         const dropZones = document.querySelectorAll('.drop-zone');
-        const algorithmsContainer = document.getElementById('algorithms-source-container').querySelector('#draggable-list');
+        const algorithmsSourceContainer = document.getElementById('algorithms-source-container'); // Container pai
+        const draggableList = document.getElementById('draggable-list'); // Lista dentro do container
         const checkButton = document.getElementById('check-button');
         const resetButton = document.getElementById('reset-button');
         const feedbackMessage = document.getElementById('feedback-message');
         const errorDetails = document.getElementById('error-details');
 
-        let draggedItem = null;
+        let draggedItem = null; // Item sendo arrastado pelo MOUSE
+        let selectedItemByKeyboard = null; // Item selecionado pelo TECLADO
 
         // --- Cores Aleatórias (Usando variáveis Bootstrap para tema claro/escuro) ---
-        const colorCombinations = [
-            // Pares: [classe-fundo-claro, classe-texto-claro, classe-borda-clara, classe-fundo-escuro, classe-texto-escuro, classe-borda-escura]
-            // Ou mais simples: [classe-fundo-bootstrap, classe-texto-bootstrap, classe-borda-bootstrap]
-            // Usando nomes de cores Bootstrap (ex: primary, secondary, success, etc.)
-            ['bg-primary-subtle', 'text-primary-emphasis', 'border-primary-subtle'],
-            ['bg-secondary-subtle', 'text-secondary-emphasis', 'border-secondary-subtle'],
-            ['bg-success-subtle', 'text-success-emphasis', 'border-success-subtle'],
-            ['bg-danger-subtle', 'text-danger-emphasis', 'border-danger-subtle'],
-            ['bg-warning-subtle', 'text-warning-emphasis', 'border-warning-subtle'],
-            ['bg-info-subtle', 'text-info-emphasis', 'border-info-subtle'],
-            // ['bg-light-subtle', 'text-light-emphasis', 'border-light-subtle'], // Evitar light em fundo light
-            ['bg-dark-subtle', 'text-dark-emphasis', 'border-dark-subtle'],
-            // Cores nomeadas (podem precisar de ajuste de contraste dependendo do tema)
-            ['bg-purple text-white border-purple', 'bg-purple', 'text-white', 'border-purple'], // Exemplo com cor nomeada (requer definição no CSS se não for do Bootstrap)
-            ['bg-pink text-white border-pink', 'bg-pink', 'text-white', 'border-pink'], // Exemplo
-        ];
-
-        // Mapeamento simples de cores Bootstrap para classes (Adapte conforme necessário)
         const bsColorClasses = [
             'bg-primary-subtle text-primary-emphasis border-primary-subtle',
             'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle',
@@ -216,9 +233,8 @@
             'bg-danger-subtle text-danger-emphasis border-danger-subtle',
             'bg-warning-subtle text-warning-emphasis border-warning-subtle',
             'bg-info-subtle text-info-emphasis border-info-subtle',
-            'bg-dark-subtle text-dark-emphasis border-dark-subtle', // Usando dark-subtle
-            // Adicione mais variações se desejar
-            'bg-primary text-white border-primary', // Cor sólida
+            'bg-dark-subtle text-dark-emphasis border-dark-subtle',
+            'bg-primary text-white border-primary',
             'bg-success text-white border-success',
             'bg-info text-dark border-info',
             'bg-warning text-dark border-warning',
@@ -226,7 +242,6 @@
             'bg-secondary text-white border-secondary',
             'bg-dark text-white border-dark',
         ];
-
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -236,16 +251,17 @@
         }
 
         function applyRandomColors() {
-            const shuffledColors = [...bsColorClasses]; // Usa as classes Bootstrap
+            const shuffledColors = [...bsColorClasses];
             shuffleArray(shuffledColors);
-            // Remove classes de cor antigas (exceto draggable-tag)
-             const colorPrefixes = ['bg-', 'text-', 'border-', 'alert-']; // Inclui alert- para limpar feedback anterior
+            // Remove classes de cor antigas (exceto draggable-tag e selected-by-keyboard)
              draggables.forEach(item => {
                  const currentClasses = item.className.split(' ');
-                 const baseClasses = ['draggable-tag']; // Mantém apenas esta classe base
+                 const baseClasses = ['draggable-tag'];
+                 if (item.classList.contains('selected-by-keyboard')) {
+                     baseClasses.push('selected-by-keyboard'); // Mantém seleção
+                 }
                  item.className = baseClasses.join(' ');
              });
-
             // Aplica novas cores
             draggables.forEach((item, index) => {
                 const colorIndex = index % shuffledColors.length;
@@ -255,9 +271,14 @@
 
         document.addEventListener('DOMContentLoaded', applyRandomColors);
 
-        // --- Lógica de Arrastar (Drag) ---
+        // --- Lógica de Arrastar (Drag - MOUSE) ---
         draggables.forEach(draggable => {
             draggable.addEventListener('dragstart', (e) => {
+                // Desseleciona qualquer item selecionado pelo teclado ao iniciar drag com mouse
+                if (selectedItemByKeyboard) {
+                    selectedItemByKeyboard.classList.remove('selected-by-keyboard');
+                    selectedItemByKeyboard = null;
+                }
                 draggedItem = e.target;
                 setTimeout(() => { e.target.classList.add('dragging'); }, 0);
                 e.dataTransfer.setData('text/plain', e.target.id);
@@ -268,11 +289,11 @@
                     e.target.classList.remove('dragging');
                 }
                 draggedItem = null;
-                updateCounters(); // Atualiza contadores após soltar
+                updateCounters();
             });
         });
 
-        // --- Lógica de Soltar (Drop) ---
+        // --- Lógica de Soltar (Drop - MOUSE) ---
         dropZones.forEach(zone => {
             zone.addEventListener('dragenter', (e) => { e.preventDefault(); const targetZone = e.target.closest('.drop-zone'); if (targetZone) targetZone.classList.add('drag-over'); });
             zone.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
@@ -282,7 +303,7 @@
                 const targetZone = e.target.closest('.drop-zone');
                 if (!targetZone) return;
                 targetZone.classList.remove('drag-over');
-                if (draggedItem) {
+                if (draggedItem) { // Somente se arrastado pelo MOUSE
                     if (!targetZone.contains(draggedItem)) {
                         targetZone.appendChild(draggedItem);
                         draggedItem.classList.remove('item-incorrect');
@@ -291,22 +312,69 @@
                 // dragend vai chamar updateCounters
             });
         });
-         // Permite arrastar de volta para a lista original
-         algorithmsContainer.parentElement.addEventListener('dragenter', (e) => { e.preventDefault(); e.target.closest('#algorithms-source-container').classList.add('drag-over'); });
-         algorithmsContainer.parentElement.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
-         algorithmsContainer.parentElement.addEventListener('dragleave', (e) => { const targetCont = e.target.closest('#algorithms-source-container'); if (targetCont && !targetCont.contains(e.relatedTarget)) { targetCont.classList.remove('drag-over'); }});
-         algorithmsContainer.parentElement.addEventListener('drop', (e) => {
+         // Permite arrastar de volta para a lista original (MOUSE)
+         algorithmsSourceContainer.addEventListener('dragenter', (e) => { e.preventDefault(); e.target.closest('#algorithms-source-container').classList.add('drag-over'); });
+         algorithmsSourceContainer.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+         algorithmsSourceContainer.addEventListener('dragleave', (e) => { const targetCont = e.target.closest('#algorithms-source-container'); if (targetCont && !targetCont.contains(e.relatedTarget)) { targetCont.classList.remove('drag-over'); }});
+         algorithmsSourceContainer.addEventListener('drop', (e) => {
              e.preventDefault();
              const targetCont = e.target.closest('#algorithms-source-container');
              if (!targetCont) return;
              targetCont.classList.remove('drag-over');
-             if (draggedItem) {
-                 algorithmsContainer.appendChild(draggedItem);
+             if (draggedItem) { // Somente se arrastado pelo MOUSE
+                 draggableList.appendChild(draggedItem);
                  draggedItem.classList.remove('item-incorrect');
              }
              // dragend vai chamar updateCounters
          });
 
+        // --- Lógica de Acessibilidade (TECLADO) ---
+        document.addEventListener('keydown', (e) => {
+            const focusedElement = document.activeElement;
+
+            // Se Enter ou Espaço for pressionado
+            if (e.key === 'Enter' || e.key === ' ') {
+                // 1. Foco está em um item arrastável?
+                if (focusedElement && focusedElement.classList.contains('draggable-tag')) {
+                    e.preventDefault(); // Previne scroll da página com espaço
+                    // Se NENHUM item estiver selecionado -> SELECIONA o focado
+                    if (!selectedItemByKeyboard) {
+                        selectedItemByKeyboard = focusedElement;
+                        selectedItemByKeyboard.classList.add('selected-by-keyboard');
+                        // Opcional: Anunciar seleção para leitores de tela
+                         announceForSR(`${selectedItemByKeyboard.textContent} selecionado.`);
+                    }
+                    // Se o item focado JÁ É o selecionado -> DESSELECIONA
+                    else if (selectedItemByKeyboard === focusedElement) {
+                        selectedItemByKeyboard.classList.remove('selected-by-keyboard');
+                        announceForSR(`${selectedItemByKeyboard.textContent} deselecionado.`);
+                        selectedItemByKeyboard = null;
+                    }
+                    // Se OUTRO item estiver selecionado -> troca seleção para o focado
+                    else {
+                        selectedItemByKeyboard.classList.remove('selected-by-keyboard');
+                         announceForSR(`${selectedItemByKeyboard.textContent} deselecionado.`);
+                        selectedItemByKeyboard = focusedElement;
+                        selectedItemByKeyboard.classList.add('selected-by-keyboard');
+                         announceForSR(`${selectedItemByKeyboard.textContent} selecionado.`);
+                    }
+                }
+                // 2. Foco está em uma zona de soltar OU no container de origem?
+                else if (selectedItemByKeyboard && focusedElement && (focusedElement.classList.contains('drop-zone') || focusedElement.id === 'algorithms-source-container')) {
+                    e.preventDefault();
+                    const targetContainer = focusedElement.id === 'algorithms-source-container' ? draggableList : focusedElement;
+                    const itemName = selectedItemByKeyboard.textContent; // Guarda nome antes de mover
+                    const targetName = focusedElement.getAttribute('aria-label') || 'Área de origem'; // Nome do destino
+
+                    targetContainer.appendChild(selectedItemByKeyboard); // Move o item
+                    selectedItemByKeyboard.classList.remove('selected-by-keyboard'); // Remove estilo de seleção
+                    selectedItemByKeyboard.classList.remove('item-incorrect'); // Remove erro se houver
+                    announceForSR(`${itemName} movido para ${targetName}.`); // Anuncia a ação
+                    selectedItemByKeyboard = null; // Limpa seleção
+                    updateCounters(); // Atualiza contadores
+                }
+            }
+        });
 
         // --- Lógica de Verificação ---
         checkButton.addEventListener('click', () => {
@@ -321,7 +389,7 @@
                 const droppedItems = zone.querySelectorAll('.draggable-tag');
                 droppedItems.forEach(item => {
                     totalPlaced++;
-                    const itemConcept = item.dataset.category; // Usa data-category agora
+                    const itemConcept = item.dataset.category;
                     if (itemConcept === zoneCategory) {
                         correctCount++;
                     } else {
@@ -332,17 +400,17 @@
             });
 
             const totalItems = draggables.length;
-            const itemsStillInContainer = algorithmsContainer.querySelectorAll('.draggable-tag').length;
+            const itemsStillInContainer = draggableList.querySelectorAll('.draggable-tag').length;
             feedbackMessage.className = 'mt-3 small fw-medium'; // Reset e aplica estilo menor
 
             if (itemsStillInContainer > 0) {
-                 feedbackMessage.textContent = `Por favor, arraste todos os ${totalItems} algoritmos.`;
+                 feedbackMessage.textContent = `Por favor, arraste ou mova todos os ${totalItems} algoritmos para as categorias.`;
                  feedbackMessage.classList.add('text-warning');
             } else if (correctCount === totalItems) {
                 feedbackMessage.textContent = 'Parabéns! Tudo correto!';
                 feedbackMessage.classList.add('text-success');
             } else {
-                feedbackMessage.textContent = `Correto: ${correctCount}/${totalItems}. Verifique os itens em vermelho.`;
+                feedbackMessage.textContent = `Correto: ${correctCount}/${totalItems}. Verifique os itens destacados.`;
                 feedbackMessage.classList.add('text-danger');
                 if (errors.length > 0) {
                     errorDetails.innerHTML = errors.map(err => `<p class="feedback-item">${err}</p>`).join('');
@@ -352,8 +420,14 @@
 
         // --- Lógica de Reiniciar ---
         resetButton.addEventListener('click', () => {
+            // Desseleciona item do teclado, se houver
+            if (selectedItemByKeyboard) {
+                selectedItemByKeyboard.classList.remove('selected-by-keyboard');
+                selectedItemByKeyboard = null;
+            }
+            // Move todos de volta
             draggables.forEach(draggable => {
-                algorithmsContainer.appendChild(draggable);
+                draggableList.appendChild(draggable);
                 draggable.classList.remove('item-incorrect');
             });
             feedbackMessage.textContent = '';
@@ -362,6 +436,44 @@
             updateCounters(); // Reseta contadores
             applyRandomColors(); // Reaplica cores aleatórias
         });
+
+        // --- Atualizar Contadores ---
+        function updateCounters() {
+            dropZones.forEach(zone => {
+                const count = zone.querySelectorAll('.draggable-tag').length;
+                const total = zone.querySelector('h3').dataset.total;
+                const counterSpan = zone.querySelector('.counter');
+                if (counterSpan) {
+                    counterSpan.textContent = `(${count}/${total})`;
+                }
+            });
+        }
+
+         // --- Função para Leitores de Tela (Live Region) ---
+         // Cria uma live region oculta para anunciar ações do teclado
+         const srAnnouncer = document.createElement('div');
+         srAnnouncer.setAttribute('aria-live', 'assertive'); // Anuncia imediatamente
+         srAnnouncer.setAttribute('aria-atomic', 'true'); // Anuncia a região inteira
+         // Estilo para ocultar visualmente, mas manter acessível
+         srAnnouncer.style.position = 'absolute';
+         srAnnouncer.style.width = '1px';
+         srAnnouncer.style.height = '1px';
+         srAnnouncer.style.padding = '0';
+         srAnnouncer.style.margin = '-1px';
+         srAnnouncer.style.overflow = 'hidden';
+         srAnnouncer.style.clip = 'rect(0, 0, 0, 0)';
+         srAnnouncer.style.whiteSpace = 'nowrap';
+         srAnnouncer.style.border = '0';
+         document.body.appendChild(srAnnouncer); // Adiciona ao body
+
+         function announceForSR(message) {
+             srAnnouncer.textContent = message;
+             // Limpa após um pequeno delay para permitir que seja anunciado novamente se necessário
+             setTimeout(() => {
+                 srAnnouncer.textContent = '';
+             }, 500);
+         }
+
 
         // Inicializa contadores no carregamento
         document.addEventListener('DOMContentLoaded', updateCounters);

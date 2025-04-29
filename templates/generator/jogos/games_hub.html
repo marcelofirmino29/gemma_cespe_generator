@@ -62,9 +62,9 @@
         {% endfor %}
     {% endif %}
 
-    {# Lista de Jogos Disponíveis (SEM CARDS) #}
-    {# Ajustado para 2 colunas em MD e LG para melhor visualização com poucos jogos #}
-    <div class="row row-cols-1 row-cols-md-2 g-4 justify-content-center">
+    {# Lista de Jogos Disponíveis #}
+    {# Ajustado para até 3 colunas em LG para acomodar mais jogos #}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
 
         {# Jogo 1: Arrastar e Soltar ML #}
         <div class="col d-flex align-items-stretch">
@@ -77,11 +77,11 @@
                      Associe algoritmos como SVM, KNN e K-Means às suas categorias (Supervisionado, Não Supervisionado, Por Reforço).
                  </p>
                  {# Link para o jogo específico #}
-                 <a href="{% url 'generator:drag_drop_ml_game' %}" class="btn btn-success btn-sm">Jogar</a>
+                 <a href="{% url 'generator:game_drag_drop_ml' %}" class="btn btn-success btn-sm">Jogar</a>
             </div>
         </div>
 
-        {# # Jogo 2:  Card para o Jogo Scratch JS #}
+        {# Jogo 2: Aprendendo JS com Blocos #}
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
                  <div class="text-center">
@@ -96,20 +96,36 @@
             </div>
         </div>
 
-        {# # Jogo 3:  Caça-Palavras: Termos da LGPD JS #}
+        {# Jogo 3: Caça-Palavras: Termos da LGPD #}
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
                  <div class="text-center">
-                     <i class="bi bi-check-circle-fill game-icon"></i> {# Ícone diferente #}
+                     <i class="bi bi-search game-icon"></i> {# Ícone mudado para busca #}
                      <h2 class="h6 mb-2 fw-medium">Caça-Palavras: Termos da LGPD</h2>
                  </div>
                  <p class="game-description text-center">
-                     Explore conceitos básicos de JavaScript arrastando e soltando blocos de código (estilo Scratch).
+                     Encontre termos importantes relacionados à Lei Geral de Proteção de Dados em um caça-palavras interativo.
                  </p>
                  {# Link para o jogo específico #}
                  <a href="{% url 'generator:word_search_lgpd_game' %}" class="btn btn-success btn-sm">Jogar</a>
             </div>
         </div>
+
+        {# Jogo 4: Aventura de Dados #}
+        <div class="col d-flex align-items-stretch">
+            <div class="game-item w-100">
+                 <div class="text-center">
+                     <i class="bi bi-controller game-icon"></i> {# Ícone de controle #}
+                     <h2 class="h6 mb-2 fw-medium">Aventura de Dados</h2>
+                 </div>
+                 <p class="game-description text-center">
+                     Um jogo de plataforma onde você coleta dados bons, evita dados ruins e responde a quizzes sobre ciência de dados.
+                 </p>
+                 {# Link para o jogo Aventura de Dados #}
+                 <a href="{% url 'generator:aventura_dados' %}" class="btn btn-success btn-sm">Jogar</a>
+            </div>
+        </div>
+        {# --- FIM DO NOVO JOGO --- #}
 
         {# Adicione outros jogos aqui no futuro, seguindo o mesmo padrão #}
 

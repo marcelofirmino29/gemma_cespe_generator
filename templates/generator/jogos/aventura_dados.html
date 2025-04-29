@@ -1,0 +1,684 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}A Força do ML: A Missão de BB-8{% endblock title %} {# Título Atualizado #}
+
+{% block extra_head %}
+    {# Carrega a fonte do Google Fonts #}
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    {# Ícones Bootstrap (opcional, mas pode ser útil) #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    {# CSS específico para o jogo com tema Star Wars #}
+    <style>
+        /* Estilos gerais para o corpo DENTRO do bloco de conteúdo */
+        .game-container {
+            font-family: 'Press Start 2P', cursive;
+            /* Fundo escuro espacial */
+            background: linear-gradient(to bottom, #000010, #0c1440);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 1rem;
+            box-sizing: border-box;
+            /* Cor de texto clara para contraste */
+            color: #e0e0e0; /* Cinza claro */
+            border-radius: var(--bs-border-radius-lg);
+            border: 1px solid #444; /* Borda sutil */
+        }
+        /* Estilo do Canvas */
+        canvas#gameCanvas {
+            /* Fundo do canvas - um pouco mais claro que o body */
+            background-color: #1a1a2e; /* Azul escuro profundo */
+            display: block;
+            /* Borda como metal de nave */
+            border: 4px solid #888; /* Cinza metálico */
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(76, 191, 255, 0.5); /* Brilho azul claro */
+            max-width: 100%;
+            height: auto;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 1rem; /* Adiciona espaço acima do canvas */
+        }
+        /* Estilos para Controles e Informações */
+        .game-controls { /* Mantém abaixo do canvas */
+             margin-top: 1rem;
+             text-align: center;
+             width: 100%;
+             max-width: 800px;
+             margin-left: auto;
+             margin-right: auto;
+             display: flex;
+             justify-content: center;
+             flex-wrap: wrap;
+        }
+        /* --- CSS ALTERADO PARA ORGANIZAÇÃO DA INFO --- */
+        .game-info {
+            text-align: center;
+            color: #c0c0ff; /* Azul claro/lavanda para texto */
+            width: 100%;
+            max-width: 800px; /* Limita largura */
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 0.85rem; /* Levemente menor */
+            margin-bottom: 0.75rem; /* Mais espaço abaixo */
+            display: flex;
+            justify-content: space-between; /* Espaça os 3 blocos */
+            align-items: center; /* Alinha verticalmente */
+            flex-wrap: wrap; /* Permite quebrar */
+            padding: 0 1rem; /* Adiciona padding lateral */
+            box-sizing: border-box;
+        }
+        .game-info > div { /* Estilo para cada bloco de info (Score, Nível, Tempo) */
+            margin: 0.2rem 0.5rem; /* Espaçamento entre blocos */
+            white-space: nowrap; /* Evita quebra de linha dentro do bloco */
+        }
+        /* --- FIM DAS ALTERAÇÕES CSS INFO --- */
+
+         /* Estilo específico para o cronómetro */
+         #timer-display {
+             color: #f0ad4e; /* Cor amarela/laranja para destaque */
+             font-weight: bold;
+         }
+
+        .control-button {
+            font-family: 'Press Start 2P', cursive;
+            /* Botões com tema: fundo escuro, texto claro, borda brilhante */
+            background-color: #333; /* Cinza escuro */
+            color: #00ffea; /* Azul/Verde Ciano (Neon) */
+            border: 2px solid #00ffea;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px; /* Cantos mais retos */
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0, 255, 234, 0.5); /* Brilho Ciano */
+            transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+            user-select: none;
+            font-size: 0.8rem;
+        }
+        .control-button:hover {
+             background-color: #444; /* Cinza um pouco mais claro */
+             box-shadow: 0 0 12px rgba(0, 255, 234, 0.8);
+        }
+        .control-button:active {
+            background-color: #555;
+            transform: translateY(2px);
+            box-shadow: 0 0 5px rgba(0, 255, 234, 0.6);
+        }
+
+        /* Estilo para a caixa de diálogo do quiz (Modal) - Holocron/DataPad */
+        #quiz-modal {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #111; /* Fundo quase preto */
+            padding: 25px;
+            border: 3px solid #4db8ff; /* Borda azul clara (Holocron) */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(77, 184, 255, 0.6); /* Brilho azul */
+            z-index: 1056;
+            text-align: center;
+            width: 90%;
+            max-width: 450px; /* Um pouco maior */
+            color: #e0e0e0; /* Texto claro */
+        }
+        #quiz-modal p#quiz-question { /* Pergunta destacada */
+            margin-bottom: 20px;
+            font-size: 1rem; /* Maior */
+            color: #fff; /* Branco */
+            font-weight: bold;
+            text-shadow: 0 0 5px #4db8ff; /* Sombra de texto azul */
+        }
+        #quiz-modal button {
+            font-family: 'Press Start 2P', cursive;
+            /* Botões de opção no modal */
+            background-color: #2a2a4a; /* Azul escuro/roxo */
+            color: #c0c0ff; /* Lavanda */
+            border: 1px solid #4a4a8a;
+            padding: 10px 15px; /* Mais padding */
+            margin: 8px 0; /* Maior margem vertical */
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 0.85rem; /* Levemente maior */
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left; /* Alinha texto do botão à esquerda */
+        }
+        #quiz-modal button:hover {
+            background-color: #4a4a8a; /* Mais claro no hover */
+            color: #fff;
+        }
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Overlay mais escuro */
+            z-index: 1055;
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* Responsividade */
+        @media (max-width: 600px) {
+            .game-container h1 {
+                font-size: 1.2rem; /* Ajusta título */
+            }
+            .game-info {
+                font-size: 0.8rem;
+                justify-content: center; /* Centraliza em telas pequenas */
+            }
+             .game-info > div {
+                 margin: 0.1rem 0.4rem; /* Ajusta margem para telas pequenas */
+             }
+             #quiz-modal p#quiz-question {
+                 font-size: 0.9rem;
+             }
+             #quiz-modal button {
+                 font-size: 0.8rem;
+                 padding: 8px 12px;
+             }
+        }
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+    {# Container principal para o conteúdo do jogo #}
+    <div class="game-container">
+
+        {# Título temático Star Wars #}
+        <h1 class="h2 fw-bold text-info mb-4 text-center" style="text-shadow: 0 0 8px #4db8ff;">
+             <i class="bi bi-gear-wide-connected"></i> A Força do ML: A Missão de BB-8 <i class="bi bi-gear-wide-connected"></i>
+        </h1>
+
+        {# Informações do Jogo (Estrutura HTML Alterada) #}
+        <div class="game-info" id="score-info">
+            <div>Dados (ML): <span id="score">0</span></div> {# Rótulo mais curto #}
+            <div>Setor: <span id="level">1</span></div> {# Rótulo mais curto #}
+            <div>Tempo: <span id="timer-display">00:00</span></div>
+        </div>
+        <div class="game-info" id="message-info" style="min-height: 1.5em; font-weight: bold;"></div>
+
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div class="game-controls">
+            <button id="left-btn" class="control-button">&lt; Rolar Esq.</button>
+            <button id="jump-btn" class="control-button">Impulso <i class="bi bi-arrow-up-circle"></i></button>
+            <button id="right-btn" class="control-button">Rolar Dir. &gt;</button>
+        </div>
+
+        {# Overlay e Modal do Quiz #}
+        <div id="overlay" class="hidden"></div>
+        <div id="quiz-modal" class="hidden">
+            <p id="quiz-question" class="fw-semibold"></p>
+            <div id="quiz-options"></div>
+             <p class="text-muted small mt-3">Use as teclas 1, 2, 3... para responder.</p>
+        </div>
+
+    </div> {# Fim do game-container #}
+{% endblock content %}
+
+
+{% block extra_js %}
+    <script>
+        // --- Seletores DOM ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const levelDisplay = document.getElementById('level');
+        const timerDisplay = document.getElementById('timer-display');
+        const messageDisplay = document.getElementById('message-info');
+        const quizModal = document.getElementById('quiz-modal');
+        const quizQuestion = document.getElementById('quiz-question');
+        const quizOptions = document.getElementById('quiz-options');
+        const overlay = document.getElementById('overlay');
+
+        console.log("Script iniciado. Seletores DOM obtidos.");
+
+        // --- Configurações do Jogo ---
+        let score = 0;
+        let currentLevel = 1;
+        const gravity = 0.55;
+        const jumpForce = 10;
+        const playerSpeed = 4.5;
+        const platformHeight = 15;
+        const collectibleSize = 20;
+        const obstacleSize = 25;
+        let gamePaused = false;
+        let gameEnded = false;
+        let originalCanvasWidth = 800;
+        let originalCanvasHeight = 400;
+        let scaleFactor = 1;
+        let playerRotation = 0;
+        const rotationSpeed = 0.15;
+
+        // --- Variáveis do Cronómetro ---
+        let timerIntervalId = null;
+        let startTime = 0;
+        let elapsedSeconds = 0;
+        let isTimerPaused = false;
+
+        // --- Constantes de Cor Temáticas ---
+        const BB8_BODY_COLOR = '#FFFFFF'; const BB8_ORANGE_COLOR = '#FF8C00'; const BB8_GREY_COLOR = '#A9A9A9'; const BB8_EYE_COLOR = '#000000';
+        const HOLOCRON_COLOR = '#00ffaa'; const OBSTACLE_COLOR = '#ff4444'; const PLATFORM_COLOR_BASE = '#6c757d'; const PLATFORM_COLOR_SPECIAL = '#8B4513';
+        const QUIZ_TRIGGER_COLOR = '#9d60ff'; const MESSAGE_SUCCESS_COLOR = '#00ffaa'; const MESSAGE_DANGER_COLOR = '#ff4444'; const MESSAGE_INFO_COLOR = '#c0c0ff';
+        const FINAL_VICTORY_COLOR = '#4db8ff';
+
+        // --- Estado do Jogador (BB-8) ---
+        const player = { radius: 18, headRadius: 10, x: 50, y: originalCanvasHeight - platformHeight - 18, dx: 0, dy: 0, onGround: false };
+        player.y = originalCanvasHeight - platformHeight - player.radius;
+
+        // --- Elementos do Jogo ---
+        let platforms = []; let collectibles = []; let obstacles = []; let quizTriggers = [];
+        const keys = { left: false, right: false, up: false };
+
+        // --- Quizzes de Machine Learning (Expandido) ---
+        const quizzes = [
+            { question: "Ensinar um dróide a reconhecer Wookies usando fotos rotuladas é:", options: ["Supervisionado", "Não Supervisionado", "Por Reforço"], correctAnswer: "Supervisionado", triggered: false },
+            { question: "Prever o preço de uma nave (valor contínuo) com base em suas características usa:", options: ["Classificação", "Regressão", "Clustering"], correctAnswer: "Regressão", triggered: false },
+            { question: "Agrupar planetas desconhecidos por semelhança atmosférica é:", options: ["Regressão", "Classificação", "Clustering (Não Supervisionado)"], correctAnswer: "Clustering (Não Supervisionado)", triggered: false },
+            { question: "Um dróide aprendendo a rota de Kessel por tentativa e erro (recompensa/punição) usa:", options: ["Supervisionado", "Por Reforço", "Não Supervisionado"], correctAnswer: "Por Reforço", triggered: false },
+            { question: "Reduzir muitas características de um dróide para as mais importantes é:", options: ["Feature Engineering", "Redução de Dimensionalidade", "Classificação"], correctAnswer: "Redução de Dimensionalidade", triggered: false },
+            { question: "Se um modelo acerta muitas previsões positivas, ele tem alta:", options: ["Acurácia", "Precisão", "Recall"], correctAnswer: "Precisão", triggered: false },
+            { question: "Se um modelo identifica quase todos os casos positivos reais, ele tem alto:", options: ["Acurácia", "Precisão", "Recall"], correctAnswer: "Recall", triggered: false },
+            { question: "Um modelo que se ajusta DEMAIS aos dados de treino (decora) sofre de:", options: ["Underfitting", "Overfitting", "Bias Elevado"], correctAnswer: "Overfitting", triggered: false },
+            { question: "Um modelo SIMPLES DEMAIS que não captura a tendência dos dados sofre de:", options: ["Underfitting", "Overfitting", "Variância Elevada"], correctAnswer: "Underfitting", triggered: false },
+            { question: "A unidade básica de processamento em uma Rede Neural é chamada de:", options: ["Pixel", "Neurônio", "Byte"], correctAnswer: "Neurônio", triggered: false },
+            { question: "Qual tipo de Rede Neural é bom para processar sequências como texto ou som?", options: ["CNN (Convolucional)", "RNN (Recorrente)", "MLP (Perceptron)"], correctAnswer: "RNN (Recorrente)", triggered: false },
+            { question: "Qual tipo de Rede Neural é excelente para reconhecimento de imagens?", options: ["CNN (Convolucional)", "RNN (Recorrente)", "K-Means"], correctAnswer: "CNN (Convolucional)", triggered: false }
+        ];
+        let currentQuiz = null;
+        let currentQuizOptions = [];
+
+        // --- Funções Auxiliares ---
+        function random(min, max) { return Math.random() * (max - min) + min; }
+        function checkCollisionCircleRect(circle, rect) { if (!circle || !rect || typeof circle.x === 'undefined' || typeof rect.x === 'undefined') { console.error("Colisão Círculo-Retângulo inválida:", circle, rect); return false; } const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width)); const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height)); const distanceX = circle.x - closestX; const distanceY = circle.y - closestY; return (distanceX * distanceX) + (distanceY * distanceY) < (circle.radius * circle.radius); }
+        function checkCollisionCircleCircle(circle1, circle2) { if (!circle1 || !circle2 || typeof circle1.x === 'undefined' || typeof circle2.x === 'undefined') { console.error("Colisão Círculo-Círculo inválida:", circle1, circle2); return false; } const dx = circle1.x - circle2.x; const dy = circle1.y - circle2.y; const radiusSum = circle1.radius + circle2.radius; return dx * dx + dy * dy < radiusSum * radiusSum; }
+
+        // --- Funções do Cronómetro ---
+        function formatTime(totalSeconds) { const minutes = Math.floor(totalSeconds / 60); const seconds = totalSeconds % 60; return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; }
+        function updateTimerDisplay() { if (!isTimerPaused) { const now = Date.now(); const deltaSeconds = Math.floor((now - startTime) / 1000); timerDisplay.textContent = formatTime(elapsedSeconds + deltaSeconds); } else { timerDisplay.textContent = formatTime(elapsedSeconds); } }
+        function startOrResumeTimer() { if (isTimerPaused || !timerIntervalId) { isTimerPaused = false; startTime = Date.now(); if (timerIntervalId) clearInterval(timerIntervalId); timerIntervalId = setInterval(updateTimerDisplay, 1000); console.log("Cronómetro iniciado/retomado."); } }
+        function pauseTimer() { if (!isTimerPaused && timerIntervalId) { isTimerPaused = true; const now = Date.now(); elapsedSeconds += Math.floor((now - startTime) / 1000); clearInterval(timerIntervalId); timerIntervalId = null; updateTimerDisplay(); console.log("Cronómetro pausado. Tempo acumulado:", elapsedSeconds); } }
+        function resetTimer() { pauseTimer(); elapsedSeconds = 0; isTimerPaused = false; startTime = Date.now(); updateTimerDisplay(); console.log("Cronómetro resetado."); }
+
+        // --- Função Game Over ---
+        function gameOver(reason = "Dados coletados chegaram a 0!") {
+            if (gameEnded) return;
+            console.log("Game Over acionado:", reason);
+            gamePaused = true;
+            gameEnded = true;
+            pauseTimer();
+            messageDisplay.textContent = `Fim da Missão! ${reason}`;
+            messageDisplay.style.color = MESSAGE_DANGER_COLOR;
+        }
+
+
+        // --- Inicialização da Missão (Nível) ---
+        function setupLevel(level) {
+            console.log(`%cIniciando setupLevel para Missão ${level} com scaleFactor ${scaleFactor.toFixed(2)}`, "color: yellow; font-weight: bold;");
+            gamePaused = false;
+            gameEnded = false;
+            const scaledRadius = player.radius * scaleFactor;
+            player.x = 50 * scaleFactor + scaledRadius;
+            player.y = (originalCanvasHeight - platformHeight) * scaleFactor - scaledRadius;
+            player.dx = 0; player.dy = 0; player.onGround = false; playerRotation = 0;
+            console.log(`   Posição inicial BB-8: x=${player.x.toFixed(1)}, y=${player.y.toFixed(1)}, raio=${scaledRadius.toFixed(1)}`);
+            keys.left = false; keys.right = false; keys.up = false;
+            collectibles = []; obstacles = []; platforms = []; quizTriggers = [];
+            quizzes.forEach(q => q.triggered = false);
+            messageDisplay.textContent = ""; levelDisplay.textContent = level;
+            const basePlatformY = (originalCanvasHeight - platformHeight) * scaleFactor;
+            const basePlatformHeight = platformHeight * scaleFactor;
+            platforms.push({ x: 0, y: basePlatformY, width: canvas.width, height: basePlatformHeight, color: PLATFORM_COLOR_BASE });
+            const scaledCollectibleSize = collectibleSize * scaleFactor; const scaledObstacleSize = obstacleSize * scaleFactor;
+            const scaledPlatformHeight = platformHeight * scaleFactor; const scaledQuizTriggerSize = 30 * scaleFactor;
+            // ... (Lógica de criação de elementos para cada nível) ...
+             if (level === 1) {
+                 console.log("   Configurando elementos da Missão 1...");
+                 platforms.push({ x: 150 * scaleFactor, y: (originalCanvasHeight - 80) * scaleFactor, width: 100 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 350 * scaleFactor, y: (originalCanvasHeight - 140) * scaleFactor, width: 120 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 600 * scaleFactor, y: (originalCanvasHeight - 100) * scaleFactor, width: 100 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 collectibles.push({ x: (180 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 105 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (400 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 165 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (630 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 125 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (750 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 45 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 obstacles.push({ x: (280 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (500 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 quizTriggers.push({ x: 200 * scaleFactor, y: (originalCanvasHeight - 110) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 0 });
+                 quizTriggers.push({ x: 700 * scaleFactor, y: (originalCanvasHeight - 150) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 1 });
+                 console.log(`   Missão 1: ${platforms.length} plat, ${collectibles.length} colet, ${obstacles.length} obst, ${quizTriggers.length} trig.`);
+             } else if (level === 2) {
+                 console.log("   Configurando elementos da Missão 2...");
+                 platforms.push({ x: 100 * scaleFactor, y: (originalCanvasHeight - 70) * scaleFactor, width: 80 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 250 * scaleFactor, y: (originalCanvasHeight - 120) * scaleFactor, width: 100 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 450 * scaleFactor, y: (originalCanvasHeight - 90) * scaleFactor, width: 120 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 650 * scaleFactor, y: (originalCanvasHeight - 150) * scaleFactor, width: 100 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 collectibles.push({ x: (120 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 95 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (300 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 145 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (500 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 115 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (700 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 175 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (50 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 45 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 obstacles.push({ x: (200 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (400 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (600 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 quizTriggers.push({ x: 150 * scaleFactor, y: (originalCanvasHeight - 100) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 2 });
+                 quizTriggers.push({ x: 550 * scaleFactor, y: (originalCanvasHeight - 120) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 3 });
+                 quizTriggers.push({ x: 750 * scaleFactor, y: (originalCanvasHeight - 200) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 4 });
+                 console.log(`   Missão 2: ${platforms.length} plat, ${collectibles.length} colet, ${obstacles.length} obst, ${quizTriggers.length} trig.`);
+              } else if (level === 3) {
+                 console.log("   Configurando elementos da Missão 3...");
+                 platforms.push({ x: 100 * scaleFactor, y: (originalCanvasHeight - 100) * scaleFactor, width: 150 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_BASE });
+                 platforms.push({ x: 350 * scaleFactor, y: (originalCanvasHeight - 160) * scaleFactor, width: 100 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 550 * scaleFactor, y: (originalCanvasHeight - 100) * scaleFactor, width: 150 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_BASE });
+                 platforms.push({ x: 300 * scaleFactor, y: (originalCanvasHeight - 60) * scaleFactor, width: 200 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 collectibles.push({ x: (150 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 125 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (400 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 185 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (650 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 125 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (350 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 85 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 obstacles.push({ x: (280 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (520 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (400 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - 80 - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 quizTriggers.push({ x: 120 * scaleFactor, y: (originalCanvasHeight - 150) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 5 });
+                 quizTriggers.push({ x: 680 * scaleFactor, y: (originalCanvasHeight - 150) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 6 });
+                 quizTriggers.push({ x: 450 * scaleFactor, y: (originalCanvasHeight - 200) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 7 });
+                 quizTriggers.push({ x: 350 * scaleFactor, y: (originalCanvasHeight - 100) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 8 });
+                 console.log(`   Missão 3: ${platforms.length} plat, ${collectibles.length} colet, ${obstacles.length} obst, ${quizTriggers.length} trig.`);
+              } else if (level === 4) {
+                 console.log("   Configurando elementos da Missão 4...");
+                 platforms.push({ x: 80 * scaleFactor, y: (originalCanvasHeight - 90) * scaleFactor, width: 70 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_BASE });
+                 platforms.push({ x: 250 * scaleFactor, y: (originalCanvasHeight - 150) * scaleFactor, width: 70 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 420 * scaleFactor, y: (originalCanvasHeight - 210) * scaleFactor, width: 70 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_BASE });
+                 platforms.push({ x: 590 * scaleFactor, y: (originalCanvasHeight - 150) * scaleFactor, width: 70 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_SPECIAL });
+                 platforms.push({ x: 720 * scaleFactor, y: (originalCanvasHeight - 90) * scaleFactor, width: 70 * scaleFactor, height: scaledPlatformHeight, color: PLATFORM_COLOR_BASE });
+                 collectibles.push({ x: (115 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 115 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (285 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 175 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (455 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 235 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (625 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 175 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 collectibles.push({ x: (755 + collectibleSize/2) * scaleFactor, y: (originalCanvasHeight - 115 - collectibleSize/2) * scaleFactor, radius: scaledCollectibleSize/2, color: HOLOCRON_COLOR, collected: false });
+                 obstacles.push({ x: (180 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (350 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (520 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 obstacles.push({ x: (690 + obstacleSize/2) * scaleFactor, y: (originalCanvasHeight - scaledPlatformHeight - obstacleSize/2) * scaleFactor, radius: scaledObstacleSize/2, color: OBSTACLE_COLOR });
+                 quizTriggers.push({ x: 100 * scaleFactor, y: (originalCanvasHeight - 140) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 9 });
+                 quizTriggers.push({ x: 440 * scaleFactor, y: (originalCanvasHeight - 260) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 10 });
+                 quizTriggers.push({ x: 700 * scaleFactor, y: (originalCanvasHeight - 140) * scaleFactor, width: scaledQuizTriggerSize, height: scaledQuizTriggerSize, color: QUIZ_TRIGGER_COLOR, quizIndex: 11 });
+                 console.log(`   Missão 4: ${platforms.length} plat, ${collectibles.length} colet, ${obstacles.length} obst, ${quizTriggers.length} trig.`);
+              }
+            resetTimer();
+            startOrResumeTimer();
+            console.log("setupLevel concluído.");
+        }
+
+        // --- Desenho ---
+        // ... (Funções drawRect, drawPlayer, drawPlatforms, drawCollectibles, drawObstacles, drawQuizTriggers SEM ALTERAÇÕES) ...
+        function drawRect(x, y, width, height, color) { ctx.fillStyle = color; ctx.fillRect(x, y, width, height); if (width > 1 && height > 1) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, width, height); } }
+        function drawPlayer() { const bodyRadius = player.radius * scaleFactor; const headRadius = player.headRadius * scaleFactor; const headOffset = bodyRadius * 0.85; ctx.save(); ctx.translate(player.x, player.y); ctx.beginPath(); ctx.arc(0, 0, bodyRadius, 0, Math.PI * 2); ctx.fillStyle = BB8_BODY_COLOR; ctx.fill(); ctx.rotate(playerRotation); ctx.fillStyle = BB8_ORANGE_COLOR; const numOrangeCircles = 3; for (let i = 0; i < numOrangeCircles; i++) { const angle = (i / numOrangeCircles) * Math.PI * 2; const circleX = Math.cos(angle) * bodyRadius * 0.6; const circleY = Math.sin(angle) * bodyRadius * 0.6; ctx.beginPath(); ctx.arc(circleX, circleY, bodyRadius * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = BB8_GREY_COLOR; ctx.beginPath(); ctx.arc(circleX, circleY, bodyRadius * 0.15, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = BB8_ORANGE_COLOR; } ctx.rotate(-playerRotation); const headX = 0; const headY = -headOffset; ctx.beginPath(); ctx.arc(headX, headY, headRadius, 0, Math.PI * 2); ctx.fillStyle = BB8_BODY_COLOR; ctx.fill(); ctx.fillStyle = BB8_GREY_COLOR; ctx.fillRect(headX - headRadius * 0.8, headY + headRadius * 0.2, headRadius * 1.6, headRadius * 0.4); ctx.fillStyle = BB8_EYE_COLOR; ctx.beginPath(); ctx.arc(headX, headY - headRadius * 0.1, headRadius * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        function drawPlatforms() { platforms.forEach(p => { let platformColor = p.color; if (typeof tinycolor === 'function') { try { const gradient = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.height); gradient.addColorStop(0, p.color); gradient.addColorStop(1, tinycolor(p.color).darken(15).toString()); platformColor = gradient; } catch (e) { platformColor = p.color; } } drawRect(p.x, p.y, p.width, p.height, platformColor); }); }
+        function drawCollectibles() { collectibles.forEach(c => { if (!c.collected) { const radius = c.radius; ctx.fillStyle = c.color; ctx.shadowColor = c.color; ctx.shadowBlur = 15 * scaleFactor; ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(Math.PI / 4); const size = radius * 1.4; ctx.fillRect(-size / 2, -size / 2, size, size); ctx.restore(); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; ctx.beginPath(); ctx.arc(c.x, c.y, radius * 0.3, 0, Math.PI * 2); ctx.fill(); } }); }
+        function drawObstacles() { obstacles.forEach(o => { const radius = o.radius; ctx.fillStyle = o.color; ctx.shadowColor = o.color; ctx.shadowBlur = 10 * scaleFactor; ctx.beginPath(); ctx.arc(o.x, o.y, radius, 0, Math.PI * 2); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.strokeStyle = '#FFF'; ctx.lineWidth = Math.max(1, 2 * scaleFactor); const sides = 6; ctx.beginPath(); ctx.moveTo(o.x + radius * 0.6 * Math.cos(0), o.y + radius * 0.6 * Math.sin(0)); for (let i = 1; i <= sides; i += 1) { ctx.lineTo(o.x + radius * 0.6 * Math.cos(i * 2 * Math.PI / sides), o.y + radius * 0.6 * Math.sin(i * 2 * Math.PI / sides)); } ctx.closePath(); ctx.stroke(); }); ctx.lineWidth = 1; }
+        function drawQuizTriggers() { quizTriggers.forEach(qt => { if (qt.quizIndex >= 0 && qt.quizIndex < quizzes.length) { const quiz = quizzes[qt.quizIndex]; if (!quiz.triggered) { const centerX = qt.x + qt.width / 2; const centerY = qt.y + qt.height / 2; const pulseFactor = Math.sin(Date.now() * 0.006) * 0.05 + 0.95; const currentWidth = qt.width * pulseFactor; const currentHeight = qt.height * pulseFactor; ctx.fillStyle = qt.color; ctx.shadowColor = qt.color; ctx.shadowBlur = 15 * scaleFactor * pulseFactor; ctx.fillRect(centerX - currentWidth / 2, centerY - currentHeight / 2, currentWidth, currentHeight); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.fillStyle = 'white'; const fontSize = Math.max(10, 18 * scaleFactor); ctx.font = `bold ${fontSize}px "Press Start 2P"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', centerX, centerY); } } else { console.warn("Índice de quiz inválido:", qt); } }); ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic'; }
+
+
+        // --- Lógica de Atualização ---
+        function update() {
+             // Alterado: Não atualiza se o jogo terminou OU se está pausado SEM o quiz visível
+             if (gameEnded || (gamePaused && quizModal.classList.contains('hidden'))) return;
+
+            const scaledRadius = player.radius * scaleFactor; const collisionRadius = scaledRadius;
+            const scaledPlayerSpeed = playerSpeed * scaleFactor; const scaledJumpForce = jumpForce * scaleFactor; const scaledGravity = gravity * scaleFactor;
+            let targetDx = 0; if (keys.left) { targetDx = -scaledPlayerSpeed; playerRotation -= rotationSpeed; } if (keys.right) { targetDx = scaledPlayerSpeed; playerRotation += rotationSpeed; }
+            player.dx = targetDx; let nextX = player.x + player.dx;
+            player.dy += scaledGravity; player.dy = Math.min(player.dy, 15 * scaleFactor); let nextY = player.y + player.dy; player.onGround = false;
+
+            // Colisão com Limites da Tela
+            if (nextX - scaledRadius < 0) { nextX = scaledRadius; player.dx = 0; }
+            if (nextX + scaledRadius > canvas.width) { nextX = canvas.width - scaledRadius; player.dx = 0; }
+            if (player.y - scaledRadius > canvas.height) {
+                gameOver("BB-8 caiu no abismo!");
+                return;
+            }
+
+            // Colisão com Plataformas
+            platforms.forEach(p => { const platformRect = { x: p.x, y: p.y, width: p.width, height: p.height }; const nextPlayerCircle = { x: nextX, y: nextY, radius: collisionRadius };
+                if (checkCollisionCircleRect(nextPlayerCircle, platformRect)) { if (player.dy >= 0 && player.y + collisionRadius <= platformRect.y + 1) { nextY = platformRect.y - collisionRadius; player.dy = 0; player.onGround = true; } else if (player.dy < 0 && player.y - collisionRadius >= platformRect.y + platformRect.height - 1) { nextY = platformRect.y + platformRect.height + collisionRadius; player.dy = 0; } const adjustedYPlayerCircle = { x: nextX, y: nextY, radius: collisionRadius }; if (checkCollisionCircleRect(adjustedYPlayerCircle, platformRect)) { if (player.dx > 0 && player.x + collisionRadius <= platformRect.x + 1) { nextX = platformRect.x - collisionRadius; player.dx = 0; } else if (player.dx < 0 && player.x - collisionRadius >= platformRect.x + platformRect.width - 1) { nextX = platformRect.x + platformRect.width + collisionRadius; player.dx = 0; } } }
+            });
+            player.x = nextX; player.y = nextY;
+
+            // Impulso (Pulo)
+            if (keys.up && player.onGround) { player.dy = -scaledJumpForce; player.onGround = false; keys.up = false; }
+
+            // Colisão com Data Chips (Coletáveis)
+            collectibles.forEach((c) => { const playerCircle = { x: player.x, y: player.y, radius: collisionRadius }; const collectibleCircle = { x: c.x, y: c.y, radius: c.radius }; if (!c.collected && checkCollisionCircleCircle(playerCircle, collectibleCircle)) { c.collected = true; score += 10; scoreDisplay.textContent = score; messageDisplay.textContent = "Data Chip de ML coletado! +10 Dados!"; messageDisplay.style.color = MESSAGE_SUCCESS_COLOR; setTimeout(() => { if (messageDisplay.textContent.includes("Data Chip")) { messageDisplay.textContent = ""; messageDisplay.style.color = MESSAGE_INFO_COLOR;} }, 1500); } });
+
+            // Colisão com Bloqueios (Obstáculos)
+            obstacles.forEach(o => { const playerCircle = { x: player.x, y: player.y, radius: collisionRadius }; const obstacleCircle = { x: o.x, y: o.y, radius: o.radius };
+                if (checkCollisionCircleCircle(playerCircle, obstacleCircle)) {
+                    messageDisplay.textContent = "Bloqueio Imperial (Erro)! -5 Dados!";
+                    messageDisplay.style.color = MESSAGE_DANGER_COLOR;
+                    score -= 5; // Reduz a pontuação
+                    scoreDisplay.textContent = score;
+                    const angle = Math.atan2(player.y - o.y, player.x - o.x); const pushForce = 8 * scaleFactor;
+                    player.dx = Math.cos(angle) * pushForce; player.dy = Math.sin(angle) * pushForce - 5 * scaleFactor;
+                    player.onGround = false; player.x += player.dx; player.y += player.dy;
+                    setTimeout(() => { if (messageDisplay.textContent.includes("Bloqueio")) { messageDisplay.textContent = ""; messageDisplay.style.color = MESSAGE_INFO_COLOR;} }, 1500);
+
+                    // Verifica Game Over APÓS atualizar a pontuação
+                    if (score <= 0) {
+                        gameOver("Dados coletados chegaram a 0!");
+                        return; // Interrompe o update
+                    }
+                }
+            });
+
+            // Colisão com Terminais (Gatilhos de Quiz)
+            quizTriggers.forEach(qt => { if (qt.quizIndex >= 0 && qt.quizIndex < quizzes.length) { const quiz = quizzes[qt.quizIndex]; const playerCircle = { x: player.x, y: player.y, radius: collisionRadius }; const triggerRect = { x: qt.x, y: qt.y, width: qt.width, height: qt.height }; if (qt && !quiz.triggered && checkCollisionCircleRect(playerCircle, triggerRect)) { quiz.triggered = true; showQuiz(quiz); } } else { console.warn("Índice de quiz inválido:", qt); } });
+
+            // Condição de Vitória da Missão
+            if (collectibles.length > 0) { const allCollected = collectibles.every(c => c.collected); if (allCollected) { messageDisplay.textContent = `Setor ${currentLevel} limpo! BB-8 recuperou os dados!`; messageDisplay.style.color = MESSAGE_SUCCESS_COLOR; gamePaused = true; currentLevel++; const maxLevel = 4; if (currentLevel <= maxLevel) { setTimeout(() => { messageDisplay.textContent = ""; messageDisplay.style.color = MESSAGE_INFO_COLOR; gamePaused = false; setupLevel(currentLevel); }, 3000); } else { setTimeout(() => { messageDisplay.textContent = "Missão Cumprida! BB-8 é um herói de ML!"; messageDisplay.style.color = FINAL_VICTORY_COLOR; pauseTimer(); gameEnded = true; /* Marca fim do jogo */ }, 3000); } collectibles = []; } }
+        }
+
+        // --- Funções do Quiz (Terminal de Dados) ---
+        function showQuiz(quiz) {
+            if (gameEnded) return; // Não mostra quiz se o jogo já terminou
+            pauseTimer();
+            gamePaused = true;
+            currentQuiz = quiz;
+            quizQuestion.textContent = quiz.question;
+            quizOptions.innerHTML = '';
+            currentQuizOptions = [];
+            const shuffledOptions = [...quiz.options].sort(() => Math.random() - 0.5);
+            shuffledOptions.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = `${index + 1}. ${option}`;
+                button.onclick = () => handleQuizAnswer(option);
+                currentQuizOptions[index] = option;
+                quizOptions.appendChild(button);
+            });
+            overlay.classList.remove('hidden');
+            quizModal.classList.remove('hidden');
+        }
+
+        function handleQuizAnswer(selectedOption) {
+            if (!currentQuiz || gameEnded) return; // Previne múltiplas respostas ou resposta após fim
+
+            let correct = selectedOption === currentQuiz.correctAnswer;
+            if (correct) {
+                messageDisplay.textContent = "Beep Boop! Correto! Dados +15!";
+                messageDisplay.style.color = MESSAGE_SUCCESS_COLOR;
+                score += 15;
+            } else {
+                messageDisplay.textContent = `Cálculo incorreto! (-5) Correto: ${currentQuiz.correctAnswer}`;
+                messageDisplay.style.color = MESSAGE_DANGER_COLOR;
+                score -= 5; // Reduz a pontuação
+            }
+            scoreDisplay.textContent = score; // Atualiza display ANTES de verificar game over
+            hideQuiz(); // Esconde o modal
+
+            // Verifica Game Over APÓS atualizar a pontuação
+            if (score <= 0) {
+                 setTimeout(() => {
+                     gameOver("Dados coletados chegaram a 0!");
+                 }, 500); // Delay para ver mensagem
+            } else {
+                 // Limpa a mensagem do quiz se não for game over
+                 setTimeout(() => { if (messageDisplay.textContent.includes("Beep Boop") || messageDisplay.textContent.includes("incorreto")) { messageDisplay.textContent = ""; messageDisplay.style.color = MESSAGE_INFO_COLOR;} }, 2500);
+            }
+        }
+
+
+        function hideQuiz() {
+            overlay.classList.add('hidden');
+            quizModal.classList.add('hidden');
+            currentQuiz = null;
+            currentQuizOptions = [];
+            // Só retoma o jogo/timer se o jogo NÃO tiver terminado
+            if (!gameEnded) {
+                gamePaused = false; // Despausa a lógica
+                startOrResumeTimer(); // Retoma o timer
+                canvas.focus();
+            }
+        }
+
+        // --- Loop Principal ---
+        let lastTime = 0; let frameCount = 0;
+        function gameLoop(timestamp) {
+            // Se o jogo terminou (game over ou vitória), apenas desenha a tela final
+            if (gameEnded) {
+                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                 ctx.fillStyle = (score <= 0) ? MESSAGE_DANGER_COLOR : FINAL_VICTORY_COLOR; // Cor depende se foi game over ou vitória
+                 ctx.font = `bold ${Math.max(18, 30 * scaleFactor)}px "Press Start 2P"`;
+                 ctx.textAlign = 'center';
+                 // Mensagem diferente para game over ou vitória
+                 const endMessage = (score <= 0) ? "FIM DE JOGO" : "MISSÃO CUMPRIDA!";
+                 ctx.fillText(endMessage, canvas.width / 2, canvas.height / 2);
+                 // Não chama requestAnimationFrame novamente, parando o loop
+                 return;
+            }
+
+            // Se o jogo está pausado para o quiz, não faz nada no loop principal
+            if (gamePaused && !quizModal.classList.contains('hidden')) {
+                 requestAnimationFrame(gameLoop); // Continua chamando o loop para manter a animação (se houver)
+                 return;
+            }
+
+
+            // --- Execução Normal do Loop ---
+            frameCount++; const deltaTime = timestamp - lastTime; lastTime = timestamp;
+            try {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawPlatforms(); drawCollectibles(); drawObstacles(); drawQuizTriggers(); drawPlayer();
+                update(); // Update só roda se não estiver pausado
+            } catch (error) {
+                console.error("Erro fatal no gameLoop:", error);
+                gameOver("Erro nos circuitos!"); // Chama game over em caso de erro
+                return; // Para o loop
+            }
+            requestAnimationFrame(gameLoop); // Chama o próximo frame
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('keydown', (e) => {
+            // --- Lógica para atalhos do Quiz ---
+            if (!quizModal.classList.contains('hidden') && currentQuiz) {
+                 const keyNumber = parseInt(e.key);
+                 if (!isNaN(keyNumber) && keyNumber >= 1 && keyNumber <= currentQuizOptions.length) {
+                     e.preventDefault();
+                     const selectedOptionText = currentQuizOptions[keyNumber - 1];
+                     console.log(`Tecla ${keyNumber} pressionada, selecionando: ${selectedOptionText}`);
+                     handleQuizAnswer(selectedOptionText);
+                     return;
+                 }
+                 if (e.key === 'Escape') { hideQuiz(); return; }
+                 // Se o quiz está aberto, ignora outras teclas (exceto números e Escape)
+                 return;
+            }
+            // --- Fim da Lógica do Quiz ---
+
+            if (gameEnded) return; // Ignora input se jogo terminou
+
+            if (gamePaused && quizModal.classList.contains('hidden')) return; // Ignora movimento se jogo pausado (mas não terminado e sem quiz)
+
+            switch (e.key.toLowerCase()) {
+                case 'arrowleft': case 'a': keys.left = true; break;
+                case 'arrowright': case 'd': keys.right = true; break;
+                case 'arrowup': case 'w': case ' ': if (!keys.up && player.onGround) keys.up = true; if (e.key === ' ') e.preventDefault(); break;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            // Keyup não precisa verificar gamePaused/gameEnded
+            switch (e.key.toLowerCase()) {
+                case 'arrowleft': case 'a': keys.left = false; break;
+                case 'arrowright': case 'd': keys.right = false; break;
+            }
+        });
+        // ... (Listeners de botão de controle SEM ALTERAÇÕES) ...
+        const leftBtn = document.getElementById('left-btn'); const rightBtn = document.getElementById('right-btn'); const jumpBtn = document.getElementById('jump-btn');
+        function handleControlStart(keyName, event) { event.preventDefault(); if (gameEnded || gamePaused) return; keys[keyName] = true; if (keyName === 'up' && !player.onGround) keys.up = false; } // Adicionado gameEnded check
+        function handleControlEnd(keyName, event) { keys[keyName] = false; }
+        leftBtn.addEventListener('mousedown', (e) => handleControlStart('left', e)); leftBtn.addEventListener('mouseup', (e) => handleControlEnd('left', e)); leftBtn.addEventListener('mouseleave', (e) => { if (keys.left) handleControlEnd('left', e); }); leftBtn.addEventListener('touchstart', (e) => handleControlStart('left', e), { passive: false }); leftBtn.addEventListener('touchend', (e) => handleControlEnd('left', e));
+        rightBtn.addEventListener('mousedown', (e) => handleControlStart('right', e)); rightBtn.addEventListener('mouseup', (e) => handleControlEnd('right', e)); rightBtn.addEventListener('mouseleave', (e) => { if (keys.right) handleControlEnd('right', e); }); rightBtn.addEventListener('touchstart', (e) => handleControlStart('right', e), { passive: false }); rightBtn.addEventListener('touchend', (e) => handleControlEnd('right', e));
+        jumpBtn.addEventListener('mousedown', (e) => handleControlStart('up', e)); jumpBtn.addEventListener('mouseup', (e) => handleControlEnd('up', e)); jumpBtn.addEventListener('touchstart', (e) => handleControlStart('up', e), { passive: false }); jumpBtn.addEventListener('touchend', (e) => handleControlEnd('up', e));
+
+        // --- Redimensionamento Responsivo ---
+        // ... (Função resizeCanvas SEM ALTERAÇÕES) ...
+        function resizeCanvas() {
+            console.log("Iniciando resizeCanvas...");
+            const container = canvas.parentElement || document.body;
+            const style = window.getComputedStyle(container);
+            const containerWidth = container.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+            const maxWidth = originalCanvasWidth; const minWidth = 300;
+            let newWidth = Math.max(minWidth, Math.min(containerWidth, maxWidth));
+            const aspectRatio = originalCanvasWidth / originalCanvasHeight;
+            let newHeight = newWidth / aspectRatio;
+            if (newWidth > 0 && newHeight > 0) {
+                canvas.width = newWidth; canvas.height = newHeight;
+                scaleFactor = newWidth / originalCanvasWidth;
+                console.log(`   Canvas definido para: ${canvas.width}x${canvas.height}, Scale Factor: ${scaleFactor.toFixed(2)}`);
+                // Só reconfigura o nível se o jogo não terminou
+                if (!gameEnded) {
+                    setupLevel(currentLevel);
+                } else {
+                     // Se o jogo terminou, apenas redesenha a tela final
+                     // (O gameLoop fará isso, mas podemos forçar aqui se necessário)
+                     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                     ctx.fillRect(0, 0, canvas.width, canvas.height);
+                     ctx.fillStyle = (score <= 0) ? MESSAGE_DANGER_COLOR : FINAL_VICTORY_COLOR;
+                     ctx.font = `bold ${Math.max(18, 30 * scaleFactor)}px "Press Start 2P"`;
+                     ctx.textAlign = 'center';
+                     const endMessage = (score <= 0) ? "FIM DE JOGO" : "MISSÃO CUMPRIDA!";
+                     ctx.fillText(endMessage, canvas.width / 2, canvas.height / 2);
+                }
+            } else { console.error("Erro ao calcular dimensões do canvas:", newWidth, newHeight); }
+            console.log("resizeCanvas concluído.");
+        }
+
+         // --- Iniciar a Missão ---
+         let tinycolor;
+         document.addEventListener('DOMContentLoaded', () => {
+             console.log("DOM Carregado.");
+             if (typeof tinycolor === 'undefined') { console.warn("TinyColor não carregado."); tinycolor = (color) => ({ darken: () => color, toString: () => color }); }
+             else { console.log("TinyColor carregado."); }
+             if (!canvas || !ctx) { console.error("ERRO FATAL: Canvas ou Contexto 2D não encontrado!"); messageDisplay.textContent = "Erro ao iniciar o Holoprojetor!"; messageDisplay.style.color = MESSAGE_DANGER_COLOR; return; }
+             console.log("Canvas e Contexto OK.");
+             window.addEventListener('resize', resizeCanvas);
+             try {
+                resizeCanvas(); // Configuração inicial de tamanho e nível
+                console.log("Chamando requestAnimationFrame pela primeira vez.");
+                requestAnimationFrame(gameLoop); // Inicia o ciclo da Força
+             } catch (error) { console.error("Erro durante a inicialização:", error); messageDisplay.textContent = "Falha na ignição! Verifique a consola."; messageDisplay.style.color = MESSAGE_DANGER_COLOR; }
+         });
+
+    </script>
+    {# Incluir TinyColor se for usar gradientes/manipulação avançada de cores #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.6.0/tinycolor.min.js"></script>
+
+{% endblock extra_js %}

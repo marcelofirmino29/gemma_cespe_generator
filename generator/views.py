@@ -1559,33 +1559,17 @@ def add_area_quick_from_generator_view(request):
     # As mensagens (success ou error) serão exibidas na página recarregada.
     return redirect('generator:generate_questions')
 
-# # --- View para Adição Rápida de Área (vinda do Gerador Discursivo) ---
-# @login_required
-# @require_POST
-# def add_area_quick_from_discursive_view(request):
-#     """Processa a adição rápida de área vinda do form da página do gerador Discursivo."""
-#     form = AreaConhecimentoForm(request.POST)
-#     if form.is_valid():
-#         try:
-#             nova_area = form.save(commit=False)
-#             # nova_area.criado_por = request.user # Opcional
-#             nova_area.save()
-#             nome_area = form.cleaned_data.get('nome')
-#             messages.success(request, f"Área '{nome_area}' adicionada com sucesso!")
-#             logger.info(f"Área rápida adicionada (via Gerador Discursivo): '{nome_area}' por {request.user.username}")
-#         except Exception as e:
-#              nome_area_tentativa = form.cleaned_data.get('nome', '[N/A]')
-#              logger.error(f"Erro ao salvar área rápida (via Gerador Discursivo) '{nome_area_tentativa}': {e}", exc_info=True)
-#              messages.error(request, f"Ocorreu um erro inesperado ao tentar salvar a área '{nome_area_tentativa}'.")
-#     else:
-#         error_list = [f"{field}: {error[0]}" for field, error in form.errors.items()]
-#         erro_msg = "Erro ao adicionar área: " + (error_list[0] if error_list else "Verifique os dados.")
-#         logger.warning(f"Tentativa inválida de adicionar Área Rápida (via Gerador Discursivo) por {request.user.username}: {form.errors.as_json()}")
-#         messages.error(request, erro_msg)
 
-#     # Redireciona de volta para a página do gerador DISCURSIVO
-#     return redirect('generator:generate_discursive_exam')
-
+@login_required # Mantém o requisito de login, remova se o jogo for público
+def aventura_dados_view(request):
+    """
+    Renderiza a página do jogo Aventura de Dados.
+    """
+    # Se precisar de contexto base (usuário, etc.), use a função auxiliar
+    # context, _, _ = _get_base_context_and_service()
+    # Se não precisar de contexto extra, pode usar um dicionário vazio:
+    context = {}
+    return render(request, 'generator/jogos/aventura_dados.html', context)
 
 # --- Função de Teste (Mantida) ---
 @login_required
