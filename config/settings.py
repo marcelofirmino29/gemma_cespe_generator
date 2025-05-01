@@ -21,7 +21,7 @@ DEBUG = False
 
 #ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-ALLOWED_HOSTS = ['https://generator-v1-2-754311810435.us-central1.run.app','*'] # Mantenha como estava ou ajuste conforme necessário para produção
+ALLOWED_HOSTS = ['https://generator-v1-2-754311810435.us-central1.run.app','.vercel.app','*'] # Mantenha como estava ou ajuste conforme necessário para produção
 CSRF_TRUSTED_ORIGINS = ['https://generator-v1-2-754311810435.us-central1.run.app'] 
 
 

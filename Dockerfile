@@ -1,23 +1,39 @@
-FROM python:3.12-alpine
+# Use uma imagem base oficial do Python
+FROM python:3.11-slim
 
+# Defina variáveis de ambiente
+ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# --- System Dependencies ---
-# Instala dependências do sistema
-RUN apk add --no-cache gcc musl-dev libffi-dev python3-dev build-base postgresql-dev
+# Crie e defina o diretório de trabalho
+WORKDIR /app
 
-WORKDIR /generator
+# Instale dependências do sistema (se necessário, ex: para psycopg2)
+# RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+# Para MySQL:
+# RUN apt-get update && apt-get install -y --no-install-recommends default-libmysqlclient-dev build-essential && rm -rf /var/lib/apt/lists/*
 
-# --- Python Dependencies ---
+
+# Instale dependências Python
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# --- Application Code ---
+# Copie o código da aplicação
 COPY . .
 
-# --- Database Migrations ---
-# Executa as migrations antes de criar o superuser ou iniciar o servidor
-RUN python manage.py migrate
+# Colete arquivos estáticos (se usar Whitenoise ou Cloud Storage gerenciado no build)
+# Certifique-se que DJANGO_SETTINGS_MODULE está definido ou use --settings
+# RUN python manage.py collectstatic --noinput --clear
+# É mais seguro definir variáveis de ambiente aqui se necessário para collectstatic
+# ARG DJANGO_SETTINGS_MODULE=seu_projeto.settings.production
+# ENV DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
+RUN python manage.py collectstatic --noinput
 
-# --- Default Runtime Command ---
-CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
+# Exponha a porta que o Gunicorn vai usar (Cloud Run espera 8080 por padrão)
+EXPOSE 8080
+
+# Comando para rodar a aplicação usando Gunicorn
+# Substitua 'seu_projeto.wsgi' pelo caminho correto do seu arquivo wsgi.py
+# O número de workers é ajustado automaticamente pelo Gunicorn baseado nos cores,
+# mas você pode ajustar se necessário. Cloud Run gerencia o scaling de instâncias.
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "seu_projeto.wsgi:application"]
