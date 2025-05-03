@@ -5,8 +5,10 @@ from django.conf import settings
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig
 # <<< Importa os PARSERS e EXCEÇÕES locais >>>
-from .utils import parse_ai_response_to_questions, parse_evaluation_scores # Garanta que este utils.py exista e contenha as funções
-from .exceptions import ConfigurationError, AIServiceError, AIResponseError, ParsingError # Garanta que este exceptions.py exista
+# Garanta que este utils.py exista e contenha as funções
+from .utils import parse_ai_response_to_questions, parse_evaluation_scores
+# Garanta que este exceptions.py exista
+from .exceptions import ConfigurationError, AIServiceError, AIResponseError, ParsingError
 
 # Define o logger UMA VEZ
 logger = logging.getLogger('generator')
@@ -143,7 +145,7 @@ class QuestionGenerationService:
             f"(Continue APENAS com Item/Gabarito/Justificativa para os {num_questions} itens totais)"
         )
         # <<< FIM DO PROMPT >>>
-        
+
         if self.safety_settings: logger.info(f"SERVICE CALL (C/E Balanceado v2): Usando {len(self.safety_settings)} regras.")
         else: logger.info("SERVICE CALL (C/E Balanceado v2): Usando safety padrão.")
         try:
@@ -163,16 +165,6 @@ class QuestionGenerationService:
         except AIResponseError as e: raise e
         except ParsingError as e: logger.error(f"Erro PARSING (C/E Balanceado v2): {e}", exc_info=True); raise ParsingError(f"Erro processar resposta IA (C/E): {e}")
         except Exception as e: logger.error(f"Erro GERAL API (C/E Balanceado v2): {e}", exc_info=True); raise AIServiceError(f"Erro comunicação API (C/E): {e}")
-
-    # --- Método _parse_questions (DEVE chamar utils.py) ---
-    def _parse_questions(self, text: str):
-        """Delega o parsing C/E para a função especializada em utils.py."""
-        logger.debug("Service: _parse_questions chamando utils.parse_ai_response_to_questions")
-        try:
-            # A função em utils.py agora precisa retornar (motivador, lista_questoes)
-            return parse_ai_response_to_questions(text)
-        except ParsingError as e: logger.error(f"Erro retornado por parser C/E: {e}"); raise e
-        except Exception as e: logger.error(f"Erro inesperado ao chamar parser C/E: {e}", exc_info=True); raise ParsingError(f"Erro inesperado no processamento C/E: {e}")
 
     # --- Método _parse_questions (Chama utils.py) ---
     def _parse_questions(self, text: str):
@@ -403,9 +395,8 @@ class QuestionGenerationService:
             logger.error(f"Erro GERAL durante chamada à API (Disc. Eval Rigor): {e}", exc_info=True)
             raise AIServiceError(f"Erro na comunicação com a API (Disc. Eval Rigor): {e}")
 
-# --- FIM DA CLASSE ---
-
-    # --- <<< NOVO MÉTODO: get_ai_response >>> ---
+# --- FIM DA CLASSE --- # Note: The class definition ends here, but there's a method outside.
+    # --- NOVO MÉTODO get_ai_response (Geral) ---
     def get_ai_response(self, user_prompt: str) -> str:
         """
         Envia um prompt genérico do usuário para a IA e retorna a resposta textual.
@@ -449,7 +440,7 @@ class QuestionGenerationService:
             logger.info("Texto (Ask AI) recebido da IA. Verificando filtro...")
 
             # # CHAMA O FILTRO PERSONALIZADO
-            # self._check_forbidden_words(generated_text, "Pergunte à IA")
+            # self._check_forbidden_words(generated_text, "Pergunte à IA") # Commented out in original
 
             logger.info("Texto passou no filtro.")
             return generated_text
@@ -461,4 +452,4 @@ class QuestionGenerationService:
             raise AIServiceError(f"Erro na comunicação com a API (Ask AI): {e}")
     # --- <<< FIM NOVO MÉTODO >>> ---
 
-# --- FIM DA CLASSE ---
+# --- FIM DA CLASSE --- # This comment seems misplaced as the class ended earlier.

@@ -46,3 +46,5 @@ uritemplate==4.1.1
 urllib3==2.4.0
 webencodings==0.5.1
 whitenoise==6.9.0
+celery>=5.0.0
+redis>=4.0.0

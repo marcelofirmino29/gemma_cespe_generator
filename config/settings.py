@@ -29,7 +29,7 @@ CSRF_TRUSTED_ORIGINS = ['https://generator-v1-2-754311810435.us-central1.run.app
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 AI_MODEL_NAME = 'gemini-1.5-pro-latest'
 AI_GENERATION_TEMPERATURE = 1.0
-AI_MAX_QUESTIONS_PER_REQUEST = 20
+AI_MAX_QUESTIONS_PER_REQUEST = 50
 
 # Configurações de Segurança para a API Google AI (Usando Strings)
 GOOGLE_AI_SAFETY_SETTINGS = [
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     # Nossos Apps:
     'generator',
     'markdownify.apps.MarkdownifyConfig',
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
@@ -98,7 +99,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# # Database
+# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -119,7 +120,15 @@ DATABASES = {
 #     }
 # }
 
-# Validação em produção
+# # ----- ADICIONE ESTAS LINHAS PARA DEBUG -----
+# print("-" * 40)
+# print(f"DEBUG settings.py: Lendo DATABASE_HOST = '{os.getenv('DATABASE_HOST')}'")
+# print(f"DEBUG settings.py: Lendo DATABASE_USER = '{os.getenv('DATABASE_USER')}'")
+# print(f"DEBUG settings.py: Lendo DATABASE_NAME = '{os.getenv('DATABASE_NAME')}'")
+# print("-" * 40)
+# # ----- FIM DAS LINHAS DE DEBUG -----
+
+# # Validação em produção
 # if not DEBUG:
 #     if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
 #     if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")

@@ -8,7 +8,10 @@ app_name = 'generator'
 urlpatterns = [
     # URLs da aplicação generator
     path('', views.landing_page_view, name='landing_page'),
-    path('questions-ce/', views.generate_questions_view, name='generate_questions'),
+
+    path('questions_ce/', views.listar_questoes_ce_view, name='questions_ce'),      # <-- Para listar/paginar existentes
+    path('gerar-questoes-ce/', views.generate_questions_view, name='generate_questions'), # <-- Para gerar novas
+
     path('validate/', views.validate_answers_view, name='validate_answers'),
     path('generate-discursive/', views.generate_discursive_view, name='generate_discursive_answer'),
     path('generate-discursive-exam/', views.generate_discursive_exam_view, name='generate_discursive_exam'),
@@ -23,10 +26,10 @@ urlpatterns = [
 
     # URLs do Módulo Jogos
     path('jogos/', views.games_hub_view, name='games_hub'),
-    path('jogos/drag-drop-ml/', views.drag_drop_ml_game_view, name='game_drag_drop_ml'), # <--- CORRIGIDO
+    path('jogos/drag-drop-ml/', views.drag_drop_ml_game_view, name='game_drag_drop_ml'),
     path('jogos/word_search_lgpd_game', views.word_search_lgpd_view, name='word_search_lgpd_game'),
     path('jogos/aventura-dados/', views.aventura_dados_view, name='aventura_dados'),
-    path('jogos/scratch-js/', views.scratch_js_view, name='scratch_js_game'), # <--- VERIFIQUE ESTA LINHA
+    path('jogos/scratch-js/', views.scratch_js_view, name='scratch_js_game'),
 
     # Módulo de Perguntas
     path('pergunte-ia/', views.ask_ai_view, name='ask_ai'),

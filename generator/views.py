@@ -1,6 +1,8 @@
 # generator/views.py
 
 from django.shortcuts import render, redirect
+from django.urls import reverse         # <<< ADICIONAR ESTA LINHA
+from urllib.parse import urlencode    # <<< ADICIONAR ESTA LINHA
 from django.conf import settings
 from django.utils import timezone
 import logging
@@ -13,6 +15,7 @@ from django.views.decorators.http import require_POST
 import json
 import re # Para expressões regulares (limpeza de texto)
 from collections import Counter # Para contar frequência de palavras
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Importa Formulários
 from .forms import (
@@ -271,146 +274,138 @@ def register_view(request):
     context = {'form': form}
     return render(request, 'generator/register.html', context)
 
-# --- VISÃO GERADOR QUESTÕES C/E (PROTEGIDA) ---
+# generator/views.py
+# (Verifique se os imports Paginator, etc., estão no topo)
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+# ... outros imports
+
+
 @login_required
 def generate_questions_view(request):
+    """
+    View Geradora C/E - Versão Final Opção B v3:
+    - POST: Limpa sessão antiga, gera questões, salva IDs/Motivador na sessão, redireciona para GET.
+    - GET:
+        - Se ?action=clear: Limpa sessão 'latest_ce', redireciona para si mesma sem o parâmetro.
+        - Senão: Tenta pegar 'latest_ce' da sessão. Se encontrar, pagina e mostra o lote.
+                 Se não encontrar, mostra só o form.
+    """
     context, service, service_initialized = _get_base_context_and_service()
-    context['questions'] = None # Lista de questões ou None
-    context['main_motivador'] = None
     context['error_message'] = context.get('error_message')
 
-    # Cria um formulário (será usado em GET e POST)
     max_q = getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 150)
     form = QuestionGeneratorForm(request.POST or None, max_questions=max_q)
     context['form'] = form
 
-    # --- Lógica POST (Gera, Salva, Guarda IDs na Sessão e Redireciona) ---
-    if request.method == 'POST' and service_initialized and service:
+    # --- Lógica POST (Permanece igual à versão anterior) ---
+    if request.method == 'POST':
         logger.info(f"POST generate_questions_view por {request.user.username}")
+        request.session.pop('latest_ce_ids', None)
+        request.session.pop('latest_ce_motivador', None)
+
         if form.is_valid():
+            # ... (Lógica completa do POST como na versão anterior: gerar, salvar, guardar na sessão, redirect) ...
+            if not service_initialized or not service:
+                messages.error(request, context.get('error_message', "Serviço de IA indisponível."))
+                return render(request, 'generator/question_generator.html', context)
             topic_text = form.cleaned_data.get('topic')
             num_questions = form.cleaned_data.get('num_questions')
             difficulty = form.cleaned_data.get('difficulty_level')
             area_obj = form.cleaned_data.get('area')
-            logger.info(f"Form válido. Gerando {num_questions}q...")
+            logger.info(f"Gerando {num_questions}q...")
             try:
-                main_motivador, generated_items_data = service.generate_questions(
-                    topic=topic_text, num_questions=num_questions, difficulty_level=difficulty
-                )
+                main_motivador, generated_items_data = service.generate_questions(topic=topic_text, num_questions=num_questions, difficulty_level=difficulty)
                 if not generated_items_data or not isinstance(generated_items_data, list):
-                    logger.warning("IA retornou dados inválidos ou vazios para questões C/E.")
-                    context['error_message'] = "IA retornou dados em formato inesperado ou vazios."
-                    generated_items_data = []
-                else:
-                    context['error_message'] = None # Limpa erro anterior se a IA retornou algo
-
+                    messages.warning(request,"IA retornou dados inválidos."); generated_items_data = []
                 saved_question_ids = []
-                if generated_items_data: # Salva apenas se a lista não estiver vazia
-                    logger.info(f"Itens C/E recebidos da IA: {len(generated_items_data)}. Salvando...")
-                    # Busca area_obj se foi selecionado no form mas não veio direto (raro, mas seguro)
+                if generated_items_data:
+                    logger.info(f"Salvando {len(generated_items_data)} itens...")
                     if area_obj is None and form.cleaned_data.get('area'):
-                       try:
-                           area_obj = AreaConhecimento.objects.get(id=form.cleaned_data.get('area').id)
-                       except AreaConhecimento.DoesNotExist:
-                           logger.warning(f"Área ID {form.cleaned_data.get('area').id} selecionada no form não encontrada no DB.")
-                           area_obj = None
-                       except Exception as e_area:
-                           logger.error(f"Erro ao rebuscar AreaConhecimento: {e_area}")
-                           area_obj = None
-
+                        try: area_obj = AreaConhecimento.objects.get(id=form.cleaned_data.get('area').id)
+                        except: area_obj = None
                     for item_data in generated_items_data:
                         try:
-                            if not isinstance(item_data, dict):
-                                logger.warning(f"Item da IA não é um dicionário: {item_data}. Pulando.")
-                                continue
-                            gabarito = item_data.get('gabarito')
-                            afirmacao = item_data.get('afirmacao')
-                            if not gabarito or gabarito not in ['C', 'E']:
-                                logger.warning(f"Item da IA com gabarito inválido ou ausente: {item_data}. Pulando.")
-                                continue
-                            if not afirmacao or not afirmacao.strip():
-                                logger.warning(f"Item da IA com afirmação vazia ou ausente: {item_data}. Pulando.")
-                                continue
-
-                            q = Questao(
-                                tipo='CE',
-                                texto_motivador=main_motivador,
-                                texto_comando=afirmacao,
-                                gabarito_ce=gabarito,
-                                justificativa_gabarito=item_data.get('justificativa'),
-                                dificuldade=(difficulty or 'medio'),
-                                area=area_obj,
-                                criado_por=request.user
-                            )
-                            q.save()
-                            saved_question_ids.append(q.id)
-                        except Exception as save_error:
-                            logger.error(f"Erro ao salvar questão C/E individualmente: {save_error}", exc_info=True)
-
-                    logger.info(f"{len(saved_question_ids)} questões C/E salvas no DB.")
-                    if saved_question_ids:
-                        messages.success(request, f"{len(saved_question_ids)} questões C/E geradas e salvas!")
-                        # <<< GUARDA OS IDs DAS QUESTÕES RECÉM-SALVAS NA SESSÃO >>>
-                        request.session['latest_ce_ids'] = saved_question_ids
-                        request.session['latest_ce_motivador'] = main_motivador # Guarda motivador também
-                    else:
-                         # Se generated_items_data tinha algo mas nada foi salvo
-                         if generated_items_data:
-                              messages.warning(request,"Nenhuma questão válida pôde ser salva devido a erros ou formato inesperado.")
-                         else: # Se a IA não retornou nada em primeiro lugar
-                              messages.warning(request,"A IA não retornou nenhuma questão para este tópico.")
-
-                    # Avisa se houve perda
-                    if len(saved_question_ids) < len(generated_items_data):
-                        messages.warning(request,"Alguns itens retornados pela IA podem não ter sido salvos devido a erros de formato ou validação.")
-
-                # <<< Redireciona para GET após processar o POST, mesmo se não salvou nada >>>
-                return redirect('generator:generate_questions')
-
-            # Captura erros durante a chamada da IA ou erros gerais
+                            if not isinstance(item_data, dict): continue
+                            gabarito = item_data.get('gabarito'); afirmacao = item_data.get('afirmacao')
+                            if not gabarito or gabarito not in ['C', 'E'] or not afirmacao or not afirmacao.strip(): continue
+                            texto_motiv_para_salvar = main_motivador
+                            q = Questao(tipo='CE', texto_motivador=texto_motiv_para_salvar, texto_comando=afirmacao, gabarito_ce=gabarito, justificativa_gabarito=item_data.get('justificativa'), dificuldade=(difficulty or 'medio'), area=area_obj, criado_por=request.user)
+                            q.save(); saved_question_ids.append(q.id)
+                        except Exception as save_error: logger.error(f"Erro salvar C/E item: {save_error}", exc_info=True)
+                if saved_question_ids:
+                    messages.success(request, f"{len(saved_question_ids)} questões C/E geradas!")
+                    request.session['latest_ce_ids'] = saved_question_ids
+                    request.session['latest_ce_motivador'] = main_motivador
+                else:
+                    if generated_items_data: messages.warning(request,"Nenhuma questão válida salva.")
+                    else: messages.warning(request,"IA não retornou questões válidas.")
+                if generated_items_data and len(saved_question_ids) < len(generated_items_data):
+                    messages.warning(request,"Alguns itens podem não ter sido salvos.")
+                return redirect(reverse('generator:generate_questions'))
             except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as e:
-                logger.error(f"Erro GERAL na Geração/Processamento C/E: {e}", exc_info=True)
-                context['error_message'] = f"Falha ao gerar ou processar questões: {e}"
-                # Renderiza o form com o erro, sem questões
-                return render(request, 'generator/question_generator.html', context)
-            except Exception as e: # Pega outros erros inesperados
-                 logger.error(f"Erro INESPERADO na Geração/Processamento C/E: {e}", exc_info=True)
-                 context['error_message'] = f"Ocorreu um erro inesperado: {e}"
+                 logger.error(f"Erro GERAL C/E Geração: {e}", exc_info=False); context['error_message'] = f"Falha: {e}"
                  return render(request, 'generator/question_generator.html', context)
-
-        else: # Form POST inválido
-             logger.warning(f"Formulário de Geração C/E inválido: {form.errors.as_json()}")
-             # Renderiza o form com os erros, sem questões
+            except Exception as e:
+                 logger.error(f"Erro INESPERADO C/E Geração: {e}", exc_info=True); context['error_message'] = f"Erro inesperado: {e}"
+                 return render(request, 'generator/question_generator.html', context)
+        else:
+             logger.warning(f"Form Geração C/E inválido: {form.errors.as_json()}")
              return render(request, 'generator/question_generator.html', context)
 
-    # --- Lógica GET (Verifica Sessão para exibir APENAS o último lote) ---
+    # --- Lógica GET ---
     else: # request.method == 'GET'
         logger.debug(f"GET generate_questions_view por {request.user.username}")
-        # Tenta pegar os IDs da última geração da sessão
-        latest_ids = request.session.pop('latest_ce_ids', None) # .pop() pega e remove
-        latest_motivador = request.session.pop('latest_ce_motivador', None) # Pega motivador
+
+        # +++++ VERIFICA SE A AÇÃO É LIMPAR +++++
+        if request.GET.get('action') == 'clear':
+            logger.info("Limpando sessão 'latest_ce' via action=clear.")
+            request.session.pop('latest_ce_ids', None)
+            request.session.pop('latest_ce_motivador', None)
+            messages.info(request, "Resultado anterior limpo.")
+            # Redireciona para a própria view SEM o parâmetro action=clear
+            return redirect(reverse('generator:generate_questions'))
+        # +++++ FIM VERIFICA LIMPAR +++++
+
+        # Se não for para limpar, continua a lógica normal de buscar da sessão e paginar
+        latest_ids = request.session.get('latest_ce_ids')
+        main_motivador = request.session.get('latest_ce_motivador')
+        page_obj = None
+        paginator = None
 
         if latest_ids:
-            logger.info(f"Exibindo último lote de questões C/E geradas (IDs: {latest_ids})")
+            # ... (Lógica para buscar question_list e aplicar Paginator como na versão anterior) ...
+            logger.info(f"IDs encontrados na sessão: {latest_ids}. Buscando e paginando...")
             try:
-                # Busca APENAS as questões recém-criadas
-                question_list = Questao.objects.filter(id__in=latest_ids).order_by('id') # Mantém ordem de geração? Ou -criado_em?
-                context['questions'] = question_list # Passa a LISTA, não um Page Object
-                context['main_motivador'] = latest_motivador
+                question_list = Questao.objects.filter(id__in=latest_ids).select_related('area', 'criado_por').order_by('id')
+                if question_list.exists():
+                    items_per_page = 20
+                    paginator = Paginator(question_list, items_per_page)
+                    page_number = request.GET.get('page')
+                    try: page_obj = paginator.get_page(page_number)
+                    except PageNotAnInteger: page_obj = paginator.get_page(1)
+                    except EmptyPage: page_obj = paginator.get_page(paginator.num_pages)
+
+                    context['page_obj'] = page_obj
+                    context['paginator'] = paginator
+                    logger.info(f"Paginando lote. Motivador: {'Sim' if main_motivador else 'Não'}. Página: {page_obj.number}/{paginator.num_pages}")
+                else:
+                    logger.warning(f"IDs {latest_ids} na sessão, mas não encontrados no DB. Limpando.")
+                    request.session.pop('latest_ce_ids', None); request.session.pop('latest_ce_motivador', None)
+                    main_motivador = None
             except Exception as e:
-                logger.error(f"Erro ao buscar questões C/E da sessão (IDs: {latest_ids}): {e}", exc_info=True)
-                messages.error(request, "Erro ao carregar as questões geradas anteriormente.")
-                context['questions'] = None
-                context['main_motivador'] = None
+                logger.error(f"Erro buscar/paginar da sessão: {e}", exc_info=True)
+                messages.error(request, "Erro carregar/paginar questões.")
+                context.pop('page_obj', None); context.pop('paginator', None); context.pop('main_motivador', None)
+                request.session.pop('latest_ce_ids', None); request.session.pop('latest_ce_motivador', None)
+                main_motivador = None
         else:
-            # Se não tem 'latest_ce_ids' na sessão, não busca nada
-            logger.debug("Nenhum lote recente na sessão, exibindo apenas o formulário.")
-            context['questions'] = None
-            context['main_motivador'] = None
+            logger.debug("Nenhum lote 'latest_ce' na sessão para exibir.")
+            main_motivador = None
 
-        # Renderiza o template. 'questions' será a lista do último lote ou None.
+        context['main_motivador'] = main_motivador # Passa para o template
+
+        # Renderiza o template do GERADOR
         return render(request, 'generator/question_generator.html', context)
-
 
 # --- VISÃO VALIDAR RESPOSTAS C/E (SALVA TENTATIVA E AVALIAÇÃO) ---
 @login_required
@@ -1584,3 +1579,75 @@ def test_print_view(request):
     # Retorna uma resposta HTTP simples para o navegador
     return HttpResponse(f"<h1>Teste Concluído</h1><p>{message}</p><p>Logado como: {request.user.username}</p><p>Verifique o console e os logs do Django.</p>")
 
+
+@login_required
+def listar_questoes_ce_view(request):
+    """
+    Lista questões C/E:
+    - Se o parâmetro GET 'ids' estiver presente, lista apenas essas questões.
+    - Senão, lista todas as questões C/E existentes.
+    Aplica paginação em ambos os casos.
+    """
+    context = {}
+    logger = logging.getLogger('generator')
+    questoes_list = None
+    is_filtered_list = False # Flag para saber se estamos vendo uma lista filtrada por IDs
+
+    # Pega parâmetro 'ids' da URL (ex: ?ids=101,102,103)
+    id_list_str = request.GET.get('ids')
+
+    if id_list_str:
+        logger.info(f"Listando questões C/E filtradas por IDs: [{id_list_str}]")
+        try:
+            # Converte a string de IDs separados por vírgula em uma lista de inteiros
+            id_list = [int(id_val.strip()) for id_val in id_list_str.split(',') if id_val.strip().isdigit()]
+            if id_list:
+                # Busca APENAS as questões com os IDs fornecidos
+                questoes_list = Questao.objects.filter(
+                    id__in=id_list
+                ).select_related(
+                    'area', 'criado_por'
+                ).order_by('id') # Ordena pela ordem dos IDs talvez? Ou mantém criado_em? 'id' é mais previsível aqui.
+                is_filtered_list = True # Marca que é uma lista filtrada
+            else:
+                 logger.warning("Parâmetro 'ids' recebido, mas vazio ou inválido após parsing.")
+                 messages.warning(request, "IDs inválidos recebidos para filtrar a lista.")
+        except (ValueError, TypeError) as e:
+            logger.error(f"Erro ao converter IDs do parâmetro GET: {e}")
+            messages.error(request, "Erro ao processar IDs para filtro.")
+            # Em caso de erro nos IDs, não define questoes_list para cair no caso 'else' abaixo
+
+    # Se NÃO veio parâmetro 'ids' ou deu erro ao processá-lo
+    if questoes_list is None:
+        logger.info("Listando todas as questões C/E existentes.")
+        questoes_list = Questao.objects.filter(
+            tipo='CE'
+        ).select_related(
+            'area', 'criado_por'
+        ).order_by('-criado_em') # Mais recentes primeiro para a lista geral
+        is_filtered_list = False
+
+    # --- PAGINAÇÃO (Aplicada à lista resultante, seja ela filtrada ou geral) ---
+    items_per_page = 20
+    paginator = Paginator(questoes_list, items_per_page)
+    page_number = request.GET.get('page')
+
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
+
+    # Adiciona ao contexto
+    context['page_obj'] = page_obj
+    context['paginator'] = paginator
+    context['is_filtered_list'] = is_filtered_list # Passa a flag para o template
+    # Passa os IDs originais para usar nos links de paginação, se for lista filtrada
+    if is_filtered_list:
+         context['id_filter_param'] = id_list_str # Passa a string original de IDs
+
+    logger.info(f"Renderizando lista C/E. Filtrada por ID: {is_filtered_list}. Página: {page_obj.number}/{paginator.num_pages}")
+
+    # Renderiza o template de LISTAGEM (questions_ce.html)
+    return render(request, 'generator/questions_ce.html', context)
