@@ -1,47 +1,63 @@
 {% extends "generator/base.html" %}
 {% load static %}
-{% load humanize %} {# Para usar 'naturaltime' ou formatação de data/número #}
+{% load humanize %}
+{% load generator_tags %} {# <<< CARREGA A TAG CUSTOMIZADA #}
 
 {% block title %}
-    {% if is_filtered_list %}Resultado da Geração{% else %}Banco de Questões C/E{% endif %}
+    {% if id_filter_param %}Resultado da Geração{% elif query_filter_param or area_filter_param %}Resultado da Busca{% else %}Banco de Questões C/E{% endif %}
 {% endblock title %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
+    {# Link para CSS externo (se houver) #}
+    {# <link rel="stylesheet" href="{% static 'generator/css/config_simulado_styles.css' %}"> #}
     <style>
-        /* Seus estilos CSS aqui... */
-        .nav-tabs .nav-link { border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; border-bottom: none; color: var(--bs-secondary-color); background-color: var(--bs-tertiary-bg); border-color: var(--bs-border-color); padding: 0.5rem 1rem; }
-        .nav-tabs .nav-link.active { color: var(--bs-primary); background-color: var(--bs-body-bg); border-color: var(--bs-border-color); border-bottom-color: var(--bs-body-bg); font-weight: 600; }
-        .filters-container { border: 1px solid var(--bs-border-color); border-top: none; padding: 1.5rem; border-bottom-left-radius: 0.375rem; border-bottom-right-radius: 0.375rem; background-color: var(--bs-body-bg); }
+        /* Estilos base (copiados/adaptados de outros templates com abas) */
+        .nav-tabs .nav-link {
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+            border-bottom: none;
+            color: var(--bs-secondary-color);
+            background-color: var(--bs-tertiary-bg);
+            border-color: var(--bs-border-color);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem; /* Fonte um pouco menor nas abas */
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--bs-primary);
+            background-color: var(--bs-body-bg);
+            border-color: var(--bs-border-color);
+            border-bottom-color: var(--bs-body-bg); /* Esconde borda inferior da aba ativa */
+            font-weight: 600;
+        }
+        .content-container { /* Container abaixo das abas */
+            border: 1px solid var(--bs-border-color);
+            border-top: none; /* Remove borda superior para conectar com abas */
+            padding: 1.5rem;
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+            background-color: var(--bs-body-bg);
+        }
+        /* Estilos mínimos para espaçamento no formulário */
+        label { display: block; margin-bottom: 0.25rem; }
         .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; }
         .form-control, .form-select { font-size: 0.9rem; }
-        .form-control-sm, .form-select-sm { font-size: 0.85rem; }
-        .form-text { font-size: 0.75rem; }
-        .btn-filter-action { font-size: 0.9rem; }
-        .ce-result-feedback { min-height: 1.5em; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); margin-top: 0.75rem; }
-        .ce-result-feedback:empty { display: none; }
-        .verify-ce-btn { font-size: 0.8rem; }
-        .motivador-text { background-color: var(--bs-secondary-bg); border-left: 5px solid var(--bs-info); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.95em; border-radius: 0.375rem; white-space: pre-wrap; }
-        .question-item-minimal { padding: 1rem; border: 1px solid var(--bs-border-color); border-radius: 0.375rem; margin-bottom: 1rem; }
-        .results-validation .question-item-minimal { border-width: 1px; border-style: solid; border-radius: 0.375rem; }
-        #addAreaQuickFormContainer { margin-top: 0.5rem; }
-        #addAreaQuickFormGenerator .input-group-text, #addAreaQuickFormGenerator .form-control-sm, #addAreaQuickFormGenerator .btn-sm { font-size: 0.8rem; }
-        #{{ form.topic.id_for_label }} { min-height: 80px; }
-        .pagination { margin-bottom: 1rem; }
+        .form-text { font-size: 0.75rem; width: 100%; }
+        /* Ajuste para o campo de tópico ocupar mais altura */
+        #id_topic { min-height: 150px; } /* Ajuste a altura conforme necessário */
+
     </style>
-{% endblock extra_head %}
 
 {% block content %}
-
-    <!-- {# Mensagens #}
-    {% if error_message %} <div class="alert alert-danger alert-dismissible fade show"><strong>Erro:</strong> {{ error_message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div> {% endif %}
-    {% if not service_initialized and not error_message %} <div class="alert alert-warning alert-dismissible fade show"><strong>Atenção:</strong> Serviço de IA indisponível ou com erro na inicialização. <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div> {% endif %}
-    {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
- -->
+<div class="container mt-4">
+    <h2 class="mb-4">
+        {# Título dinâmico #}
+        {% if id_filter_param %}Resultado da Geração (Questões C/E){% elif query_filter_param or area_filter_param %}Resultado da Busca{% else %}Banco de Questões Certo/Errado{% endif %}
+    </h2>
 
     {# Mensagens #}
     {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
-    {# Abas de Navegação #}
+
+    {# --- Abas de Navegação --- #}
     <ul class="nav nav-tabs mb-0" id="mainTabs" role="tablist">
        <li class="nav-item" role="presentation"> <a class="nav-link active" href="{% url 'generator:generate_questions' %}" id="objetivas-tab" role="tab" aria-selected="true">Gerador C/E</a> </li>
        <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:generate_discursive_exam' %}">Gerador Discursiva</a> </li>
@@ -49,13 +65,45 @@
        <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a> </li>
        {# <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:questions_ce' %}">Banco de Questões</a> </li> #}
     </ul>
+    {# --- Fim Abas de Navegação --- #}
 
-    {# Motivador Principal #}
-    {% if is_filtered_list and main_motivador %} <hr class="my-0"> <div class="motivador-text"> <h3 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador Principal</h3> <div class="small">{{ main_motivador|linebreaksbr }}</div> </div> {% else %} <div class="mt-4"></div> {% endif %} {# Adiciona espaço se não tiver motivador #}
+    {# +++++ FORMULÁRIO DE BUSCA/FILTRO +++++ #}
+    <div class="search-filters mb-4">
+        {# Action aponta para a própria URL da view de listagem #}
+        <form method="GET" action="{% url 'generator:questions_ce' %}" class="row g-2 align-items-end">
+            {# GET não precisa de csrf_token #}
+            <div class="col-md-6">
+                <label for="search-q" class="form-label form-label-sm">Buscar por Palavra-chave/ID:</label>
+                {# Usa o valor do filtro atual passado pela view #}
+                <input type="text" class="form-control form-control-sm" id="search-q" name="q" value="{{ query_filter_param|default:'' }}" placeholder="Digite termo ou ID...">
+            </div>
+            <div class="col-md-4">
+                <label for="search-area" class="form-label form-label-sm">Filtrar por Área:</label>
+                <select class="form-select form-select-sm" id="search-area" name="area">
+                    <option value="">-- Todas as Áreas --</option>
+                    {# Popula o dropdown com as áreas passadas pela view #}
+                    {% for area_obj in all_areas %}
+                        <option value="{{ area_obj.id }}" {% if area_filter_param == area_obj.id|stringformat:"s" %}selected{% endif %}>
+                            {{ area_obj.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-search"></i> Buscar</button>
+            </div>
+        </form>
+    </div>
+    {# +++++ FIM FORMULÁRIO DE BUSCA +++++ #}
 
+    {# Motivador Principal (só para resultado de geração - filtro por ids) #}
+    {% if id_filter_param and main_motivador %} <hr class="my-0"> <div class="motivador-text"> <h3 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador Principal</h3> <div class="small">{{ main_motivador|linebreaksbr }}</div> </div> {% else %} <div class="mt-2"></div> {% endif %}
+
+    {# Lista Paginada #}
     {% if page_obj %}
         <p class="text-muted small mb-3 mt-2"> Exibindo página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}. (Questões {{ page_obj.start_index }} a {{ page_obj.end_index }} de um total de {{ page_obj.paginator.count }}). </p>
 
+        {# O form wrapper ainda é útil para o CSRF token do AJAX #}
         <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}">
              {% csrf_token %}
             <div class="question-list">
@@ -65,11 +113,8 @@
                         <h5 class="mb-1 h6 me-2"> Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão #{{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %} </h5>
                         <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>
                     </div>
-
-                    {# Removido motivador individual daqui #}
-
+                    {# Motivador individual removido #}
                     <p class="mb-2" style="white-space: pre-wrap;">{{ questao.texto_comando }}</p>
-
                     {# --- ELEMENTOS DE RESPOSTA --- #}
                     <div class="d-flex align-items-center flex-wrap mt-3">
                         <div class="form-check form-check-inline me-3"> <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao.id }}" id="certo_{{ questao.id }}" value="C" required> <label class="form-check-label small" for="certo_{{ questao.id }}">Certo</label> </div>
@@ -78,46 +123,40 @@
                     </div>
                     <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ questao.id }}"></div>
                     {# --- FIM ELEMENTOS DE RESPOSTA --- #}
-
-                    {# Gabarito e outras metas (SEM JUSTIFICATIVA AQUI) #}
-                     <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle">
-                         Gabarito: <strong>{{ questao.gabarito_ce }}</strong> |
-                         Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} |
-                         Criada por: {{ questao.criado_por.username|default:"Desconhecido" }}
-                     </div>
-
-                     {# ***** BLOCO DETAILS DA JUSTIFICATIVA FOI REMOVIDO DAQUI ***** #}
-
-                </div> {# Fim question-list-item #}
+                    {# Metadados (sem justificativa visível por padrão) #}
+                     <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle"> Gabarito: <strong>{{ questao.gabarito_ce }}</strong> | Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} | Criada por: {{ questao.criado_por.username|default:"Desconhecido" }} </div>
+                     {# Bloco Justificativa Removido #}
+                </div>
                 {% empty %}
-                 <div class="alert alert-warning" role="alert"> {% if is_filtered_list %} Nenhuma questão encontrada para os IDs fornecidos. {% else %} Nenhuma questão Certo/Errado encontrada no banco de dados. {% endif %} </div>
+                 <div class="alert alert-warning" role="alert"> {% if id_filter_param or query_filter_param or area_filter_param %} Nenhuma questão encontrada para os filtros aplicados. {% else %} Nenhuma questão Certo/Errado encontrada no banco de dados. {% endif %} </div>
                 {% endfor %}
-            </div> {# Fim question-list #}
+            </div>
         </form>
 
-        {# --- Controles de Paginação (Já ajustados) --- #}
+        {# --- Controles de Paginação (USANDO A TAG url_params) --- #}
         {% if paginator.num_pages > 1 %}
             <nav aria-label="Navegação das questões" class="mt-4 d-flex justify-content-center">
+                 {# VVV Usa a tag para pegar filtros atuais (exceto 'page') VVV #}
+                {% url_params page=None as current_filters %}
                 <ul class="pagination flex-wrap">
-                    {% if page_obj.number > 1 %}<li class="page-item"><a class="page-link" href="?page=1{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}" aria-label="Primeira">&laquo;&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>{% endif %}
-                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
-                    {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}">{{ num }}</a></li>{% elif num == 1 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}">{{ num }}</a></li>{% if page_obj.number > 3 %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}{% elif num == paginator.num_pages %}{% if page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}">{{ num }}</a></li>{% endif %}{% endfor %}
-                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}" aria-label="Próximo">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
-                    {% if page_obj.number < paginator.num_pages %}<li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{% if is_filtered_list %}&amp;ids={{ id_filter_param }}{% endif %}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
+                    {% if page_obj.number > 1 %}<li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>{% endif %}
+                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
+                    {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% if page_obj.number > 3 %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}{% elif num == paginator.num_pages %}{% if page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% endif %}{% endfor %}
+                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próximo">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
+                    {% if page_obj.number < paginator.num_pages %}<li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
                 </ul>
             </nav>
         {% endif %}
         {# --- Fim Controles de Paginação --- #}
 
     {% else %}
-        <div class="alert alert-info mt-4" role="alert"> Não há questões C/E cadastradas para exibir {% if is_filtered_list %} para os IDs fornecidos{% endif %}. </div>
+        <div class="alert alert-info mt-4" role="alert"> Nenhuma questão C/E cadastrada para exibir {% if id_filter_param or query_filter_param or area_filter_param %} com os filtros aplicados{% endif %}. </div>
     {% endif %}
 
 </div> {# Fim container #}
 {% endblock content %}
 
 {% block extra_js %}
-    {# Adiciona o script validador AJAX, necessário para o botão "Verificar Item" #}
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
-    {# Mantenha outros scripts JS se forem necessários #}
+    {# Mantenha outros scripts JS se necessários #}
 {% endblock extra_js %}

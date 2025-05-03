@@ -7,7 +7,7 @@
     {# Link para CSS externo (se houver) #}
     <link rel="stylesheet" href="{% static 'generator/css/dashboard_styles.css' %}">
     <style>
-        /* Estilos base (copiados/adaptados de question_generator) */
+        /* Estilos base */
         .nav-tabs .nav-link {
             border-top-left-radius: 0.375rem;
             border-top-right-radius: 0.375rem;
@@ -16,32 +16,53 @@
             background-color: var(--bs-tertiary-bg);
             border-color: var(--bs-border-color);
             padding: 0.5rem 1rem;
-            font-size: 0.9rem; /* Ajuste opcional do tamanho da fonte da aba */
         }
         .nav-tabs .nav-link.active {
             color: var(--bs-primary);
-            background-color: var(--bs-body-bg);
+            background-color: var(--bs-body-bg); /* Fundo do corpo para aba ativa */
             border-color: var(--bs-border-color);
-            border-bottom-color: var(--bs-body-bg);
+            border-bottom-color: var(--bs-body-bg); /* Esconde a borda inferior */
             font-weight: 600;
         }
-        .content-container { /* Similar ao filters-container */
+        .filters-container {
             border: 1px solid var(--bs-border-color);
-            border-top: none;
+            border-top: none; /* Remove borda superior pois as abas já têm */
             padding: 1.5rem;
             border-bottom-left-radius: 0.375rem;
             border-bottom-right-radius: 0.375rem;
-            background-color: var(--bs-body-bg);
+            background-color: var(--bs-body-bg); /* Fundo do corpo */
         }
-        /* Estilos específicos do Dashboard */
-        .stat-value { font-size: 1.75rem; font-weight: bold; }
-        .stat-label { font-size: 0.9rem; }
-        .chart-container { position: relative; margin: auto; height: 250px; width: 100%; max-width: 300px; }
-        .stat-icon { font-size: 2.5rem; margin-bottom: 0.5rem; display: block; }
-        .filter-form { padding: 1rem 1.5rem; background-color: var(--bs-tertiary-bg); border-radius: 0.5rem; border: 1px solid var(--bs-border-color); }
-        [data-bs-theme="dark"] .filter-form { box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); }
-        /* Remove margem inferior padrão da tabela */
-        .table { margin-bottom: 0 !important; }
+        .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; /* Menor margem */ }
+        .form-control, .form-select { font-size: 0.9rem; /* Tamanho de fonte padrão para inputs */ }
+        .form-control-sm, .form-select-sm { font-size: 0.85rem; } /* Mantém sm se usado */
+        .form-text { font-size: 0.75rem; /* Texto de ajuda menor */ }
+        .btn-filter-action { font-size: 0.9rem; }
+
+        /* Estilo para o texto da questão renderizado (substitui o <pre>) */
+        .generated-exam-markdown {
+            white-space: pre-wrap; /* Mantém quebras de linha e espaços */
+            word-wrap: break-word;
+            background-color: var(--bs-tertiary-bg);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--bs-border-color);
+            font-size: 0.9em; /* Texto um pouco menor */
+            line-height: 1.6; /* Melhora legibilidade */
+        }
+        .generated-exam-markdown p { margin-bottom: 0.5rem; } /* Espaçamento entre parágrafos se houver */
+        .generated-exam-markdown strong { font-weight: 600; } /* Garante negrito */
+        .generated-exam-markdown ol,
+        .generated-exam-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;} /* Indentação de listas */
+
+
+        /* Garante que labels fiquem acima dos campos */
+        label { display: block; margin-bottom: 0.25rem; }
+
+         /* Ajuste para textarea (tópico) */
+        #{{ form.base_topic_or_context.id_for_label }} {
+            min-height: 80px; /* Altura mínima para o campo tópico */
+        }
+
     </style>
 {% endblock extra_head %}
 

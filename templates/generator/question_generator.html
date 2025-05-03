@@ -1,6 +1,6 @@
 {% extends 'generator/base.html' %}
 {% load static %}
-{# {% load humanize %} - Removido se não usar #}
+{# {% load humanize %} - Se necessário para outras partes #}
 
 {% block title %}Gerador de Questões C/E - Gerador IA{% endblock title %}
 
@@ -15,7 +15,7 @@
         .form-control, .form-select { font-size: 0.9rem; }
         .form-control-sm, .form-select-sm { font-size: 0.85rem; }
         .form-text { font-size: 0.75rem; }
-        .btn-filter-action { font-size: 0.9rem; }
+        /* Removida a classe .btn-filter-action se não for mais usada ou definida aqui */
         .ce-result-feedback { min-height: 1.5em; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); margin-top: 0.75rem; }
         .ce-result-feedback:empty { display: none; }
         .verify-ce-btn { font-size: 0.8rem; }
@@ -24,8 +24,11 @@
         .results-validation .question-item-minimal { border-width: 1px; border-style: solid; border-radius: 0.375rem; }
         #addAreaQuickFormContainer { margin-top: 0.5rem; }
         #addAreaQuickFormGenerator .input-group-text, #addAreaQuickFormGenerator .form-control-sm, #addAreaQuickFormGenerator .btn-sm { font-size: 0.8rem; }
-        #{{ form.topic.id_for_label }} { min-height: 80px; }
+        #id_topic { min-height: 80px; } /* Usando ID padrão */
         .pagination { margin-bottom: 1rem; }
+         /* Garante que botões dentro do btn-group não tenham margens extras indesejadas */
+        .btn-group .btn { margin: 0 !important; }
+
     </style>
 {% endblock extra_head %}
 
@@ -50,56 +53,64 @@
     <div class="tab-content" id="questionTypeTabContent">
       <div class="tab-pane fade show active" id="objetivas-panel" role="tabpanel" aria-labelledby="objetivas-tab">
         <div class="filters-container shadow-sm">
+            {# Formulário principal #}
             <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
                 {% csrf_token %}
                 <div class="row g-3">
                     {# Coluna Esquerda: Tópico/Contexto #}
                     <div class="col-lg-6">
-                        <label for="{{ form.topic.id_for_label }}" class="form-label fw-medium">{{ form.topic.label|default:"Tópico ou Contexto" }}</label>
+                        <label for="{{ form.topic.id_for_label|default:'id_topic' }}" class="form-label fw-medium">{{ form.topic.label|default:"Tópico ou Contexto" }}</label>
                         {{ form.topic }}
                         {% if form.topic.help_text %}<div class="form-text text-muted mt-1">{{ form.topic.help_text|safe }}</div>{% endif %}
                         {% if form.topic.errors %}<div class="invalid-feedback d-block">{{ form.topic.errors|striptags }}</div>{% endif %}
                     </div>
 
-                    {# Coluna Direita: Campos + Botões (estrutura modificada) #}
+                    {# Coluna Direita: Campos + Botões #}
                     <div class="col-lg-6">
-                        {# Linha interna APENAS para os campos #}
+                        {# Linha interna para os campos #}
                         <div class="row g-3">
+                             {# --- CAMPO Nº QUESTÕES --- #}
                              <div class="col-md-4">
-                                 <label for="{{ form.num_questions.id_for_label }}" class="form-label fw-medium">{{ form.num_questions.label|default:"Nº Questões" }}</label>
+                                 <label for="{{ form.num_questions.id_for_label|default:'id_num_questions' }}" class="form-label fw-medium">{{ form.num_questions.label|default:"Nº Questões" }}</label>
                                  {{ form.num_questions }}
                                  {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
                              </div>
+                             {# --- FIM Nº QUESTÕES --- #}
+
+                             {# --- CAMPO DIFICULDADE --- #}
                              <div class="col-md-4">
-                                 <label for="{{ form.difficulty_level.id_for_label }}" class="form-label fw-medium">{{ form.difficulty_level.label|default:"Dificuldade" }}</label>
+                                 <label for="{{ form.difficulty_level.id_for_label|default:'id_difficulty_level' }}" class="form-label fw-medium">{{ form.difficulty_level.label|default:"Dificuldade" }}</label>
                                  {{ form.difficulty_level }}
                                  {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
                              </div>
+                             {# --- FIM DIFICULDADE --- #}
+
+                             {# --- CAMPO ÁREA --- #}
                              <div class="col-md-4">
-                                 <label for="{{ form.area.id_for_label }}" class="form-label fw-medium">{{ form.area.label|default:"Área" }}</label>
+                                 <label for="{{ form.area.id_for_label|default:'id_area' }}" class="form-label fw-medium">{{ form.area.label|default:"Área" }}</label>
                                  {{ form.area }}
                                  {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
-                                 {# ----- DIV DOS BOTÕES FOI REMOVIDA DAQUI ----- #}
                              </div>
-                        </div> {# +++++ DIV COM BOTÕES DE AÇÃO (MOVIDA PARA FORA DA ROW INTERNA) +++++ #}
-                        <div class="d-flex justify-content-end align-items-center flex-wrap gap-2 mt-4">
-                             <button type="reset" class="btn btn-outline-secondary btn-sm btn-filter-action mb-1 mb-md-0" title="Limpa os campos do formulário de geração"><i class="bi bi-x-lg"></i> Limpar Formulário</button>
-                             <a href="{% url 'generator:generate_questions' %}?action=clear" class="btn btn-outline-warning btn-sm btn-filter-action mb-1 mb-md-0" role="button" title="Remove o último lote de questões geradas da tela"> <i class="bi bi-eraser"></i> Limpar Resultado </a>
-                             <a href="{% url 'generator:questions_ce' %}" class="btn btn-outline-success btn-sm btn-filter-action mb-1 mb-md-0" role="button" title="Abre a página para buscar questões existentes no banco de dados"> <i class="bi bi-search"></i> Buscar no Banco </a>
-                             <button type="submit" class="btn btn-primary btn-sm btn-filter-action mb-1 mb-md-0" id="submit-button" {% if not service_initialized %} disabled {% endif %} title="Gera novas questões com base nos filtros definidos"> <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner"></span> <span id="button-text"><i class="bi bi-funnel-fill"></i> Gerar Questões por IA</span> </button>
+                             {# --- FIM ÁREA --- #}
+                        </div> {# +++++ BOTÕES DE AÇÃO (USANDO BTN-GROUP) +++++ #}
+                        <div class="btn-group w-100 mt-4" role="group" aria-label="Grupo de Ações do Gerador">
+                            <button type="reset" form="generator-form" class="btn btn-outline-secondary btn-sm" title="Limpa os campos do formulário"> <i class="bi bi-x-lg"></i> Limpar Formulário </button>
+                            <a href="{% url 'generator:generate_questions' %}?action=clear" class="btn btn-outline-warning btn-sm" role="button" title="Remove o último lote gerado da tela"> <i class="bi bi-eraser"></i> Limpar Resultado </a>
+                            <a href="{% url 'generator:questions_ce' %}" id="search-db-button" class="btn btn-outline-success btn-sm" role="button" title="Busca questões existentes usando Tópico/Área"> <i class="bi bi-search"></i> Buscar no Banco </a>
+                            <button type="submit" form="generator-form" class="btn btn-primary btn-sm" id="submit-button" {% if not service_initialized %} disabled {% endif %} title="Gera novas questões"> <span id="button-content-wrapper"> <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner"></span> <span id="button-text"><i class="bi bi-robot"></i> Gerar Questões por IA</span> </span> </button>
                         </div>
-                        {# +++++ FIM DIV BOTÕES MOVIDA +++++ #}
+                        {# +++++ FIM BOTÕES COM BTN-GROUP +++++ #}
 
-                    </div> {# Fim col-lg-6 #}
-                </div> {# Fim row g-3 Principal #}
-            </form> {# Fim generator-form #}
+                    </div>{# Fim col-lg-6 #}
+                </div>{# Fim row g-3 principal #}
+            </form>
 
             {# Formulário Rápido de Área #}
             <div id="addAreaQuickFormContainer" class="mt-2"> <form id="addAreaQuickFormGenerator" method="post" action="{% url 'generator:add_area_quick_from_generator' %}" > {% csrf_token %} <div class="input-group input-group-sm"> <input type="text" class="form-control form-control-sm" name="nome" placeholder="Não encontrou a área? Adicione-a." required maxlength="100" aria-label="Nome da nova área"> <button type="submit" class="btn btn-outline-primary btn-sm"> <i class="bi bi-plus-lg"></i> Add </button> </div> </form> </div>
-        </div> {# Fim filters-container #}
-      </div> {# Fim tab-pane objetivas #}
+        </div>
+      </div>
       {# Outras abas #}
-    </div> {# Fim tab-content #}
+    </div>
 
     {# Rodapé #}
     <div class="alert alert-secondary mt-4 small text-center"> Use os filtros acima para gerar novas questões C/E ou clique em Buscar no Banco. </div>
@@ -122,7 +133,7 @@
     {% endif %} {# Fim if page_obj #}
 
      {# Seção de Resultados da VALIDAÇÃO GERAL (mantida) #}
-     {% if results %} <hr class="my-4"> <div class="results-validation mt-4"> <h2 class="h5 mb-3 fw-normal">Resultado da Verificação Geral:</h2> {% if error_message and not performance %} <div class="alert alert-danger small">{{ error_message }}</div> {% endif %} {% for result in results %} {# ... (código exibir result) ... #} {% endfor %} {% if performance %} {# ... (código exibir performance) ... #} {% endif %} </div> {% endif %} {# Fim if results #}
+     {% if results %} <hr class="my-4"> <div class="results-validation mt-4"> <h2 class="h5 mb-3 fw-normal">Resultado da Verificação Geral:</h2> {# ... (código results/performance) ... #} </div> {% endif %}
 
 {% endblock content %}
 
@@ -130,4 +141,34 @@
 {% block extra_js %}
     <script src="{% static 'generator/js/question_generator_scripts.js' %}" defer></script>
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
+
+    {# +++++ SCRIPT PARA BOTÃO BUSCAR NO BANCO COM FILTROS +++++ #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchButton = document.getElementById('search-db-button');
+            const topicInput = document.getElementById('id_topic'); // << VERIFIQUE ESTE ID no HTML renderizado
+            const areaSelect = document.getElementById('id_area'); // << VERIFIQUE ESTE ID no HTML renderizado
+
+            if (searchButton && topicInput && areaSelect) {
+                searchButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const topicValue = topicInput.value.trim();
+                    const areaValue = areaSelect.value;
+                    const baseUrl = searchButton.href;
+                    const params = new URLSearchParams();
+                    if (topicValue) { params.append('q', topicValue); }
+                    if (areaValue) { params.append('area', areaValue); }
+                    let finalUrl = baseUrl;
+                    const queryString = params.toString();
+                    if (queryString) { finalUrl += '?' + queryString; }
+                    console.log('Redirecionando para busca com filtros:', finalUrl);
+                    window.location.href = finalUrl;
+                });
+            } else {
+                console.error('Elementos não encontrados para busca: #search-db-button, #id_topic, #id_area.');
+            }
+        });
+    </script>
+    {# +++++ FIM SCRIPT +++++ #}
+
 {% endblock extra_js %}

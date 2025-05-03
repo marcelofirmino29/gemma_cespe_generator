@@ -1579,75 +1579,81 @@ def test_print_view(request):
     # Retorna uma resposta HTTP simples para o navegador
     return HttpResponse(f"<h1>Teste Concluído</h1><p>{message}</p><p>Logado como: {request.user.username}</p><p>Verifique o console e os logs do Django.</p>")
 
-
 @login_required
 def listar_questoes_ce_view(request):
     """
-    Lista questões C/E:
-    - Se o parâmetro GET 'ids' estiver presente, lista apenas essas questões.
-    - Senão, lista todas as questões C/E existentes.
-    Aplica paginação em ambos os casos.
+    Lista questões C/E com paginação e filtros: q (keyword), area (id).
+    Também trata filtro por 'ids' vindo do redirect da geração.
+    Passa todas as áreas para o contexto para o formulário de busca.
     """
     context = {}
     logger = logging.getLogger('generator')
     questoes_list = None
-    is_filtered_list = False # Flag para saber se estamos vendo uma lista filtrada por IDs
-
-    # Pega parâmetro 'ids' da URL (ex: ?ids=101,102,103)
+    is_filtered_list = False
+    main_motivador = None
     id_list_str = request.GET.get('ids')
+    query_filter_param = request.GET.get('q', '').strip()
+    area_filter_param = request.GET.get('area', '')
 
+    # Prioridade 1: Filtro por IDs específicos
     if id_list_str:
-        logger.info(f"Listando questões C/E filtradas por IDs: [{id_list_str}]")
+        # ... (lógica para filtrar por IDs e buscar main_motivador como antes) ...
+        logger.info(f"Listando por IDs: [{id_list_str}]")
         try:
-            # Converte a string de IDs separados por vírgula em uma lista de inteiros
             id_list = [int(id_val.strip()) for id_val in id_list_str.split(',') if id_val.strip().isdigit()]
             if id_list:
-                # Busca APENAS as questões com os IDs fornecidos
-                questoes_list = Questao.objects.filter(
-                    id__in=id_list
-                ).select_related(
-                    'area', 'criado_por'
-                ).order_by('id') # Ordena pela ordem dos IDs talvez? Ou mantém criado_em? 'id' é mais previsível aqui.
-                is_filtered_list = True # Marca que é uma lista filtrada
-            else:
-                 logger.warning("Parâmetro 'ids' recebido, mas vazio ou inválido após parsing.")
-                 messages.warning(request, "IDs inválidos recebidos para filtrar a lista.")
-        except (ValueError, TypeError) as e:
-            logger.error(f"Erro ao converter IDs do parâmetro GET: {e}")
-            messages.error(request, "Erro ao processar IDs para filtro.")
-            # Em caso de erro nos IDs, não define questoes_list para cair no caso 'else' abaixo
+                questoes_list = Questao.objects.filter(id__in=id_list).select_related('area', 'criado_por').order_by('id')
+                is_filtered_list = True
+                context['id_filter_param'] = id_list_str
+                try:
+                    first_q = questoes_list.first()
+                    if first_q: main_motivador = first_q.texto_motivador
+                except Exception as e_motiv: logger.error(f"Erro buscar motivador: {e_motiv}")
+            else: messages.warning(request, "IDs inválidos.")
+        except (ValueError, TypeError) as e: logger.error(f"Erro converter IDs: {e}"); messages.error(request, "Erro IDs.")
 
-    # Se NÃO veio parâmetro 'ids' ou deu erro ao processá-lo
+    # Prioridade 2: Filtro por 'q' ou 'area' (ou lista geral)
     if questoes_list is None:
-        logger.info("Listando todas as questões C/E existentes.")
-        questoes_list = Questao.objects.filter(
-            tipo='CE'
-        ).select_related(
-            'area', 'criado_por'
-        ).order_by('-criado_em') # Mais recentes primeiro para a lista geral
-        is_filtered_list = False
+        logger.info(f"Listando com filtros: q='{query_filter_param}', area='{area_filter_param}'")
+        questoes_list = Questao.objects.filter(tipo='CE').select_related('area', 'criado_por')
+        if query_filter_param:
+            questoes_list = questoes_list.filter( Q(texto_comando__icontains=query_filter_param) | Q(texto_motivador__icontains=query_filter_param) | Q(id__icontains=query_filter_param) )
+            is_filtered_list = True
+        if area_filter_param and area_filter_param.isdigit():
+            try:
+                questoes_list = questoes_list.filter(area_id=int(area_filter_param))
+                is_filtered_list = True
+            except ValueError: messages.warning(request, f"ID Área inválido: {area_filter_param}"); area_filter_param = ''
+        elif area_filter_param: messages.warning(request, f"Filtro Área inválido: {area_filter_param}"); area_filter_param = ''
+        questoes_list = questoes_list.order_by('-criado_em')
+        main_motivador = None
 
-    # --- PAGINAÇÃO (Aplicada à lista resultante, seja ela filtrada ou geral) ---
+    # --- PAGINAÇÃO ---
     items_per_page = 20
     paginator = Paginator(questoes_list, items_per_page)
     page_number = request.GET.get('page')
+    try: page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger: page_obj = paginator.get_page(1)
+    except EmptyPage: page_obj = paginator.get_page(paginator.num_pages)
 
-    try:
-        page_obj = paginator.get_page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.get_page(1)
-    except EmptyPage:
-        page_obj = paginator.get_page(paginator.num_pages)
-
-    # Adiciona ao contexto
+    # --- ADICIONA TUDO AO CONTEXTO ---
     context['page_obj'] = page_obj
     context['paginator'] = paginator
-    context['is_filtered_list'] = is_filtered_list # Passa a flag para o template
-    # Passa os IDs originais para usar nos links de paginação, se for lista filtrada
-    if is_filtered_list:
-         context['id_filter_param'] = id_list_str # Passa a string original de IDs
+    context['is_filtered_list'] = is_filtered_list
+    context['main_motivador'] = main_motivador
+    context['id_filter_param'] = id_list_str
+    context['query_filter_param'] = query_filter_param
+    context['area_filter_param'] = area_filter_param
 
-    logger.info(f"Renderizando lista C/E. Filtrada por ID: {is_filtered_list}. Página: {page_obj.number}/{paginator.num_pages}")
+    # +++++ ADICIONA TODAS AS ÁREAS PARA O DROPDOWN DO FILTRO +++++
+    try:
+        context['all_areas'] = AreaConhecimento.objects.all().order_by('nome')
+    except Exception as e_area:
+        logger.error(f"Erro ao buscar todas as áreas para filtro: {e_area}")
+        context['all_areas'] = None # Evita erro no template se a busca falhar
+    # +++++ FIM ADIÇÃO all_areas +++++
 
-    # Renderiza o template de LISTAGEM (questions_ce.html)
+    logger.info(f"Renderizando lista C/E. Filtrada: {is_filtered_list}. Página: {page_obj.number}/{paginator.num_pages}")
+
+    # Renderiza o template de LISTAGEM
     return render(request, 'generator/questions_ce.html', context)
