@@ -1,0 +1,124 @@
+{% extends "generator/base.html" %}
+{% load static %}
+{% load humanize %}
+{% load generator_tags %} {# <<< Tag customizada para paginação com filtros #}
+{% load markdownify %} {# <<< Para renderizar markdown #}
+
+{% block title %}
+    {% if query_filter_param or area_filter_param %}Resultado da Busca - Discursivas{% else %}Banco de Questões Discursivas{% endif %}
+{% endblock title %}
+
+{% block extra_head %}
+    {# Estilos podem ser os mesmos do questions_ce ou customizados #}
+    <style>
+        .search-filters { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1.5rem; border: 1px solid var(--bs-border-color-translucent); }
+        .question-list-item { padding: 1rem 1.25rem; border: 1px solid var(--bs-border-color-translucent); border-radius: 0.375rem; margin-bottom: 1rem; background-color: var(--bs-body-bg); box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+        .question-meta { font-size: 0.85em; color: var(--bs-secondary-color); }
+        .pagination { margin-bottom: 1rem; }
+        .discursive-command { font-size: 0.95em; line-height: 1.6; margin-bottom: 1rem; }
+        .aspects-details summary { cursor: pointer; }
+        .aspects-content { white-space: pre-wrap; background-color: var(--bs-tertiary-bg); padding: 0.75rem; border-radius: 0.25rem; margin-top: 0.5rem; font-size: 0.9em;}
+        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; }
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        {% if query_filter_param or area_filter_param %}Resultado da Busca - Discursivas{% else %}Banco de Questões Discursivas{% endif %}
+    </h2>
+
+    {# Mensagens #}
+    {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
+
+    {# Formulário de Busca/Filtro para Discursivas #}
+    <div class="search-filters mb-4">
+        <form method="GET" action="{% url 'generator:questions_discursivas' %}" class="row g-2 align-items-end">
+            <div class="col-md-7">
+                <label for="search-q" class="form-label form-label-sm">Buscar por Palavra-chave/ID:</label>
+                <input type="text" class="form-control form-control-sm" id="search-q" name="q" value="{{ query_filter_param|default:'' }}" placeholder="Digite termo ou ID...">
+            </div>
+            <div class="col-md-3">
+                <label for="search-area" class="form-label form-label-sm">Filtrar por Área:</label>
+                <select class="form-select form-select-sm" id="search-area" name="area">
+                    <option value="">-- Todas --</option>
+                    {% for area_obj in all_areas %} <option value="{{ area_obj.id }}" {% if area_filter_param == area_obj.id|stringformat:"s" %}selected{% endif %}>{{ area_obj.nome }}</option> {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-search"></i> Buscar</button>
+            </div>
+        </form>
+    </div>
+
+    {# Lista Paginada #}
+    {% if page_obj %}
+        <p class="text-muted small mb-3 mt-2"> Exibindo página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}. (Questões {{ page_obj.start_index }} a {{ page_obj.end_index }} de um total de {{ page_obj.paginator.count }}). </p>
+
+            <div class="question-list">
+                {% for questao in page_obj %}
+                <div class="question-list-item">
+                    <div class="d-flex w-100 justify-content-between mb-1 flex-wrap">
+                        <h5 class="mb-1 h6 me-2"> Questão Discursiva #{{ questao.id }} {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %} </h5>
+                        <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>
+                    </div>
+
+                    <div class="discursive-command">
+                       {{ questao.texto_comando | markdownify | default:"(Comando não disponível)"}}
+                    </div>
+
+                    {% if questao.aspectos_discursiva %}
+                        <details class="mb-2 aspects-details">
+                             <summary class="text-info small">Mostrar Aspectos de Avaliação</summary>
+                             <div class="aspects-content">
+                                 {{ questao.aspectos_discursiva | markdownify }}
+                             </div>
+                        </details>
+                    {% endif %}
+
+                     <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle">
+                         Dificuldade: {{ questao.get_dificuldade_display|default:"N/D" }} |
+                         Criada por: {{ questao.criado_por.username|default:"?" }}
+                     </div>
+
+                     {# +++++ BOTÃO RESPONDER ADICIONADO AQUI +++++ #}
+                     <div class="mt-3 text-end"> {# Alinha botão à direita #}
+                         {# Link para a view do gerador discursivo, passando o ID da questão #}
+                         <a href="{% url 'generator:generate_discursive_exam' %}?questao_id={{ questao.id }}" class="btn btn-sm btn-outline-primary">
+                             <i class="bi bi-pencil-square"></i> Responder / Avaliar
+                         </a>
+                     </div>
+                     {# +++++ FIM BOTÃO RESPONDER +++++ #}
+
+                </div> {# Fim question-list-item #}
+                {% empty %}
+                 <div class="alert alert-warning" role="alert"> {% if query_filter_param or area_filter_param %} Nenhuma questão discursiva encontrada para os filtros aplicados. {% else %} Nenhuma questão discursiva encontrada no banco de dados. {% endif %} </div>
+                {% endfor %}
+            </div>
+
+        {# --- Controles de Paginação (Usando a tag url_params) --- #}
+        {% if paginator.num_pages > 1 %}
+            <nav aria-label="Navegação das questões discursivas" class="mt-4 d-flex justify-content-center">
+                {# Passa filtros q e area para a tag #}
+                {% url_params page=None q=query_filter_param area=area_filter_param as current_filters %}
+                <ul class="pagination flex-wrap">
+                    {% if page_obj.number > 1 %}<li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>{% endif %}
+                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
+                    {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% if page_obj.number > 3 %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}{% elif num == paginator.num_pages %}{% if page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% endif %}{% endfor %}
+                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próximo">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
+                    {% if page_obj.number < paginator.num_pages %}<li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        {# --- Fim Controles de Paginação --- #}
+
+    {% else %}
+        <div class="alert alert-info mt-4" role="alert"> Nenhuma questão discursiva cadastrada para exibir {% if query_filter_param or area_filter_param %} com os filtros aplicados{% endif %}. </div>
+    {% endif %}
+
+</div> {# Fim container #}
+{% endblock content %}
+
+{% block extra_js %}
+    {# Nenhum JS específico necessário aqui para esta funcionalidade do botão #}
+{% endblock extra_js %}

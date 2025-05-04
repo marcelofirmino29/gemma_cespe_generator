@@ -37,7 +37,7 @@
         .form-control, .form-select { font-size: 0.9rem; /* Tamanho de fonte padrão para inputs */ }
         .form-control-sm, .form-select-sm { font-size: 0.85rem; } /* Mantém sm se usado */
         .form-text { font-size: 0.75rem; /* Texto de ajuda menor */ }
-        .btn-filter-action { font-size: 0.9rem; }
+        .btn-filter-action { font-size: 0.9rem; } /* Classe mantida caso usada em outro lugar */
 
         /* Estilo para o texto da questão renderizado (substitui o <pre>) */
         .generated-exam-markdown {
@@ -60,9 +60,11 @@
         label { display: block; margin-bottom: 0.25rem; }
 
          /* Ajuste para textarea (tópico) */
-        #{{ form.base_topic_or_context.id_for_label }} {
+        #{{ form.base_topic_or_context.id_for_label|default:'id_base_topic_or_context' }} { /* Adicionado default */
             min-height: 80px; /* Altura mínima para o campo tópico */
         }
+        /* Ajuste para grupo de botões */
+        .action-buttons .btn { font-size: 0.9rem; }
 
     </style>
 {% endblock extra_head %}
@@ -79,138 +81,90 @@
 
     {# --- Abas de Navegação --- #}
     <ul class="nav nav-tabs mb-0" id="mainTabs" role="tablist">
-       <li class="nav-item" role="presentation">
-         {# Link para Gerador C/E #}
-         <a class="nav-link" href="{% url 'generator:generate_questions' %}">Gerador C/E</a>
-       </li>
-       <li class="nav-item" role="presentation">
-         {# Link/Aba Ativa para Gerador Discursiva #}
-         <a class="nav-link active" href="{% url 'generator:generate_discursive_exam' %}" id="discursivas-tab" role="tab" aria-selected="true">Gerador Discursiva</a>
-       </li>
-       <li class="nav-item" role="presentation">
-         {# Link para Configurar Simulado #}
-         <a class="nav-link" href="{% url 'generator:configurar_simulado' %}">Configurar Simulado</a>
-       </li>
-       <li class="nav-item" role="presentation">
-         {# Link para Dashboard #}
-         <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a>
-       </li>
-       {# Adicione outras abas principais se desejar #}
+       <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:generate_questions' %}?action=clear">Gerador C/E</a> </li> {# Link do C/E agora limpa o resultado dele #}
+       <li class="nav-item" role="presentation"> <a class="nav-link active" href="{% url 'generator:generate_discursive_exam' %}" id="discursivas-tab" role="tab" aria-selected="true">Gerador Discursiva</a> </li>
+       <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:configurar_simulado' %}">Configurar Simulado</a> </li>
+       <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a> </li>
+       {# Link opcional para o Banco de Questões Discursivas (se criar URL) #}
+       {# <li class="nav-item" role="presentation"> <a class="nav-link" href="{% url 'generator:questions_discursivas' %}">Banco Discursivas</a> </li> #}
     </ul>
     {# --- Fim Abas de Navegação --- #}
 
-
     {# Container dos Filtros - Aba Discursivas #}
     <div class="tab-content" id="questionTypeTabContent">
-      <div class="tab-pane fade" id="objetivas-panel" role="tabpanel" aria-labelledby="objetivas-tab">
-          <div class="filters-container p-5 text-center text-muted">
-             Filtros para questões objetivas disponíveis na aba correspondente.
-         </div>
-      </div>
+      <div class="tab-pane fade" id="objetivas-panel" role="tabpanel" aria-labelledby="objetivas-tab"></div> {# Painel vazio #}
       <div class="tab-pane fade show active" id="discursivas-panel" role="tabpanel" aria-labelledby="discursivas-tab">
          <div class="filters-container shadow-sm">
-
              {# Formulário principal #}
             <form method="post" action="{% url 'generator:generate_discursive_exam' %}" id="discursive-exam-form" {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}>
                 {% csrf_token %}
-
-                {# Linha principal dos filtros #}
                 <div class="row g-3">
-
-                    {# Coluna Esquerda: Tópico/Contexto #}
                     <div class="col-lg-6">
-                        <label for="{{ form.base_topic_or_context.id_for_label }}" class="form-label fw-medium">{{ form.base_topic_or_context.label|default:"Tópico ou Contexto para Questão Discursiva" }}</label>
+                        <label for="{{ form.base_topic_or_context.id_for_label|default:'id_base_topic_or_context' }}" class="form-label fw-medium">{{ form.base_topic_or_context.label|default:"Tópico ou Contexto Base" }}</label>
                         {{ form.base_topic_or_context }}
                         {% if form.base_topic_or_context.help_text %}<small class="form-text text-muted mt-1">{{ form.base_topic_or_context.help_text }}</small>{% endif %}
                         {% if form.base_topic_or_context.errors %}<div class="invalid-feedback d-block">{{ form.base_topic_or_context.errors|striptags }}</div>{% endif %}
                     </div>
-
-                    {# Coluna Direita: Nº Aspectos e Área #}
                     <div class="col-lg-6">
                         <div class="row g-3">
-                            {# Número de Aspectos #}
                             <div class="col-md-6">
-                                <label for="{{ form.num_aspects.id_for_label }}" class="form-label fw-medium">{{ form.num_aspects.label|default:"Nº Aspectos" }}</label>
+                                <label for="{{ form.num_aspects.id_for_label|default:'id_num_aspects' }}" class="form-label fw-medium">{{ form.num_aspects.label|default:"Nº Aspectos" }}</label>
                                 {{ form.num_aspects }}
                                 {% if form.num_aspects.help_text %}<small class="form-text text-muted mt-1">{{ form.num_aspects.help_text }}</small>{% endif %}
                                 {% if form.num_aspects.errors %}<div class="invalid-feedback d-block">{{ form.num_aspects.errors|striptags }}</div>{% endif %}
                             </div>
-
-                            {# Área #}
                             <div class="col-md-6">
-                                <label for="{{ form.area.id_for_label }}" class="form-label fw-medium">{{ form.area.label|default:"Área (Opcional)" }}</label>
+                                <label for="{{ form.area.id_for_label|default:'id_area' }}" class="form-label fw-medium">{{ form.area.label|default:"Área (Opcional)" }}</label>
                                 {{ form.area }}
                                 {% if form.area.help_text %}<small class="form-text text-muted mt-1">{{ form.area.help_text }}</small>{% endif %}
                                 {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
                             </div>
-                             {# Campos Complexidade e Idioma removidos do layout #}
-                        </div> {# Fim da row interna #}
+                        </div>
 
-                         {# Botões de Ação (Alinhados à direita dentro da coluna direita) #}
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                             {# Botão Limpar #}
-                            <button type="reset" class="btn btn-outline-secondary btn-sm btn-filter-action"><i class="bi bi-x-lg"></i> Limpar</button>
-                            {# Botão Gerar Questão #}
-                            <button type="submit" class="btn btn-primary btn-sm btn-filter-action" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
+                         {# +++++ BOTÕES DE AÇÃO COM BUSCAR DISCURSIVAS +++++ #}
+                        <div class="d-flex justify-content-end gap-2 mt-4 action-buttons">
+                            <button type="reset" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i> Limpar</button>
+
+                            {# ----- BOTÃO BUSCAR DISCURSIVAS ADICIONADO ----- #}
+                            <a href="{% url 'generator:questions_discursivas' %}" {# << URL DA NOVA VIEW DE LISTAGEM DISCURSIVA #}
+                               id="search-discursive-db-button" {# << ID para o JS #}
+                               class="btn btn-outline-success btn-sm"
+                               role="button" title="Busca discursivas existentes usando Tópico/Área informados">
+                                <i class="bi bi-search"></i> Buscar Discursivas
+                            </a>
+                            {# ----- FIM BOTÃO BUSCAR DISCURSIVAS ----- #}
+
+                            <button type="submit" class="btn btn-primary btn-sm" id="submit-discursive-exam" {% if not service_initialized %} disabled {% endif %}>
                                  <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="loading-spinner-discursive-exam"></span>
                                  <span id="button-text-discursive-exam"><i class="bi bi-robot"></i> Gerar Discursiva por IA</span>
                             </button>
                         </div>
+                         {# +++++ FIM BOTÕES DE AÇÃO +++++ #}
 
-                    </div> {# Fim da Coluna Direita #}
-                </div> {# Fim da row principal dos filtros #}
-
-            </form> {# Fim do form principal #}
-
+                    </div> {# Fim Coluna Direita #}
+                </div> {# Fim row principal #}
+            </form> {# Fim form principal #}
          </div> {# Fim filters-container #}
       </div> {# Fim tab-pane discursivas #}
     </div> {# Fim tab-content #}
 
-     {# Mensagem de rodapé (como na imagem) #}
-    <div class="alert alert-secondary mt-4 small text-center">
-        Use os filtros acima para gerar novas questões discursivas.
-    </div>
+    {# Rodapé #}
+    <div class="alert alert-secondary mt-4 small text-center"> Use os filtros acima para gerar novas questões discursivas ou clique em Buscar Discursivas. </div> {# Texto ajustado #}
 
-    {# Exibição de Erro Geral de Geração #}
-    {% if error_message and service_initialized and not form.errors %}
-        <div class="alert alert-danger alert-dismissible fade show small" role="alert">
-             <strong>Erro ao Gerar:</strong> {{ error_message }}
-             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endif %}
+    {# Exibição de Erro #}
+    {% if error_message and service_initialized and not form.errors %} <div class="alert alert-danger alert-dismissible fade show small" role="alert"> <strong>Erro ao Gerar:</strong> {{ error_message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endif %}
 
-    {# Exibição da Questão Gerada E Formulário para Resposta #}
+    {# Exibição da Questão Gerada + Formulário de Resposta #}
     {% if discursive_exam_text and questao_id %}
-        <hr class="my-4"> {# Separador #}
-        <div class="mt-4"> {# Container simples #}
+        <hr class="my-4">
+        <div class="mt-4">
             <h2 class="h5 mb-3 fw-normal">Questão Discursiva Gerada:</h2>
-             {# <<< ALTERADO: Usa DIV com filtro markdownify em vez de PRE >>> #}
-            <div class="generated-exam-markdown mb-3" id="markdown-content">
-                {{ discursive_exam_text | markdownify }}
-            </div>
-            <div class="text-end mb-4"> {# Botão Copiar alinhado à direita #}
-                 {# <<< ALTERADO: Botão Copiar agora copia o CONTEÚDO RENDERIZADO da div >>> #}
-                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyRenderedText('markdown-content')">Copiar Texto</button>
-            </div>
-
-            {# Formulário para Resposta do Usuário #}
+            <div class="generated-exam-markdown mb-3" id="markdown-content"> {{ discursive_exam_text | markdownify }} </div>
+            <div class="text-end mb-4"> <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyRenderedText('markdown-content')">Copiar Texto</button> </div>
             <hr class="my-4">
-            <div class="mb-4"> {# Container simples #}
+            <div class="mb-4">
                 <h3 class="h5 mb-3 fw-normal">Sua Resposta para Avaliação (Beta)</h3>
-                <form method="post" action="{% url 'generator:evaluate_discursive_answer' %}" id="user-answer-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="line_count" id="line_count_input" value="0">
-                    <input type="hidden" name="questao_id" value="{{ questao_id }}">
-                    <div class="mb-3">
-                        <label for="user_answer_text" class="form-label visually-hidden">Sua Resposta</label>
-                        <textarea class="form-control" id="user_answer_text" name="user_answer" rows="15" placeholder="Escreva sua resposta dissertativa aqui..." required></textarea>
-                        <div id="word-count-feedback" class="form-text text-muted small mt-1">Contagem de palavras: 0</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-sm"> {# btn-sm #}
-                        <i class="bi bi-send-check-fill me-1"></i> Enviar para Avaliação
-                    </button>
-                    <small class="text-muted ms-2 fst-italic">(Avaliação por IA experimental)</small>
-                </form>
+                <form method="post" action="{% url 'generator:evaluate_discursive_answer' %}" id="user-answer-form"> {% csrf_token %} <input type="hidden" name="line_count" id="line_count_input" value="0"> <input type="hidden" name="questao_id" value="{{ questao_id }}"> <div class="mb-3"> <label for="user_answer_text" class="form-label visually-hidden">Sua Resposta</label> <textarea class="form-control" id="user_answer_text" name="user_answer" rows="15" placeholder="Escreva sua resposta dissertativa aqui..." required></textarea> <div id="word-count-feedback" class="form-text text-muted small mt-1">Contagem de palavras: 0</div> </div> <button type="submit" class="btn btn-primary btn-sm"> <i class="bi bi-send-check-fill me-1"></i> Enviar para Avaliação </button> <small class="text-muted ms-2 fst-italic">(Avaliação por IA experimental)</small> </form>
             </div>
         </div>
     {% endif %}
@@ -219,22 +173,48 @@
 
 
 {% block extra_js %}
+    {# Scripts JS existentes #}
     <script src="{% static 'generator/js/exam_generator_scripts.js' %}" defer></script>
+    <script> function copyRenderedText(elementId) { const element = document.getElementById(elementId); if (element) { navigator.clipboard.writeText(element.textContent || element.innerText) .then(() => { alert('Texto da questão copiado!'); }) .catch(err => { console.error('Erro ao copiar: ', err); alert('Falha ao copiar.'); }); } else { console.error(`Elemento com ID '${elementId}' não encontrado para cópia.`); alert('Erro: Não foi possível encontrar o texto para copiar.'); } } </script>
+
+    {# +++++ SCRIPT PARA BOTÃO BUSCAR DISCURSIVAS COM FILTROS +++++ #}
     <script>
-        // Função Copiar (MODIFICADA para copiar o texto renderizado da div)
-        function copyRenderedText(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                // Tenta copiar o texto como ele é exibido (preserva quebras de linha melhor que innerText)
-                navigator.clipboard.writeText(element.textContent || element.innerText)
-                    .then(() => { alert('Texto da questão copiado!'); })
-                    .catch(err => { console.error('Erro ao copiar: ', err); alert('Falha ao copiar.'); });
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchDiscursiveButton = document.getElementById('search-discursive-db-button'); // ID do botão
+            // IDs PROVÁVEIS dos campos (VERIFIQUE!)
+            const topicInputDiscursive = document.getElementById('id_base_topic_or_context');
+            const areaSelectDiscursive = document.getElementById('id_area'); // Assumindo mesmo nome de campo 'area'
+
+            if (searchDiscursiveButton && topicInputDiscursive && areaSelectDiscursive) {
+                searchDiscursiveButton.addEventListener('click', function(event) {
+                    event.preventDefault(); // Impede link
+
+                    const topicValue = topicInputDiscursive.value.trim();
+                    const areaValue = areaSelectDiscursive.value;
+                    // Pega a URL da NOVA view de listagem DISCURSIVA
+                    const baseUrl = searchDiscursiveButton.href; // Deve ser {% url 'generator:questions_discursivas' %}
+
+                    const params = new URLSearchParams();
+                    // NÃO precisa mais de tipo=DISC aqui, pois a view é específica
+                    if (topicValue) { params.append('q', topicValue); }
+                    if (areaValue) { params.append('area', areaValue); }
+
+                    let finalUrl = baseUrl;
+                    const queryString = params.toString();
+                    if (queryString) {
+                        finalUrl += '?' + queryString;
+                    }
+                    // Remove '?' extra se não houver parâmetros
+                    if (finalUrl.endsWith('?')) { finalUrl = baseUrl; }
+
+                    console.log('Redirecionando para busca discursiva:', finalUrl);
+                    window.location.href = finalUrl; // Redireciona
+                });
             } else {
-                 console.error(`Elemento com ID '${elementId}' não encontrado para cópia.`);
-                 alert('Erro: Não foi possível encontrar o texto para copiar.');
+                console.error('Elementos não encontrados para busca discursiva. Verifique IDs: #search-discursive-db-button, #id_base_topic_or_context, #id_area.');
             }
-        }
-        // Lógica para contar palavras/linhas (assumindo que está em exam_generator_scripts.js)
-        // ...
+        });
     </script>
+    {# +++++ FIM SCRIPT +++++ #}
+
 {% endblock extra_js %}

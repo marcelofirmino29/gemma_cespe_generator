@@ -535,191 +535,243 @@ def validate_answers_view(request):
     return render(request, 'generator/question_generator.html', context)
 
 
-# --- VISÃO GERAR RESPOSTA DISCURSIVA ---
-@login_required
-def generate_discursive_view(request):
-    context, service, service_initialized = _get_base_context_and_service()
-    essay_answer = None
-    form = DiscursiveAnswerForm(request.POST or None)
-    context['form'] = form
-    context['error_message'] = context.get('error_message') # Pega erro inicial, se houver
+# generator/views.py
+# (Imports: render, redirect, login_required, messages, Questao, DiscursiveExamForm, get_object_or_404, services, exceptions, logging)
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Questao, AreaConhecimento # Garanta que Questao e AreaConhecimento estão importados
+from .forms import DiscursiveExamForm # Garanta que o form está importado
+from .services import QuestionGenerationService # Importe seu serviço
+from .exceptions import ( # Importe exceptions
+    ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError
+)
+import logging
 
-    if request.method == 'POST':
-        if not service_initialized or not service:
-            logger.error(f"POST generate_discursive_view sem serviço IA por {request.user.username}.")
-            # Usa o erro já existente no contexto ou define um novo
-            context['error_message'] = context.get('error_message', "Serviço de IA indisponível no momento.")
-            # Renderiza o form com o erro
-            return render(request, 'generator/discursive_generator.html', context)
-        else:
-            logger.info(f"POST generate_discursive_view por {request.user.username}")
-            if form.is_valid():
-                essay_prompt = form.cleaned_data.get('essay_prompt')
-                key_points = form.cleaned_data.get('key_points')
-                limit = form.cleaned_data.get('limit')
-                area = form.cleaned_data.get('area') # Pode ser None
+logger = logging.getLogger('generator')
 
-                # Validação extra (embora o form já deva fazer isso com required=True)
-                if not essay_prompt or not essay_prompt.strip():
-                    form.add_error('essay_prompt', 'Este campo é obrigatório.')
-                    logger.warning(f"Tentativa de Geração R. Discursiva sem prompt por {request.user.username}.")
-                    context['error_message'] = "Erro no formulário: Verifique os campos obrigatórios."
-                    # Re-renderiza com o erro no form
-                    return render(request, 'generator/discursive_generator.html', context)
-                else:
-                    logger.info(f"Form Gerar R. Discursiva válido. Prompt: '{essay_prompt[:80]}...' (User: {request.user.username})")
-                    try:
-                        essay_answer = service.generate_discursive_answer(
-                            essay_prompt=essay_prompt,
-                            key_points=key_points,
-                            limit=limit,
-                            area=area # Passa o objeto AreaConhecimento ou None
-                        )
-                        logger.info("Resposta discursiva modelo gerada pela IA.")
-                        context['error_message'] = None # Limpa erro se sucesso
-                        messages.success(request, "Resposta discursiva gerada com sucesso!")
-                        # Limpa o form após sucesso para nova geração
-                        context['form'] = DiscursiveAnswerForm()
-
-                    except (AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as e:
-                        logger.error(f"Erro ao gerar Resposta Discursiva: {e}", exc_info=True)
-                        context['error_message'] = f"Falha ao gerar resposta: {e}"
-                        # Mantém o form preenchido para o usuário não perder o input
-                    except Exception as e:
-                         logger.error(f"Erro INESPERADO ao gerar Resposta Discursiva: {e}", exc_info=True)
-                         context['error_message'] = f"Ocorreu um erro inesperado: {e}"
-                         # Mantém o form preenchido
-            else: # Form inválido
-                logger.warning(f"Tentativa de Geração R. Discursiva com formulário inválido por {request.user.username}: {form.errors.as_json()}")
-                context['error_message'] = "Formulário inválido. Por favor, corrija os erros indicados."
-                # O form com os erros já está no contexto
-
-    # Para GET ou após POST (com ou sem sucesso)
-    context['essay_answer'] = essay_answer # Será None ou a resposta gerada
-    logger.debug(f"Contexto final (generate_discursive_view): User={request.user.username}, { {k: v for k, v in context.items() if k not in ['essay_answer', 'form']} }")
-    return render(request, 'generator/discursive_generator.html', context)
+# Função auxiliar _get_base_context_and_service (mantenha a sua)
+def _get_base_context_and_service(): # Exemplo básico
+    context = {}
+    service = None
+    service_initialized = True
+    try: service = QuestionGenerationService()
+    except Exception as e: logger.error(f"Falha Service Init: {e}"); context['error_message'] = f"Erro IA: {e}"; service_initialized = False
+    context['service_initialized'] = service_initialized
+    return context, service, service_initialized
 
 
-# --- VISÃO GERAR QUESTÃO DISCURSIVA ---
 @login_required
 def generate_discursive_exam_view(request):
+    """
+    View Geradora Discursiva - Com Debug no GET:
+    - POST: Gera nova questão.
+    - GET: Se ?questao_id=, carrega questão existente; senão, mostra form vazio.
+    """
     context, service, service_initialized = _get_base_context_and_service()
-    discursive_exam_text = None # Texto bruto da IA
-    questao_salva = None # Objeto Questao salvo
-    questao_id = None # <<< Adicionado para passar o ID consistentemente
-    form = DiscursiveExamForm(request.POST or None)
-    context['form'] = form
-    context['error_message'] = context.get('error_message') # Pega erro inicial
+    # Inicializa variáveis que serão definidas no GET ou POST
+    discursive_exam_text = None
+    questao_id = None
 
+    context['error_message'] = context.get('error_message')
+
+    # --- Lógica POST (Permanece igual) ---
     if request.method == 'POST':
-        if not service_initialized or not service:
-            logger.error(f"POST generate_discursive_exam_view sem serviço IA por {request.user.username}.")
-            context['error_message'] = context.get('error_message', "Serviço de IA indisponível no momento.")
-            # Renderiza com erro, mas garante que as variáveis do template existem como None
-            context['discursive_exam_text'] = None
-            context['questao_id'] = None
-            return render(request, 'generator/discursive_exam_generator.html', context)
-        else:
-            logger.info(f"POST generate_discursive_exam_view por {request.user.username}")
-            if form.is_valid():
-                base_topic_or_context = form.cleaned_data.get('base_topic_or_context')
-                num_aspects = form.cleaned_data.get('num_aspects', 3)
-                area_obj = form.cleaned_data.get('area') # Agora pega o objeto diretamente
-                complexity = form.cleaned_data.get('complexity', 'Intermediária')
-                language = form.cleaned_data.get('language', 'pt-br')
+        form = DiscursiveExamForm(request.POST)
+        context['form'] = form # Passa o form preenchido (com erros ou não)
+        # ... (Toda a lógica do POST para gerar e salvar questão como antes) ...
+        # ... (Se gerar com sucesso, define questao_id e discursive_exam_text) ...
+        # ... (Se der erro, define context['error_message']) ...
 
-                # Validação extra (embora o form já deva fazer isso)
-                if not base_topic_or_context or not base_topic_or_context.strip():
-                    form.add_error('base_topic_or_context', 'Este campo é obrigatório.')
-                    logger.warning(f"Tentativa de Geração Q. Discursiva sem tópico base por {request.user.username}.")
-                    context['error_message'] = "Erro no formulário: Verifique os campos obrigatórios."
-                    context['discursive_exam_text'] = None # Garante que não haja texto
-                    context['questao_id'] = None # Garante que não haja ID
-                    return render(request, 'generator/discursive_exam_generator.html', context)
-                else:
-                    area_nome_log = area_obj.nome if area_obj else "Nenhuma"
-                    logger.info(f"Form Gerar Q. Disc. válido. Tópico: '{base_topic_or_context[:80]}...' Área: {area_nome_log}, Idioma: {language} (User: {request.user.username})")
+        # --- Bloco POST (resumido para focar no GET) ---
+        if form.is_valid():
+            if not service_initialized or not service:
+                messages.error(request, context.get('error_message', "Serviço de IA indisponível."))
+                return render(request, 'generator/discursive_exam_generator.html', context)
+            base_topic_or_context = form.cleaned_data.get('base_topic_or_context')
+            num_aspects = form.cleaned_data.get('num_aspects', 3); area_obj = form.cleaned_data.get('area'); complexity = form.cleaned_data.get('complexity', 'Intermediária'); language = form.cleaned_data.get('language', 'pt-br')
+            try:
+                discursive_exam_text = service.generate_discursive_exam_question(base_topic_or_context=base_topic_or_context, num_aspects=num_aspects, area=area_obj.nome if area_obj else None, complexity=complexity, language=language)
+                if discursive_exam_text and isinstance(discursive_exam_text, str) and discursive_exam_text.strip():
                     try:
-                        # Tenta gerar o texto da questão
-                        discursive_exam_text = service.generate_discursive_exam_question(
-                            base_topic_or_context=base_topic_or_context,
-                            num_aspects=num_aspects,
-                            area=area_obj.nome if area_obj else None, # Passa o nome da área para o serviço
-                            complexity=complexity,
-                            language=language
-                        )
-                        logger.info("Estrutura da questão discursiva recebida da IA.")
-                        context['error_message'] = None # Limpa erro se sucesso na geração
-
-                        # Verifica se o texto gerado é válido antes de tentar salvar
-                        if discursive_exam_text and isinstance(discursive_exam_text, str) and discursive_exam_text.strip():
-                            # Tenta salvar a questão no banco
-                            try:
-                                questao_obj = Questao(
-                                    tipo='DISC',
-                                    texto_comando=discursive_exam_text, # Salva o texto completo retornado
-                                    aspectos_discursiva=f"Avaliar conforme o comando e {num_aspects} aspecto(s) principal(is).",
-                                    dificuldade=complexity,
-                                    area=area_obj, # Associa o objeto AreaConhecimento
-                                    criado_por=request.user
-                                )
-                                questao_obj.save()
-                                questao_salva = questao_obj # Guarda o objeto salvo
-                                questao_id = questao_salva.id # <<< GUARDA O ID AQUI >>>
-                                logger.info(f"Questão Discursiva ID {questao_id} salva no DB.")
-                                messages.success(request, f"Questão discursiva gerada e salva (ID: {questao_id})!")
-                                # Limpa o form após sucesso completo (geração E salvamento)
-                                form = DiscursiveExamForm() # <<<< REINSTANCIA O FORM AQUI
-
-                            except Exception as db_error:
-                                logger.error(f"Erro ao salvar Questão Discursiva no DB: {db_error}", exc_info=True)
-                                messages.error(request, "Questão gerada pela IA, mas houve um erro ao salvá-la no banco de dados.")
-                                # Mantém o texto gerado para exibição, mas sem ID salvo
-                                questao_salva = None
-                                questao_id = None # <<< GARANTE QUE ID É NONE SE SALVAR FALHAR >>>
-                        else:
-                             logger.warning("IA retornou texto vazio ou inválido para questão discursiva.")
-                             messages.warning(request, "A IA não retornou uma questão válida.")
-                             discursive_exam_text = None # Garante que nada seja exibido
-                             questao_salva = None
-                             questao_id = None
-
-                    # Captura erros durante a chamada da IA ou erros gerais
-                    except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as e:
-                        logger.error(f"Erro ao gerar Questão Discursiva (serviço/parse): {e}", exc_info=True)
-                        context['error_message'] = f"Falha ao gerar questão: {e}"
-                        discursive_exam_text = None; questao_salva = None; questao_id = None
-                        # Mantém o form preenchido com os dados que deram erro
-                    except Exception as e:
-                         logger.error(f"Erro INESPERADO ao gerar Questão Discursiva: {e}", exc_info=True)
-                         context['error_message'] = f"Ocorreu um erro inesperado: {e}"
-                         discursive_exam_text = None; questao_salva = None; questao_id = None
-                         # Mantém o form preenchido
-
-            else: # Form inválido
-                logger.warning(f"Tentativa de Geração Q. Discursiva com formulário inválido por {request.user.username}: {form.errors.as_json()}")
-                context['error_message'] = "Formulário inválido. Por favor, corrija os erros indicados."
-                discursive_exam_text = None # Garante que não haja texto
-                questao_id = None # Garante que não haja ID
-                # O form com os erros já está no contexto
+                        q = Questao(tipo='DISC', texto_comando=discursive_exam_text, aspectos_discursiva=f"Avaliar {num_aspects} aspecto(s).", dificuldade=complexity, area=area_obj, criado_por=request.user)
+                        q.save(); questao_id = q.id; logger.info(f"Discursiva ID {questao_id} salva.")
+                        messages.success(request, f"Questão discursiva gerada (ID: {questao_id})! Responda abaixo.")
+                    except Exception as db_error: logger.error(f"Erro salvar DISC: {db_error}", exc_info=True); messages.error(request, "Erro ao salvar questão."); questao_id = None; discursive_exam_text = None
+                else: messages.warning(request, "IA não retornou questão válida."); discursive_exam_text = None; questao_id = None
+            except Exception as e: logger.error(f"Erro gerar DISC: {e}", exc_info=True); context['error_message'] = f"Falha: {e}"; discursive_exam_text = None; questao_id = None
+        # Fim if form.is_valid() (Continua abaixo para setar contexto e renderizar)
+    # --- Fim Lógica POST ---
 
     # --- Lógica GET ---
-    # (Não precisa fazer nada extra aqui, apenas renderiza o form vazio)
-    elif request.method == 'GET':
-         logger.debug(f"GET generate_discursive_exam_view por {request.user.username}")
-         # Garante que as variáveis estejam como None em GET
-         discursive_exam_text = None
-         questao_id = None
+    else: # request.method == 'GET'
+        form = DiscursiveExamForm() # Form vazio para nova geração
+        context['form'] = form
+        logger.debug(f"GET generate_discursive_exam por {request.user.username}")
 
+        questao_id_from_url = request.GET.get('questao_id')
+        print(f"\n--- DEBUG DISCURSIVA GET ---") # Início do Debug
+        print(f"Parametro questao_id da URL: {questao_id_from_url}")
 
-    # Atualiza o contexto ANTES de renderizar (para GET ou POST)
-    # Garante que as variáveis SEMPRE existam no contexto
-    context['form'] = form # Passa o form (preenchido com erro, vazio ou re-instanciado)
-    context['discursive_exam_text'] = discursive_exam_text # Texto da IA ou None
-    context['questao_id'] = questao_id # ID da questão salva ou None
+        if questao_id_from_url and questao_id_from_url.isdigit():
+            qid = int(questao_id_from_url)
+            print(f"Tentando buscar Questao ID={qid}, tipo='DISC'")
+            try:
+                # Busca a questão específica ou dá erro 404
+                questao_para_responder = get_object_or_404(Questao, id=qid, tipo='DISC')
+                print(f"Questão encontrada: {questao_para_responder}")
+                discursive_exam_text = questao_para_responder.texto_comando # Pega o texto
+                questao_id = questao_para_responder.id # Pega o ID
+                print(f"Definindo discursive_exam_text: {'Sim' if discursive_exam_text else 'Não'}")
+                print(f"Definindo questao_id: {questao_id}")
+                logger.info(f"Questão ID {questao_id} carregada para resposta.")
+            except Exception as e:
+                 # Captura get_object_or_404 ou outros erros
+                 print(f"!!! ERRO ao buscar questão ID {qid}: {e}")
+                 logger.error(f"Erro buscar discursiva ID {qid}: {e}", exc_info=True)
+                 messages.error(request, f"Erro ao carregar questão discursiva {qid}.")
+                 # Garante que variáveis fiquem None se der erro
+                 discursive_exam_text = None
+                 questao_id = None
+        else:
+            print("Nenhum questao_id válido encontrado na URL.")
+            # Garante que variáveis são None se não veio ID
+            discursive_exam_text = None
+            questao_id = None
 
-    logger.debug(f"Contexto final (generate_discursive_exam_view): User={request.user.username}, QuestaoID={questao_id}, HasText={discursive_exam_text is not None}")
+        print(f"Valores FINAIS para contexto: questao_id={questao_id}, tem_texto={discursive_exam_text is not None}")
+        print(f"--- FIM DEBUG ---") # Fim do Debug
+
+    # Atualiza contexto ANTES de renderizar (para GET ou POST)
+    # As variáveis locais 'discursive_exam_text' e 'questao_id' terão os valores corretos
+    # vindos do POST ou do GET (se questao_id foi passado e encontrado)
+    context['discursive_exam_text'] = discursive_exam_text
+    context['questao_id'] = questao_id
+
+    # Renderiza o template do GERADOR DISCURSIVO
     return render(request, 'generator/discursive_exam_generator.html', context)
+
+# # --- VISÃO GERAR QUESTÃO DISCURSIVA ---
+# @login_required
+# def generate_discursive_exam_view(request):
+#     context, service, service_initialized = _get_base_context_and_service()
+#     discursive_exam_text = None # Texto bruto da IA
+#     questao_salva = None # Objeto Questao salvo
+#     questao_id = None # <<< Adicionado para passar o ID consistentemente
+#     form = DiscursiveExamForm(request.POST or None)
+#     context['form'] = form
+#     context['error_message'] = context.get('error_message') # Pega erro inicial
+
+#     if request.method == 'POST':
+#         if not service_initialized or not service:
+#             logger.error(f"POST generate_discursive_exam_view sem serviço IA por {request.user.username}.")
+#             context['error_message'] = context.get('error_message', "Serviço de IA indisponível no momento.")
+#             # Renderiza com erro, mas garante que as variáveis do template existem como None
+#             context['discursive_exam_text'] = None
+#             context['questao_id'] = None
+#             return render(request, 'generator/discursive_exam_generator.html', context)
+#         else:
+#             logger.info(f"POST generate_discursive_exam_view por {request.user.username}")
+#             if form.is_valid():
+#                 base_topic_or_context = form.cleaned_data.get('base_topic_or_context')
+#                 num_aspects = form.cleaned_data.get('num_aspects', 3)
+#                 area_obj = form.cleaned_data.get('area') # Agora pega o objeto diretamente
+#                 complexity = form.cleaned_data.get('complexity', 'Intermediária')
+#                 language = form.cleaned_data.get('language', 'pt-br')
+
+#                 # Validação extra (embora o form já deva fazer isso)
+#                 if not base_topic_or_context or not base_topic_or_context.strip():
+#                     form.add_error('base_topic_or_context', 'Este campo é obrigatório.')
+#                     logger.warning(f"Tentativa de Geração Q. Discursiva sem tópico base por {request.user.username}.")
+#                     context['error_message'] = "Erro no formulário: Verifique os campos obrigatórios."
+#                     context['discursive_exam_text'] = None # Garante que não haja texto
+#                     context['questao_id'] = None # Garante que não haja ID
+#                     return render(request, 'generator/discursive_exam_generator.html', context)
+#                 else:
+#                     area_nome_log = area_obj.nome if area_obj else "Nenhuma"
+#                     logger.info(f"Form Gerar Q. Disc. válido. Tópico: '{base_topic_or_context[:80]}...' Área: {area_nome_log}, Idioma: {language} (User: {request.user.username})")
+#                     try:
+#                         # Tenta gerar o texto da questão
+#                         discursive_exam_text = service.generate_discursive_exam_question(
+#                             base_topic_or_context=base_topic_or_context,
+#                             num_aspects=num_aspects,
+#                             area=area_obj.nome if area_obj else None, # Passa o nome da área para o serviço
+#                             complexity=complexity,
+#                             language=language
+#                         )
+#                         logger.info("Estrutura da questão discursiva recebida da IA.")
+#                         context['error_message'] = None # Limpa erro se sucesso na geração
+
+#                         # Verifica se o texto gerado é válido antes de tentar salvar
+#                         if discursive_exam_text and isinstance(discursive_exam_text, str) and discursive_exam_text.strip():
+#                             # Tenta salvar a questão no banco
+#                             try:
+#                                 questao_obj = Questao(
+#                                     tipo='DISC',
+#                                     texto_comando=discursive_exam_text, # Salva o texto completo retornado
+#                                     aspectos_discursiva=f"Avaliar conforme o comando e {num_aspects} aspecto(s) principal(is).",
+#                                     dificuldade=complexity,
+#                                     area=area_obj, # Associa o objeto AreaConhecimento
+#                                     criado_por=request.user
+#                                 )
+#                                 questao_obj.save()
+#                                 questao_salva = questao_obj # Guarda o objeto salvo
+#                                 questao_id = questao_salva.id # <<< GUARDA O ID AQUI >>>
+#                                 logger.info(f"Questão Discursiva ID {questao_id} salva no DB.")
+#                                 messages.success(request, f"Questão discursiva gerada e salva (ID: {questao_id})!")
+#                                 # Limpa o form após sucesso completo (geração E salvamento)
+#                                 form = DiscursiveExamForm() # <<<< REINSTANCIA O FORM AQUI
+
+#                             except Exception as db_error:
+#                                 logger.error(f"Erro ao salvar Questão Discursiva no DB: {db_error}", exc_info=True)
+#                                 messages.error(request, "Questão gerada pela IA, mas houve um erro ao salvá-la no banco de dados.")
+#                                 # Mantém o texto gerado para exibição, mas sem ID salvo
+#                                 questao_salva = None
+#                                 questao_id = None # <<< GARANTE QUE ID É NONE SE SALVAR FALHAR >>>
+#                         else:
+#                              logger.warning("IA retornou texto vazio ou inválido para questão discursiva.")
+#                              messages.warning(request, "A IA não retornou uma questão válida.")
+#                              discursive_exam_text = None # Garante que nada seja exibido
+#                              questao_salva = None
+#                              questao_id = None
+
+#                     # Captura erros durante a chamada da IA ou erros gerais
+#                     except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as e:
+#                         logger.error(f"Erro ao gerar Questão Discursiva (serviço/parse): {e}", exc_info=True)
+#                         context['error_message'] = f"Falha ao gerar questão: {e}"
+#                         discursive_exam_text = None; questao_salva = None; questao_id = None
+#                         # Mantém o form preenchido com os dados que deram erro
+#                     except Exception as e:
+#                          logger.error(f"Erro INESPERADO ao gerar Questão Discursiva: {e}", exc_info=True)
+#                          context['error_message'] = f"Ocorreu um erro inesperado: {e}"
+#                          discursive_exam_text = None; questao_salva = None; questao_id = None
+#                          # Mantém o form preenchido
+
+#             else: # Form inválido
+#                 logger.warning(f"Tentativa de Geração Q. Discursiva com formulário inválido por {request.user.username}: {form.errors.as_json()}")
+#                 context['error_message'] = "Formulário inválido. Por favor, corrija os erros indicados."
+#                 discursive_exam_text = None # Garante que não haja texto
+#                 questao_id = None # Garante que não haja ID
+#                 # O form com os erros já está no contexto
+
+#     # --- Lógica GET ---
+#     # (Não precisa fazer nada extra aqui, apenas renderiza o form vazio)
+#     elif request.method == 'GET':
+#          logger.debug(f"GET generate_discursive_exam_view por {request.user.username}")
+#          # Garante que as variáveis estejam como None em GET
+#          discursive_exam_text = None
+#          questao_id = None
+
+
+#     # Atualiza o contexto ANTES de renderizar (para GET ou POST)
+#     # Garante que as variáveis SEMPRE existam no contexto
+#     context['form'] = form # Passa o form (preenchido com erro, vazio ou re-instanciado)
+#     context['discursive_exam_text'] = discursive_exam_text # Texto da IA ou None
+#     context['questao_id'] = questao_id # ID da questão salva ou None
+
+#     logger.debug(f"Contexto final (generate_discursive_exam_view): User={request.user.username}, QuestaoID={questao_id}, HasText={discursive_exam_text is not None}")
+#     return render(request, 'generator/discursive_exam_generator.html', context)
 
 
 # --- VISÃO Configuração do Simulado (COM FILTRO DE TÓPICO) ---
@@ -1657,3 +1709,49 @@ def listar_questoes_ce_view(request):
 
     # Renderiza o template de LISTAGEM
     return render(request, 'generator/questions_ce.html', context)
+
+
+
+logger = logging.getLogger('generator')
+
+@login_required
+def listar_questoes_discursivas_view(request):
+    """
+    Lista e filtra APENAS questões Discursivas com paginação.
+    Filtros: q (keyword), area (id).
+    """
+    context = {}
+    is_filtered_list = False
+    query_filter_param = request.GET.get('q', '').strip()
+    area_filter_param = request.GET.get('area', '')
+
+    logger.info(f"Listando questões DISCURSIVAS com filtros: q='{query_filter_param}', area='{area_filter_param}'")
+    questoes_list = Questao.objects.filter(tipo='DISC').select_related('area', 'criado_por')
+
+    if query_filter_param:
+        questoes_list = questoes_list.filter( Q(texto_comando__icontains=query_filter_param) | Q(id__icontains=query_filter_param) )
+        is_filtered_list = True
+    if area_filter_param and area_filter_param.isdigit():
+        try:
+            questoes_list = questoes_list.filter(area_id=int(area_filter_param))
+            is_filtered_list = True
+        except ValueError: messages.warning(request, f"ID Área inválido: {area_filter_param}"); area_filter_param = ''
+    elif area_filter_param: messages.warning(request, f"Filtro Área inválido: {area_filter_param}"); area_filter_param = ''
+
+    questoes_list = questoes_list.order_by('-criado_em')
+    items_per_page = 20
+    paginator = Paginator(questoes_list, items_per_page)
+    page_number = request.GET.get('page')
+    try: page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger: page_obj = paginator.get_page(1)
+    except EmptyPage: page_obj = paginator.get_page(paginator.num_pages)
+
+    context['page_obj'] = page_obj; context['paginator'] = paginator
+    context['is_filtered_list'] = is_filtered_list
+    context['query_filter_param'] = query_filter_param; context['area_filter_param'] = area_filter_param
+    try: context['all_areas'] = AreaConhecimento.objects.all().order_by('nome')
+    except Exception as e_area: logger.error(f"Erro buscar áreas: {e_area}"); context['all_areas'] = None
+
+    logger.info(f"Renderizando lista DISCURSIVAS. Filtrada: {is_filtered_list}. Página: {page_obj.number}/{paginator.num_pages}")
+    return render(request, 'generator/questions_discursivas.html', context)
+# --- FIM DA VIEW listar_questoes_discursivas_view ---

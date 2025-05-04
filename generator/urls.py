@@ -9,13 +9,21 @@ urlpatterns = [
     # URLs da aplicação generator
     path('', views.landing_page_view, name='landing_page'),
 
-    path('questions_ce/', views.listar_questoes_ce_view, name='questions_ce'),      # <-- Para listar/paginar existentes
-    path('gerar-questoes-ce/', views.generate_questions_view, name='generate_questions'), # <-- Para gerar novas
+    path('questions_ce/', views.listar_questoes_ce_view, name='questions_ce'),
+    path('gerar-questoes-ce/', views.generate_questions_view, name='generate_questions'),
 
     path('validate/', views.validate_answers_view, name='validate_answers'),
-    path('generate-discursive/', views.generate_discursive_view, name='generate_discursive_answer'),
+
+    # ----- LINHA PROBLEMÁTICA COMENTADA -----
+    # Esta linha estava causando o AttributeError na inicialização.
+    # Comentada para permitir que o servidor inicie.
+    # path('generate-discursive/', views.generate_discursive_view, name='generate_discursive_answer'),
+    # ----- FIM LINHA COMENTADA -----
+
     path('generate-discursive-exam/', views.generate_discursive_exam_view, name='generate_discursive_exam'),
     path('evaluate-discursive/', views.evaluate_discursive_answer_view, name='evaluate_discursive_answer'),
+    path('questions_discursivas/', views.listar_questoes_discursivas_view, name='questions_discursivas'), # View deve existir em views.py
+
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('validate-single-ce/', views.validate_single_ce_view, name='validate_single_ce'),
 
@@ -37,12 +45,11 @@ urlpatterns = [
     # URL de Teste
     path('test-print/', views.test_print_view, name='test_print'),
 
-    # --- URL de Registro (geralmente no final) ---
+    # --- URL de Registro ---
     path('accounts/register/', views.register_view, name='register'),
 
-# --- URLs de Área ---
+    # --- URLs de Área ---
     path('areas/', views.area_list_view, name='area_list'),
     path('areas/nova/', views.add_area_view, name='add_area'),
-
     path('add-area-quick-generator/', views.add_area_quick_from_generator_view, name='add_area_quick_from_generator')
 ]
