@@ -71,7 +71,7 @@
                 {% for questao in page_obj %}
                     <div class="question-list-item" id="question-item-{{ questao.id }}">
                         <div class="d-flex w-100 justify-content-between mb-1 flex-wrap">
-                            <h5 class="mb-1 h6 me-2"> Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão #{{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %} </h5>
+                            <h5 class="mb-1 h6 me-2"> Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão ID {{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %} </h5>
                             <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>
                         </div>
                         <p class="mb-2" style="white-space: pre-wrap;">{{ questao.texto_comando }}</p>
@@ -83,7 +83,7 @@
                         </div>
                         <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ questao.id }}"></div>
                         {# --- FIM ELEMENTOS DE RESPOSTA --- #}
-                         <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle"> Gabarito: <strong>{{ questao.gabarito_ce }}</strong> | Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} | Criada por: {{ questao.criado_por.username|default:"Desconhecido" }} </div>
+                         <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle">  Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} | Criada por: {{ questao.criado_por.username|default:"Desconhecido" }} </div>
                          {# Justificativa removida daqui, aparecerá no feedback AJAX #}
                     </div>
                 {% empty %}
