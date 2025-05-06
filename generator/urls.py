@@ -23,6 +23,7 @@ urlpatterns = [
     path('generate-discursive-exam/', views.generate_discursive_exam_view, name='generate_discursive_exam'),
     path('evaluate-discursive/', views.evaluate_discursive_answer_view, name='evaluate_discursive_answer'),
     path('questions_discursivas/', views.listar_questoes_discursivas_view, name='questions_discursivas'), # View deve existir em views.py
+    path('concursos/', views.listar_concursos_view, name='listar_concursos'), # <<< NOVA URL
 
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('validate-single-ce/', views.validate_single_ce_view, name='validate_single_ce'),

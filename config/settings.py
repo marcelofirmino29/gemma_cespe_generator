@@ -120,13 +120,6 @@ DATABASES = {
 #     }
 # }
 
-# ----- ADICIONE ESTAS LINHAS PARA DEBUG -----
-# print("-" * 40)
-# print(f"DEBUG settings.py: Lendo DATABASE_HOST = '{os.getenv('DATABASE_HOST')}'")
-# print(f"DEBUG settings.py: Lendo DATABASE_USER = '{os.getenv('DATABASE_USER')}'")
-# print(f"DEBUG settings.py: Lendo DATABASE_NAME = '{os.getenv('DATABASE_NAME')}'")
-# print("-" * 40)
-# # ----- FIM DAS LINHAS DE DEBUG -----
 
 # # Validação em produção
 # if not DEBUG:

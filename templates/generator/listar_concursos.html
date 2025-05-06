@@ -1,0 +1,136 @@
+{% extends "generator/base.html" %}
+{% load static %}
+{% load generator_tags %} {# <<< USA A MESMA TAG para paginação com filtros #}
+
+{% block title %}Concursos Públicos Abertos{% endblock title %}
+
+{% block extra_head %}
+    {# Estilos específicos para esta página #}
+    <style>
+        .search-filters { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1.5rem; border: 1px solid var(--bs-border-color-translucent); }
+        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; }
+        .concurso-card { margin-bottom: 1.5rem; height: 100%; }
+        .concurso-card .card-body { display: flex; flex-direction: column; }
+        .concurso-card .card-title { font-size: 1.1em; font-weight: 600; }
+        .concurso-card .card-subtitle { font-size: 0.9em; }
+        .concurso-card ul { font-size: 0.85em; padding-left: 1.2rem; list-style: none; }
+        .concurso-card ul li strong { min-width: 120px; display: inline-block;} /* Alinha os valores */
+        .concurso-card .card-footer { background-color: var(--bs-secondary-bg); margin-top: auto; /* Empurra para baixo */ }
+        .pagination { margin-bottom: 1rem; }
+        /* Badge Nível */
+        .badge.bg-nivel-medio { background-color: #0d6efd !important; color: white;}
+        .badge.bg-nivel-tecnico { background-color: #6f42c1 !important; color: white;}
+        .badge.bg-nivel-superior { background-color: #198754 !important; color: white;}
+        .badge.bg-nivel-fundamental { background-color: #fd7e14 !important; color: white;}
+        .badge.bg-nivel-default { background-color: #6c757d !important; color: white;}
+
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Concursos Públicos Abertos (API Externa)</h2>
+
+    {# Mensagens de Erro ou Info #}
+    {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
+    {% if error_message %} <div class="alert alert-danger">{{ error_message }}</div> {% endif %}
+
+    {# Formulário de Filtro/Busca #}
+    <div class="search-filters mb-4">
+        <form method="GET" action="{% url 'generator:listar_concursos' %}" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label for="search-q" class="form-label form-label-sm">Buscar por Título:</label>
+                <input type="text" class="form-control form-control-sm" id="search-q" name="q" value="{{ filtro_titulo_atual|default:'' }}" placeholder="Ex: Prefeitura, TRT, Banco...">
+            </div>
+            <div class="col-md-3">
+                <label for="search-estado" class="form-label form-label-sm">Filtrar por Estado (Sigla):</label>
+                <input type="text" class="form-control form-control-sm" id="search-estado" name="estado" value="{{ filtro_estado_atual|default:'' }}" placeholder="Ex: SP, RJ, MG..." maxlength="2" pattern="[A-Za-z]{2}" title="Digite a sigla do estado com 2 letras">
+            </div>
+            <div class="col-md-3">
+                <label for="search-regiao" class="form-label form-label-sm">Filtrar por Região:</label>
+                <select class="form-select form-select-sm" id="search-regiao" name="regiao">
+                    <option value="">-- Todas --</option>
+                    {% for reg in regioes_validas %}
+                        <option value="{{ reg }}" {% if filtro_regiao_atual == reg %}selected{% endif %}>{{ reg }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Filtrar</button>
+            </div>
+             <div class="col-12 text-end">
+                <a href="{% url 'generator:listar_concursos' %}" class="btn btn-link btn-sm p-0">Limpar filtros</a>
+             </div>
+        </form>
+    </div>
+
+    {# Exibição dos Resultados #}
+    <div class="row">
+        {% for concurso in page_obj %}
+            <div class="col-md-6 col-lg-4"> {# 2 ou 3 colunas dependendo da tela #}
+                <div class="card concurso-card shadow-sm">
+                    <div class="card-body">
+                        <h3 class="card-title h6 mb-1">{{ concurso.concurso }}</h3>
+                        <h4 class="card-subtitle mb-2 text-muted">
+                            {% if concurso.estado %}{{ concurso.estado }}{% endif %}
+                            {% if concurso.estado and concurso.regiao %}-{% endif %}
+                            {% if concurso.regiao %}{{ concurso.regiao }}{% endif %}
+                        </h4>
+
+                        {% with detalhes=concurso.detalhes %} {# Atalho para acessar detalhes #}
+                            <ul class="list-unstyled mt-2 mb-3">
+                                {% if detalhes.nivel %}
+                                    {% with nivel_lower=detalhes.nivel|lower %}
+                                        {% if "superior" in nivel_lower %} <span class="badge bg-nivel-superior">Superior</span>
+                                        {% elif "médio" in nivel_lower or "medio" in nivel_lower %} <span class="badge bg-nivel-medio">Médio</span>
+                                        {% elif "técnico" in nivel_lower or "tecnico" in nivel_lower %} <span class="badge bg-nivel-tecnico">Técnico</span>
+                                        {% elif "fundamental" in nivel_lower %} <span class="badge bg-nivel-fundamental">Fundamental</span>
+                                        {% else %} <span class="badge bg-nivel-default">{{ detalhes.nivel }}</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+
+                                {% if detalhes.vagas %}<li><strong>Vagas:</strong> {{ detalhes.vagas }}</li>{% endif %}
+                                {% if detalhes.salario %}<li><strong>Salário:</strong> {{ detalhes.salario }}</li>{% endif %}
+                                {% if detalhes.periodo_inscricao %}<li><strong>Inscrição:</strong> {{ detalhes.periodo_inscricao }}</li>{% endif %}
+                            </ul>
+                        {% endwith %}
+
+                    </div>
+                    {% if concurso.detalhes.link_inscricao %}
+                        <div class="card-footer text-center">
+                            <a href="{{ concurso.detalhes.link_inscricao }}" class="btn btn-sm btn-info" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-box-arrow-up-right"></i> Ver Edital/Inscrição
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center">Nenhum concurso encontrado {% if filtro_ativo %} para "{{ filtro_ativo }}"{% endif %}.</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# Paginação #}
+    {% if paginator.num_pages > 1 %}
+        <nav aria-label="Navegação dos concursos" class="mt-4 d-flex justify-content-center">
+             {# Passa os filtros ATUAIS para a tag url_params #}
+            {% url_params page=None q=filtro_titulo_atual estado=filtro_estado_atual regiao=filtro_regiao_atual as current_filters %}
+            <ul class="pagination flex-wrap">
+                {% if page_obj.number > 1 %}<li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>{% endif %}
+                {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
+                {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% if page_obj.number > 3 %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}{% elif num == paginator.num_pages %}{% if page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% endif %}{% endfor %}
+                {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próximo">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
+                {% if page_obj.number < paginator.num_pages %}<li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+</div> {# Fim container #}
+{% endblock content %}
+
+{% block extra_js %}
+    {# Nenhum JS específico necessário aqui (a menos que queira interatividade extra no filtro) #}
+{% endblock extra_js %}
