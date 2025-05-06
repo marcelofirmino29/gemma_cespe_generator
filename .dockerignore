@@ -46,12 +46,12 @@ Thumbs.db
 .vscode/
 *.iml
 
-# Segredos e Configurações Locais (use variáveis de ambiente ou Secret Manager)
-# .env*
-# *.env
-# local_settings.py
-# settings_local.py
-# config.local.yaml
+Segredos e Configurações Locais (use variáveis de ambiente ou Secret Manager)
+.env*
+*.env
+local_settings.py
+settings_local.py
+config.local.yaml
 
 # Banco de Dados Local (ex: SQLite para desenvolvimento)
 *.sqlite3
