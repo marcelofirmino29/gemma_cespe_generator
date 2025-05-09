@@ -1,0 +1,336 @@
+{% extends "generator/base.html" %}
+{% load static %}
+
+{% block title %}Upload de PDF para Geração e Extração de Questões{% endblock title %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
+    <style>
+        /* Estilos Gerais do Card Principal */
+        .main-content-card {
+            background-color: var(--bs-dark-bg-subtle, #343a40);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            color: var(--bs-light-text-emphasis);
+        }
+        .main-content-card .form-label {
+            color: var(--bs-light-text-emphasis);
+        }
+        .main-content-card .form-label.required::after {
+            content: " *";
+            color: #dc3545; /* Vermelho Bootstrap para perigo */
+            font-weight: bold;
+        }
+        .main-content-card .form-control,
+        .main-content-card .form-select {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            border-color: var(--bs-border-color-translucent);
+        }
+        .main-content-card .form-control::placeholder {
+            color: var(--bs-secondary-color);
+        }
+        .main-content-card .form-text {
+            color: var(--bs-light-text-emphasis);
+            opacity: 0.8;
+        }
+        .main-content-card .btn-primary {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        .main-content-card h2, .main-content-card h3, .main-content-card h4 {
+            color: var(--bs-light);
+        }
+
+        /* Estilos para Seções de Resultados */
+        .generated-questions-section {
+            margin-top: 2.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--bs-border-color);
+        }
+        .extracted-question-item {
+            background-color: var(--bs-tertiary-bg);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--bs-border-color);
+            white-space: pre-wrap;
+            color: var(--bs-body-color);
+        }
+        .motivador-text-display {
+            background-color: var(--bs-secondary-bg);
+            border-left: 5px solid var(--bs-info);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.95em;
+            border-radius: 0.375rem;
+            white-space: pre-wrap;
+            color: var(--bs-body-color);
+        }
+        .question-item-display { /* Para itens C/E gerados pela IA */
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--bs-border-color-translucent);
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            background-color: var(--bs-body-bg);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            color: var(--bs-body-color);
+        }
+        .question-item-display h5 {
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--bs-emphasis-color);
+        }
+        .question-item-display .item-text {
+            white-space: pre-wrap;
+            margin-bottom: 0.75rem;
+        }
+        .ce-response-options {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .ce-result-feedback {
+            min-height: 1.5em;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--bs-border-color-translucent);
+            margin-top: 0.75rem;
+            font-size: 0.9em;
+            color: var(--bs-body-color);
+        }
+        .ce-result-feedback:empty { display: none; }
+        .verify-ce-btn {
+            font-size: 0.8rem;
+        }
+        .discursive-question-display {
+            white-space: pre-wrap;
+            background-color: var(--bs-body-bg);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--bs-border-color);
+            font-size: 0.95em;
+            color: var(--bs-body-color);
+        }
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+<div class="container mt-4">
+    {# Abas de Navegação #}
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item"><a class="nav-link" href="{% url 'generator:generate_questions' %}?action=clear">Gerador C/E</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'generator:generate_discursive_exam' %}">Gerador Discursiva</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="{% url 'generator:upload_pdf_generate' %}">Upload PDF (Gerar Questões)</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'generator:configurar_simulado' %}">Configurar Simulado</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'generator:dashboard' %}">Meu Desempenho</a></li>
+    </ul>
+
+    <div class="main-content-card">
+        <h2 class="mb-4 text-center">Gerador de Questões Baseado em Upload de PDF</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message|safe }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {# Formulário Principal de Upload e Parâmetros de Geração #}
+        <form method="post" enctype="multipart/form-data" action="{% url 'generator:upload_pdf_generate' %}" id="uploadPdfMainForm">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="{{ form.pdf_file.id_for_label|default:'id_pdf_file' }}" class="form-label">{{ form.pdf_file.label|default:"Selecione o Arquivo PDF" }}</label>
+                {{ form.pdf_file }}
+                {% if form.pdf_file.help_text %}<div class="form-text">{{ form.pdf_file.help_text|safe }}</div>{% endif %}
+                {% for error in form.pdf_file.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <hr class="my-4">
+            <h4 class="mb-3">Parâmetros para Geração</h4>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.num_questions_ce.id_for_label|default:'id_num_questions_ce' }}" class="form-label">{{ form.num_questions_ce.label|default:"Número de Questões C/E" }}</label>
+                    {{ form.num_questions_ce }}
+                    {% for error in form.num_questions_ce.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.difficulty_level.id_for_label|default:'id_difficulty_level' }}" class="form-label">{{ form.difficulty_level.label|default:"Nível de Dificuldade" }}</label>
+                    {{ form.difficulty_level }}
+                    {% for error in form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.area.id_for_label|default:'id_area' }}" class="form-label">{{ form.area.label|default:"Área de Conhecimento" }}</label>
+                {{ form.area }}
+                {% for error in form.area.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            {% if form.num_aspects_discursive %} {# Renderiza apenas se o campo existir no formulário #}
+            <hr class="my-4">
+            <h4 class="mb-3">Questão Discursiva (Opcional)</h4>
+            <div class="mb-3">
+                <label for="{{ form.num_aspects_discursive.id_for_label|default:'id_num_aspects_discursive' }}" class="form-label">{{ form.num_aspects_discursive.label|default:"Número de Aspectos para Discursiva" }}</label>
+                {{ form.num_aspects_discursive }}
+                {% for error in form.num_aspects_discursive.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-cloud-upload-fill me-2"></i>Processar PDF e Gerar Questões
+                </button>
+            </div>
+        </form>
+
+        {# Seção para Questões EXTRAÍDAS diretamente do PDF (se implementado no backend) #}
+        {% if extracted_pdf_questions %}
+            <div class="generated-questions-section">
+                <h3 class="mb-3 display-6 fs-4">Questões Encontradas e Extraídas do PDF</h3>
+                {% if extracted_pdf_context_text %}
+                    <div class="motivador-text-display">
+                        <h4 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Contexto Geral Extraído</h4>
+                        <div class="small">{{ extracted_pdf_context_text|linebreaksbr }}</div>
+                    </div>
+                {% endif %}
+                {% for questao_texto in extracted_pdf_questions %}
+                    <div class="extracted-question-item">
+                        <p><strong>Item {{ forloop.counter }}:</strong></p>
+                        <p>{{ questao_texto|linebreaksbr }}</p>
+                    </div>
+                {% empty %}
+                    <p class="text-muted"><em>Nenhuma questão foi diretamente extraída do PDF.</em></p>
+                {% endfor %}
+            </div>
+        {% elif request.method == 'POST' and 'pdf_file' in request.FILES and not form.errors and not generated_questions_ce_data and not generated_discursive_question_text %}
+            <div class="generated-questions-section">
+                <h3 class="mb-3 display-6 fs-4">Processamento do PDF</h3>
+                <p class="text-muted"><em>O PDF foi processado, mas nenhuma questão foi extraída ou gerada. Verifique o conteúdo do PDF e os logs do servidor.</em></p>
+            </div>
+        {% endif %}
+
+        {# Seção para Questões C/E GERADAS PELA IA (onde o "Verificar Item" é crucial) #}
+        {% if generated_questions_ce_data %}
+        <div class="generated-questions-section">
+            <h3 class="mb-3 display-6 fs-4">Questões Certo/Errado Geradas pela IA</h3>
+            {% if motivador_texto_ce and motivador_texto_ce != "Não aplicável" %}
+                <div class="motivador-text-display">
+                    <h4 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador (Gerado)</h4>
+                    <div class="small">{{ motivador_texto_ce|linebreaksbr }}</div>
+                </div>
+            {% endif %}
+            
+            {# Formulário para os botões "Verificar Item" - ID AJUSTADO #}
+            <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}" novalidate>
+                {% csrf_token %}
+                {% for questao_data in generated_questions_ce_data %}
+                    <div class="question-item-display" id="question-item-{{ questao_data.id }}">
+                        <h5 class="mb-2">Item C/E Gerado {{ forloop.counter }}: (Questão ID {{ questao_data.id }})</h5>
+                        <p class="item-text">{{ questao_data.afirmacao }}</p>
+                        <div class="ce-response-options d-flex align-items-center flex-wrap mt-3">
+                            <div class="form-check form-check-inline me-3">
+                                <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao_data.id }}" id="certo_gen_{{ questao_data.id }}" value="C" required>
+                                <label class="form-check-label small" for="certo_gen_{{ questao_data.id }}">Certo</label>
+                            </div>
+                            <div class="form-check form-check-inline me-3">
+                                <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao_data.id }}" id="errado_gen_{{ questao_data.id }}" value="E" required>
+                                <label class="form-check-label small" for="errado_gen_{{ questao_data.id }}">Errado</label>
+                            </div>
+                            <button type="button" class="btn btn-outline-info btn-sm ms-md-auto mt-2 mt-md-0 verify-ce-btn" data-questao-id="{{ questao_data.id }}">
+                                <i class="bi bi-check-lg"></i> Verificar Item
+                            </button>
+                        </div>
+                        <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ questao_data.id }}"></div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted"><em>Nenhuma questão C/E foi gerada pela IA.</em></p>
+                {% endfor %}
+            </form>
+        </div>
+        {% elif request.method == 'POST' and form.num_questions_ce.value|add:0 > 0 and not form.errors %}
+             <div class="generated-questions-section">
+                <h3 class="mb-3 display-6 fs-4">Questões Certo/Errado Geradas pela IA</h3>
+                <p class="text-muted"><em>A geração de questões C/E foi solicitada, mas nenhum item foi retornado. Verifique os logs.</em></p>
+            </div>
+        {% endif %}
+
+        {# Seção para Questão Discursiva GERADA PELA IA #}
+        {% if generated_discursive_question_text %}
+            <div class="generated-questions-section">
+                <h3 class="mb-3 display-6 fs-4">Questão Discursiva Gerada pela IA</h3>
+                <div class="discursive-question-display">
+                    {{ generated_discursive_question_text|linebreaksbr }}
+                </div>
+            </div>
+        {% elif request.method == 'POST' and form.num_aspects_discursive.value|add:0 > 0 and not form.errors %}
+             <div class="generated-questions-section">
+                <h3 class="mb-3 display-6 fs-4">Questão Discursiva Gerada pela IA</h3>
+                <p class="text-muted"><em>A geração de questão discursiva foi solicitada, mas nenhum texto foi retornado. Verifique os logs.</em></p>
+            </div>
+        {% endif %}
+    </div> {# Fim .main-content-card #}
+</div> {# Fim .container #}
+{% endblock content %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("PÁGINA UPLOAD PDF: DOM carregado.");
+
+        const pdfFileInput = document.getElementById('{{ form.pdf_file.id_for_label|default:"id_pdf_file" }}');
+        if (pdfFileInput) {
+            pdfFileInput.addEventListener('change', function(event) {
+                if (event.target.files.length > 0) {
+                    console.log("PÁGINA UPLOAD PDF: Arquivo selecionado:", event.target.files[0].name);
+                } else {
+                    console.log("PÁGINA UPLOAD PDF: Seleção de arquivo removida.");
+                }
+            });
+        } else {
+            // Este ID vem do Django Form, então {{ form.pdf_file.id_for_label }} deve funcionar se o campo existe no form.
+            // Se 'form.pdf_file' não é um campo do Django Form, você precisaria usar um ID fixo como 'id_pdf_file'.
+            console.warn("PÁGINA UPLOAD PDF: Campo de input PDF ('{{ form.pdf_file.id_for_label|default:"id_pdf_file" }}') não encontrado. Verifique o ID no HTML e se 'pdf_file' é um campo do form Django.");
+        }
+
+        // Verifica se o formulário de validação e os botões para os itens C/E existem
+        const validationForm = document.getElementById('validate-form'); // ID CORRIGIDO PARA CONSISTÊNCIA
+        if (validationForm) {
+            console.log("PÁGINA UPLOAD PDF: Formulário '#validate-form' (para itens C/E) encontrado.");
+            
+            const radioButtons = validationForm.querySelectorAll('.question-radio');
+            if (radioButtons.length > 0) {
+                console.log("PÁGINA UPLOAD PDF: " + radioButtons.length + " radio buttons (.question-radio) encontrados.");
+                radioButtons.forEach(function(radio) {
+                    radio.addEventListener('click', function(e) {
+                        console.log('DEBUG (UPLOAD PAGE): Radio button clicado:', e.target.id, 'Valor:', e.target.value, 'Name:', e.target.name, 'Checked:', e.target.checked);
+                    });
+                });
+            } else {
+                console.warn("PÁGINA UPLOAD PDF: NENHUM radio button (.question-radio) encontrado dentro do #validate-form.");
+            }
+
+            const verifyButtons = validationForm.querySelectorAll('.verify-ce-btn');
+            if (verifyButtons.length > 0) {
+                console.log("PÁGINA UPLOAD PDF: " + verifyButtons.length + " botão(ões) '.verify-ce-btn' encontrado(s) DENTRO do #validate-form.");
+            } else {
+                console.warn("PÁGINA UPLOAD PDF: Formulário '#validate-form' encontrado, mas NENHUM botão '.verify-ce-btn'.");
+            }
+        } else if (document.querySelector('.verify-ce-btn')) {
+             console.warn("PÁGINA UPLOAD PDF: Botões '.verify-ce-btn' encontrados, mas o formulário com id '#validate-form' NÃO foi encontrado. ce_validator.js provavelmente falhará.");
+        } else {
+            console.log("PÁGINA UPLOAD PDF: Formulário '#validate-form' (para itens C/E) NÃO encontrado. Isso é esperado se nenhuma questão C/E foi gerada ainda.");
+        }
+
+        // Lembre-se de adicionar console.log DENTRO do seu arquivo ce_validator.js
+        // para depurar o fluxo interno dele, como sugerido anteriormente.
+    });
+    </script>
+{% endblock extra_js %}

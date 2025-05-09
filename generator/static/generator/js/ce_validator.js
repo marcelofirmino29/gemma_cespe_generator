@@ -1,3 +1,4 @@
+console.log("DEBUG: ce_validator.js está sendo executado NESTA PÁGINA!");
 document.addEventListener('DOMContentLoaded', function() {
     const validateForm = document.getElementById('validate-form');
     // Pega a URL da view AJAX do atributo data-* do formulário

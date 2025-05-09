@@ -50,7 +50,7 @@
             border: none;
         }
 
-        /* --- CORES ORIGINAIS RESTAURADAS --- */
+        /* --- CORES DOS CARDS --- */
         .card-ce { background-color: var(--bs-primary); } /* Azul */
         .card-ce .btn { color: var(--bs-primary-text-emphasis); background-color: var(--bs-primary-bg-subtle); }
         .card-ce .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
@@ -75,11 +75,9 @@
         .card-games .btn:hover { background-color: rgba(255, 255, 255, 0.3); }
 
         .card-ask-ai { background-color: var(--bs-secondary); } /* Cinza secundário */
-         .card-ask-ai .card-title, .card-ask-ai .card-text, .card-ask-ai .card-title i { color: var(--bs-white); }
+        .card-ask-ai .card-title, .card-ask-ai .card-text, .card-ask-ai .card-title i { color: var(--bs-white); }
         .card-ask-ai .btn { color: var(--bs-secondary-text-emphasis); background-color: var(--bs-secondary-bg-subtle); }
         .card-ask-ai .btn:hover { background-color: rgba(255, 255, 255, 0.2); }
-        /* --- FIM CORES ORIGINAIS --- */
-
 
         /* --- Estilos para a Nuvem de Palavras --- */
         #wordCloudContainer {
@@ -96,45 +94,40 @@
             margin: 3rem 0;
             background-color: var(--bs-tertiary-bg);
             box-shadow: var(--bs-box-shadow-sm);
-            overflow: hidden; /* Evita que a animação cause scroll se sair dos limites */
-            perspective: 1000px; /* Adiciona perspectiva para rotações 3D, se usadas */
+            overflow: hidden; 
+            perspective: 1000px; 
         }
 
-        /* --- NOVA ANIMAÇÃO: float-scale --- */
         @keyframes float-scale {
             0% {
                 transform: translateY(0px) rotate(0deg) scale(1);
-                opacity: 0.9; /* Inicia ligeiramente transparente */
+                opacity: 0.9; 
             }
             50% {
-                /* Movimento mais pronunciado: sobe mais, gira mais, aumenta um pouco */
                 transform: translateY(-5px) rotate(2deg) scale(1.03);
-                opacity: 1; /* Totalmente opaco no pico */
+                opacity: 1; 
             }
             100% {
                 transform: translateY(0px) rotate(0deg) scale(1);
-                opacity: 0.9; /* Volta à opacidade inicial */
+                opacity: 0.9; 
             }
         }
-        /* --- FIM NOVA ANIMAÇÃO --- */
-
         .word-cloud-item {
             cursor: pointer;
-            transition: transform 0.3s ease-in-out, color 0.2s ease-in-out, opacity 0.3s ease; /* Adiciona transição de opacidade */
+            transition: transform 0.3s ease-in-out, color 0.2s ease-in-out, opacity 0.3s ease; 
             display: inline-block;
             padding: 0.2rem 0.4rem;
             border-radius: 0.25rem;
             line-height: 1.2;
             text-decoration: none;
-            /* Aplica a NOVA animação */
-            animation: float-scale 7s ease-in-out infinite; /* Nome e duração ajustados */
-            backface-visibility: hidden; /* Melhora performance da animação */
+            animation: float-scale 7s ease-in-out infinite; 
+            backface-visibility: hidden; 
         }
         .word-cloud-item:hover {
-            transform: scale(1.2) rotate(0deg); /* Mantém o hover */
+            transform: scale(1.2) rotate(0deg); 
             text-decoration: underline;
-            animation-play-state: paused; /* Pausa a animação no hover */
-            opacity: 1; /* Garante opacidade total no hover */
+            animation-play-state: paused; 
+            opacity: 1; 
         }
         /* Tamanhos de fonte */
         .wc-size-1 { font-size: 0.8rem; }
@@ -156,21 +149,21 @@
                 Bem-vindo ao Meu Gerador IA {# Exibe a mensagem padrão #}
             {% endif %}
         </h1>
-         {# Mensagens #}
-         {% if messages %}
-             {% for message in messages %}
-             <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
-                 {{ message }}
-                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-             </div>
-             {% endfor %}
-         {% endif %}
-         {% if error_message %}
-             <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
-                 {{ error_message }}
-                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-             </div>
-         {% endif %}
+        {# Mensagens #}
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% if error_message %}
+            <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                {{ error_message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
     </div>
 
 
@@ -203,17 +196,17 @@
         <div class="col">
             <div class="card landing-card card-disc shadow-sm"> {# Azul Claro #}
                 <div class="card-body d-flex flex-column p-3">
-                     <div class="mb-auto">
+                    <div class="mb-auto">
                         <h3 class="card-title d-flex align-items-center">
-                             <i class="bi bi-pencil-square icon"></i>
+                            <i class="bi bi-pencil-square icon"></i>
                             Gerador de Questão Discursiva
                         </h3>
                         <p class="card-text flex-grow-1">
                             Forneça um tema ou contexto e a IA criará uma questão discursiva completa, com textos, comando e aspectos.
                         </p>
                     </div>
-                     <div class="mt-3 align-self-start">
-                         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn">
+                    <div class="mt-3 align-self-start">
+                        <a href="{% url 'generator:generate_discursive_exam' %}" class="btn">
                             Acessar Gerador de Questão
                         </a>
                     </div>
@@ -225,16 +218,16 @@
         <div class="col">
             <div class="card landing-card card-simulado shadow-sm"> {# Amarelo #}
                 <div class="card-body d-flex flex-column p-3">
-                     <div class="mb-auto">
+                    <div class="mb-auto">
                         <h3 class="card-title d-flex align-items-center">
                             <i class="bi bi-sliders icon"></i>
                             Configurar Simulado
                         </h3>
-                         <p class="card-text flex-grow-1">
+                        <p class="card-text flex-grow-1">
                             Personalize seus simulados escolhendo o número de questões e os tópicos que deseja praticar.
                         </p>
                     </div>
-                     <div class="mt-3 align-self-start">
+                    <div class="mt-3 align-self-start">
                         <a href="{% url 'generator:configurar_simulado' %}" class="btn">
                             Configurar Simulado
                         </a>
@@ -247,17 +240,17 @@
         <div class="col">
             <div class="card landing-card card-dashboard shadow-sm"> {# Verde #}
                 <div class="card-body d-flex flex-column p-3">
-                     <div class="mb-auto">
-                         <h3 class="card-title d-flex align-items-center">
-                             <i class="bi bi-graph-up icon"></i>
+                    <div class="mb-auto">
+                        <h3 class="card-title d-flex align-items-center">
+                            <i class="bi bi-graph-up icon"></i>
                             Dashboard de Desempenho
                         </h3>
                         <p class="card-text flex-grow-1">
                             Acompanhe seu histórico de respostas, acertos, erros e pontuação geral nos simulados.
                         </p>
-                     </div>
-                     <div class="mt-3 align-self-start">
-                         <a href="{% url 'generator:dashboard' %}" class="btn">
+                    </div>
+                    <div class="mt-3 align-self-start">
+                        <a href="{% url 'generator:dashboard' %}" class="btn">
                             Acessar Dashboard
                         </a>
                     </div>
@@ -421,14 +414,14 @@
 
         // Mensagem de fallback se nenhuma palavra foi adicionada
         if (container.childElementCount === 0) {
-             // Verifica se o problema foi a ausência do script de dados ou se os dados estavam vazios/inválidos
-             if (wordsDataElement === null || !Array.isArray(JSON.parse(wordsDataElement?.textContent || '[]'))){
-                  container.textContent = 'Erro ao carregar os tópicos em destaque.';
-             } else {
-                  container.textContent = 'Nenhum tópico em destaque disponível no momento.';
-             }
-             // Adiciona classes para estilizar a mensagem de fallback
-             container.classList.add('text-muted', 'text-center', 'fst-italic', 'p-4');
+            // Verifica se o problema foi a ausência do script de dados ou se os dados estavam vazios/inválidos
+            if (wordsDataElement === null || !Array.isArray(JSON.parse(wordsDataElement?.textContent || '[]'))){
+                 container.textContent = 'Erro ao carregar os tópicos em destaque.';
+            } else {
+                 container.textContent = 'Nenhum tópico em destaque disponível no momento.';
+            }
+            // Adiciona classes para estilizar a mensagem de fallback
+            container.classList.add('text-muted', 'text-center', 'fst-italic', 'p-4');
         }
     });
 </script>

@@ -14,11 +14,7 @@ urlpatterns = [
 
     path('validate/', views.validate_answers_view, name='validate_answers'),
 
-    # ----- LINHA PROBLEMÁTICA COMENTADA -----
-    # Esta linha estava causando o AttributeError na inicialização.
-    # Comentada para permitir que o servidor inicie.
-    # path('generate-discursive/', views.generate_discursive_view, name='generate_discursive_answer'),
-    # ----- FIM LINHA COMENTADA -----
+    path('upload-pdf-generate/', views.upload_pdf_and_generate_questions_view, name='upload_pdf_generate'),
 
     path('generate-discursive-exam/', views.generate_discursive_exam_view, name='generate_discursive_exam'),
     path('evaluate-discursive/', views.evaluate_discursive_answer_view, name='evaluate_discursive_answer'),

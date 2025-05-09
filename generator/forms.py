@@ -59,76 +59,155 @@ LANGUAGE_CHOICES = [
     ('pt-br', 'Português (Brasil)'),
     ('en', 'Inglês'),
 ]
+# No seu arquivo forms.py (ex: generator/forms.py)
 
-# --- Formulário Gerador C/E (ATUALIZADO) ---
+from django import forms
+from django.conf import settings # Para getattr(settings, ...)
+from django.core.exceptions import ValidationError
+from .models import AreaConhecimento # Certifique-se que o import está correto
+
+# Supondo que DIFFICULTY_CHOICES está definido globalmente ou importado
+# Exemplo (certifique-se que corresponde ao seu):
+DIFFICULTY_CHOICES = [
+    ('facil', 'Fácil'),
+    ('medio', 'Médio'),
+    ('dificil', 'Difícil'),
+    # ('qualquer', 'Qualquer'), # Removido pelo seu código se a chave for vazia
+]
+
 class QuestionGeneratorForm(forms.Form):
     topic = forms.CharField(
-        label="Tópico ou Contexto para Questões C/E", # Label ajustado
+        label="Tópico ou Contexto para Questões C/E",
         widget=forms.Textarea(attrs={
-            'rows': 5, # <<< Linhas aumentadas >>>
+            'rows': 5,
             'placeholder': 'Digite o tópico específico (Ex: Controle de Constitucionalidade) ou cole um pequeno texto base...',
             'class': 'form-control',
-            'autocomplete': 'off'  # <<< Atributo adicionado para tentar evitar autofill >>>
+            'id': 'id_topic', # Para o JavaScript no template
+            'autocomplete': 'off'
         }),
-        required=True,
-        help_text="Descreva o assunto ou forneça um contexto." # Help text ajustado
+        required=True,  # Permanece True para a validação HTML5 inicial e se nenhum PDF for enviado.
+                        # A view ajustará para False se um PDF for detectado ANTES de form.is_valid().
+        help_text="Descreva o assunto ou forneça um contexto. Mín. 4 caracteres se este for o input."
     )
+    
+    # --- NOVO CAMPO ADICIONADO ---
+    pdf_contexto = forms.FileField(
+        label="OU Envie um PDF para Contexto",
+        required=False, # Este campo em si não é obrigatório; a lógica 'pelo menos um' está no clean().
+        widget=forms.ClearableFileInput(attrs={
+            'class': 'form-control form-control-sm', # Para consistência com outros inputs de arquivo
+            'id': 'id_pdf_contexto_ce_generator', # ID usado no template para o JS
+            'accept': '.pdf'
+        }),
+        help_text="Se um PDF for enviado, o campo 'Tópico ou Contexto' textual acima se torna opcional."
+    )
+    # --- FIM DO NOVO CAMPO ---
+
     num_questions = forms.IntegerField(
         label="Nº Questões",
-        min_value=1, # Definido aqui
+        min_value=1,
         initial=3,
         required=True,
         widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'style': 'max-width: 100px;'
-            # max é definido no __init__
+            'class': 'form-control form-control-sm', # Aplicando form-control-sm para consistência
+            # 'style': 'max-width: 100px;' # Estilo é melhor via CSS global se possível
+            'id': 'id_num_questions_ce_generator' # ID para o JS do template
         })
     )
     difficulty_level = forms.ChoiceField(
         label="Dificuldade",
-        # Usa a lista global, mas remove a opção 'Qualquer' (chave vazia)
-        choices=[opt for opt in DIFFICULTY_CHOICES if opt[0]],
+        choices=[opt for opt in DIFFICULTY_CHOICES if opt[0]], # Remove opções com chave vazia
         required=True, initial='medio',
-        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 150px;'})
-        )
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-sm', # Aplicando form-select-sm
+            # 'style': 'max-width: 150px;'
+            'id': 'id_difficulty_ce_generator' # ID para o JS do template
+            })
+    )
     area = forms.ModelChoiceField(
         queryset=AreaConhecimento.objects.all().order_by('nome'),
-        label="Área (Opcional)",
-        required=False,
-        empty_label="---------", # Texto para opção vazia
-        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 200px;'}),
-        help_text="Ajuda a categorizar."
+        label="Área de Conhecimento", # Alterado para refletir que é para categorizar as novas questões
+        required=True, # Definido como True, pois novas questões geralmente precisam de uma área
+        empty_label="-- Selecione a Área --", # Rótulo vazio mais informativo
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-sm', # Aplicando form-select-sm
+            # 'style': 'max-width: 200px;'
+            'id': 'id_area_ce_generator' # ID para o JS do template
+            }),
+        help_text="Selecione a área para as novas questões geradas." # Help text ajustado
     )
 
     def __init__(self, *args, **kwargs):
-        # Define o limite máximo de questões dinamicamente
-        max_questions_limit = kwargs.pop('max_questions', getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 10)) # Default 10
+        max_questions_limit = kwargs.pop('max_questions', getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 10))
         super().__init__(*args, **kwargs)
-        self.fields['num_questions'].max_value = max_questions_limit
-        self.fields['num_questions'].widget.attrs['max'] = max_questions_limit
-        self.fields['num_questions'].help_text = f"Gere entre 1 e {max_questions_limit}." # Help text ajustado
+        
+        # Ajusta o campo num_questions (lógica existente mantida)
+        if 'num_questions' in self.fields: # Boa prática verificar se o campo existe
+            self.fields['num_questions'].max_value = max_questions_limit
+            self.fields['num_questions'].widget.attrs['max'] = max_questions_limit
+            # O min_value já está definido no campo, então podemos usá-lo no help_text
+            min_val = self.fields['num_questions'].min_value or 1 
+            self.fields['num_questions'].help_text = f"Gere entre {min_val} e {max_questions_limit}."
 
-    # Validações adicionais
     def clean_topic(self):
         topic = self.cleaned_data.get('topic', '').strip()
-        # <<< Validação de comprimento mínimo restaurada >>>
-        if len(topic) < 4:
-            raise ValidationError("Tópico/Contexto muito curto (mín. 4 caracteres).")
+        
+        # Esta validação de comprimento só será efetivamente um problema se o 'topic'
+        # for a única fonte de contexto e o usuário digitar algo muito curto.
+        # Se um PDF for enviado e o 'topic' estiver vazio, a view deve ter tornado
+        # este campo opcional, então cleaned_data.get('topic') será vazio e este 'if topic' não será True.
+        if topic and len(topic) < 4:
+            raise ValidationError("Tópico/Contexto textual fornecido é muito curto (mínimo de 4 caracteres).")
         return topic
 
     def clean_num_questions(self):
+        # Sua lógica existente para clean_num_questions está boa.
         num = self.cleaned_data.get('num_questions')
-        # <<< Validação explícita de min/max restaurada >>>
         if num is not None:
-             max_limit = self.fields['num_questions'].max_value
-             min_limit = self.fields['num_questions'].min_value
-             if min_limit is not None and num < min_limit:
-                 raise ValidationError(f"O número mínimo de questões é {min_limit}.")
-             if max_limit is not None and num > max_limit:
-                 raise ValidationError(f"O número máximo de questões é {max_limit}.")
-        # Se for None, a validação required=True já falhou
+            max_limit = self.fields['num_questions'].max_value
+            min_limit = self.fields['num_questions'].min_value
+            if min_limit is not None and num < min_limit:
+                raise ValidationError(f"O número mínimo de questões é {min_limit}.")
+            if max_limit is not None and num > max_limit:
+                raise ValidationError(f"O número máximo de questões é {max_limit}.")
         return num
 
+    # --- NOVO MÉTODO clean() PARA VALIDAÇÃO CRUZADA ---
+    def clean(self):
+        cleaned_data = super().clean()
+        topic = cleaned_data.get('topic', '').strip()
+        pdf_contexto = cleaned_data.get('pdf_contexto') # Este é o UploadedFile object ou None
+
+        # A view (generate_questions_view) DEVE ter ajustado self.fields['topic'].required = False
+        # se um PDF foi detectado em request.FILES, ANTES de form.is_valid() ser chamado.
+
+        # Esta validação garante que PELO MENOS UM (tópico ou PDF) foi fornecido.
+        if not topic and not pdf_contexto:
+            # Se a view não ajustou topic.required e o topic estava vazio, Django já teria
+            # adicionado um erro a 'topic'. Este erro aqui é mais geral ou para 'pdf_contexto'.
+            # Para evitar mensagens duplicadas, podemos ser mais específicos.
+            
+            # Se 'topic' era obrigatório (nenhum PDF enviado) e está vazio, Django já tratou.
+            # Este 'raise' é para o caso em que 'topic' se tornou opcional (devido ao PDF),
+            # mas o PDF também não foi enviado (ex: usuário limpou o campo PDF após selecioná-lo).
+            # Ou para o caso em que 'topic' era opcional por padrão.
+            
+            # No nosso caso, 'topic' começa como required=True. A view o torna False se há PDF.
+            # Se não há PDF, 'topic' permanece required=True. Se estiver vazio, o erro já existe.
+            # Se há PDF, 'topic' se torna required=False. Se estiver vazio, tudo bem.
+            # O que este clean() realmente precisa garantir é que, se 'topic' está vazio E 'pdf_contexto' está vazio,
+            # então um erro deve ser lançado *se ainda não houver um erro 'required' no 'topic'*.
+
+            if not self.errors.get('topic'): # Só adiciona erro se o 'topic' não tiver já um erro de 'required'
+                error_message = "Forneça um Tópico/Contexto textual OU envie um arquivo PDF."
+                # Adicionar a ambos para que o usuário veja onde a ação é necessária
+                self.add_error('topic', ValidationError(error_message, code='input_required'))
+                self.add_error('pdf_contexto', ValidationError(error_message, code='input_required'))
+                # Ou um erro não vinculado:
+                # raise ValidationError(error_message, code='input_required')
+
+        return cleaned_data
+    
 # --- Formulário para Gerar Questão Discursiva ---
 class DiscursiveExamForm(forms.Form):
     base_topic_or_context = forms.CharField(label="Tópico Geral ou Contexto Base", widget=forms.Textarea(attrs={'rows': 8,'placeholder': 'Forneça o tema geral...','class': 'form-control'}), required=True, help_text="Insumo para IA.")
@@ -287,3 +366,67 @@ class AreaConhecimentoForm(forms.ModelForm):
         # Adicionar outras validações se necessário
         return question
 # --- FIM NOVO FORMULÁRIO ---
+class PDFUploadForm(forms.Form):
+    pdf_file = forms.FileField(
+        label='Selecione o arquivo PDF',
+        help_text='Máximo de 50MB. Apenas arquivos .pdf são permitidos.',
+        widget=forms.ClearableFileInput(attrs={'accept': '.pdf', 'class': 'form-control'})
+    )
+    num_questions_ce = forms.IntegerField(
+        label='Número de Questões Certo/Errado',
+        min_value=0, 
+        max_value=20,
+        initial=5,
+        required=False,
+        help_text='Deixe em 0 ou em branco se não desejar questões C/E.',
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    num_aspects_discursive = forms.IntegerField(
+        label='Número de Aspectos para Questão Discursiva',
+        min_value=0, 
+        max_value=5,
+        initial=3,
+        required=False,
+        help_text='Deixe em 0 ou em branco se não desejar questão discursiva.',
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    difficulty_level = forms.ChoiceField(
+        label='Nível de Dificuldade',
+        choices=[
+            ('facil', 'Fácil'),
+            ('medio', 'Médio'),
+            ('dificil', 'Difícil')
+        ],
+        initial='medio',
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    area = forms.ModelChoiceField(
+        queryset=AreaConhecimento.objects.all().order_by('nome'), 
+        required=False, 
+        label="Área de Conhecimento (Opcional)",
+        help_text="Selecione uma área para associar às questões geradas.",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        empty_label="-- Nenhuma Área Específica --" 
+    )
+
+    def clean_pdf_file(self):
+        file = self.cleaned_data.get('pdf_file')
+        if file:
+            if file.content_type != 'application/pdf':
+                raise forms.ValidationError('Arquivo inválido. Por favor, envie um arquivo PDF.')
+            if file.size > 50 * 1024 * 1024: # Limite de 50MB
+                raise forms.ValidationError('Arquivo muito grande. O limite é de 50MB.')
+        return file
+
+    def clean_num_questions_ce(self):
+        num = self.cleaned_data.get('num_questions_ce')
+        if num is None: 
+            return 0
+        return num
+
+    def clean_num_aspects_discursive(self):
+        num = self.cleaned_data.get('num_aspects_discursive')
+        if num is None: 
+            return 0
+        return num
