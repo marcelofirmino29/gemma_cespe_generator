@@ -7,7 +7,7 @@
     {% if id_filter_param %}Resultado da Geração{% elif query_filter_param or area_filter_param %}Resultado da Busca{% else %}Banco de Questões C/E{% endif %}
 {% endblock title %}
 
-{% block extra_head %} {# <--- Bloco começa aqui #}
+{% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}"> {# Adapte se necessário #}
     <style>
         /* Seus estilos CSS aqui... */
@@ -27,10 +27,10 @@
         .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; } /* Ajuste opcional para labels do filtro */
 
     </style>
-{% endblock extra_head %} {# <--- Bloco termina aqui #}
+{% endblock extra_head %}
 
 
-{% block content %} {# <--- Bloco começa aqui #}
+{% block content %}
 <div class="container mt-4">
     {# O título principal da página, sem as abas abaixo dele diretamente neste template #}
     <h1 class="mb-4 h2"> {# Usando h1 para o título principal da página, estilizado como h2 #}
