@@ -1,8 +1,8 @@
 # generator/views.py
 
-from django.shortcuts import render, redirect
-from django.urls import reverse         # <<< ADICIONAR ESTA LINHA
-from urllib.parse import urlencode    # <<< ADICIONAR ESTA LINHA
+from django.shortcuts import render, redirect, reverse, get_object_or_404 
+from django.urls import reverse 
+from urllib.parse import urlencode   
 from django.conf import settings
 from django.utils import timezone
 import logging
@@ -278,83 +278,53 @@ def register_view(request):
     context = {'form': form}
     return render(request, 'generator/register.html', context)
 
-# generator/views.py
 logger = logging.getLogger(__name__)
 
-# --- Função placeholder para extrair texto do PDF ---
-# MANTENHA SUA IMPLEMENTAÇÃO REAL AQUI. ESTA É APENAS UMA SIMULAÇÃO.
-def extrair_texto_de_pdf_upload(uploaded_file):
-    logger.info(f"Simulando extração de texto do PDF: {uploaded_file.name}")
-    uploaded_file.seek(0)
-    try:
-        content_bytes = uploaded_file.read(2048) # Lê os primeiros 2KB
-        text = content_bytes.decode('utf-8', errors='ignore')
-        return f"Conteúdo simulado do PDF '{uploaded_file.name}':\n{text}..."
-    except Exception as e:
-        logger.error(f"Erro ao simular extração de texto: {e}")
-        return f"Erro ao processar PDF '{uploaded_file.name}'."
-# --- Fim da função placeholder ---
-
-# --- Sua função _get_base_context_and_service ---
-# MANTENHA SUA IMPLEMENTAÇÃO REAL. Esta é uma simulação para o exemplo.
-def _get_base_context_and_service():
-    context = {}
-    service = None 
-    service_initialized = True 
-    try:
-        context['all_areas'] = AreaConhecimento.objects.all().order_by('nome')
-    except Exception as e:
-        logger.error(f"Erro ao carregar todas as áreas: {e}")
-        context['all_areas'] = []
-    if not service_initialized:
-        context['error_message'] = "Serviço de IA indisponível."
-    if service_initialized:
-        class MockAIService:
-            def generate_questions(self, topic, num_questions, difficulty_level):
-                logger.info(f"MockAIService: Gerando {num_questions}q para '{topic[:50]}...' dif: {difficulty_level}")
-                items = [{'afirmacao': f'Item gerado {i+1} sobre "{topic[:20]}"', 'gabarito': 'C', 'justificativa': 'Just.'} for i in range(num_questions)]
-                return f"Motivador para '{topic[:30]}'", items
-        service = MockAIService()
-    return context, service, service_initialized
-# --- Fim da simulação ---
-
-logger = logging.getLogger(__name__)
-
-# --- FUNÇÃO REAL PARA EXTRAIR TEXTO COMPLETO DO PDF ---
+# --- FUNÇÃO REAL PARA EXTRAIR TEXTO COMPLETO DO PDF usando PyPDF2 ---
 def extrair_texto_completo_pdf(uploaded_file_obj):
     """
     Extrai todo o texto de um objeto de arquivo PDF enviado usando PyPDF2.
+    Retorna o texto extraído ou uma string vazia se não houver texto.
+    Levanta ValueError em caso de erro de processamento do PDF.
     """
-    texto_completo = ""
+    texto_completo = [] # Usar lista para juntar no final é mais eficiente
     try:
         # Garante que o ponteiro do arquivo esteja no início
         uploaded_file_obj.seek(0)
         reader = PyPDF2.PdfReader(uploaded_file_obj)
         num_paginas = len(reader.pages)
+        
+        if num_paginas == 0:
+            logger.warning(f"PyPDF2: PDF '{uploaded_file_obj.name}' não contém páginas.")
+            return ""
+
         logger.info(f"Lendo PDF '{uploaded_file_obj.name}' com {num_paginas} página(s) usando PyPDF2.")
         
         for i in range(num_paginas):
             page = reader.pages[i]
             texto_pagina = page.extract_text()
             if texto_pagina:
-                texto_completo += texto_pagina + "\n" 
+                texto_completo.append(texto_pagina)
         
-        if not texto_completo.strip():
-            logger.warning(f"PyPDF2 não conseguiu extrair texto do PDF: '{uploaded_file_obj.name}'. O PDF pode ser baseado em imagem ou ter problemas.")
-            # Retorna uma string vazia, a view deve tratar isso.
-            return ""
+        texto_final = "\n".join(texto_completo) # Junta as páginas com uma nova linha
+        
+        if not texto_final.strip():
+            logger.warning(f"PyPDF2 não conseguiu extrair texto legível do PDF: '{uploaded_file_obj.name}'.")
+            return "" 
             
-        logger.info(f"PyPDF2 extraiu {len(texto_completo)} caracteres de '{uploaded_file_obj.name}'.")
-        return texto_completo
+        logger.info(f"PyPDF2 extraiu {len(texto_final)} caracteres de '{uploaded_file_obj.name}'.")
+        return texto_final
+    except PyPDF2.errors.PdfReadError as e_read:
+        logger.error(f"PyPDF2: Erro de leitura do PDF '{uploaded_file_obj.name}': {e_read}", exc_info=True)
+        raise ValueError(f"O arquivo PDF '{uploaded_file_obj.name}' parece estar corrompido ou não é um PDF válido.")
     except Exception as e:
-        logger.error(f"PyPDF2: Erro crítico ao extrair texto do PDF '{uploaded_file_obj.name}': {e}", exc_info=True)
-        # Levanta uma exceção para ser tratada pela view que chamou
+        logger.error(f"PyPDF2: Erro inesperado ao extrair texto do PDF '{uploaded_file_obj.name}': {e}", exc_info=True)
         raise ValueError(f"Erro ao processar o conteúdo do PDF com PyPDF2: {e}")
 # --- FIM DA FUNÇÃO DE EXTRAÇÃO DE TEXTO ---
 
+
 # --- Sua função _get_base_context_and_service ---
-# MANTENHA SUA IMPLEMENTAÇÃO REAL. Esta é uma simulação para o exemplo.
-def _get_base_context_and_service():
+def _get_base_context_and_service(): # Mantenha sua implementação real
     context = {}
     service = None 
     service_initialized = True 
@@ -365,16 +335,21 @@ def _get_base_context_and_service():
         context['all_areas'] = []
     if not service_initialized:
         context['error_message'] = "Serviço de IA indisponível."
-    if service_initialized: # Simulação do serviço de IA
+    if service_initialized: # Simulação do serviço de IA (SUBSTITUA PELO SEU SERVIÇO REAL)
         class MockAIService:
             def generate_questions(self, topic, num_questions, difficulty_level):
-                logger.info(f"MockAIService: Gerando {num_questions}q para '{topic[:50]}...' dif: {difficulty_level}")
-                items = [{'afirmacao': f'Item gerado {i+1} sobre "{topic[:20]}"', 'gabarito': 'C', 'justificativa': 'Just.'} for i in range(num_questions)]
-                return f"Motivador para '{topic[:30]}'", items
+                logger.info(f"MockAIService: Chamado para gerar {num_questions}q para o tópico/contexto fornecido (dif: {difficulty_level}). Início do contexto: '{topic[:100]}...'")
+                items = []
+                for i in range(num_questions):
+                    items.append({
+                        'afirmacao': f'Afirmação REALMENTE GERADA PELA IA #{i+1} com base no contexto (dificuldade: {difficulty_level}).',
+                        'gabarito': 'C' if i % 2 == 0 else 'E',
+                        'justificativa': f'Justificativa real para o item {i+1} baseada no contexto.'
+                    })
+                return f"Texto motivador principal REAL para o contexto: '{topic[:70]}...'", items
         service = MockAIService()
     return context, service, service_initialized
 # --- Fim da simulação ---
-
 
 @login_required
 def generate_questions_view(request):
@@ -383,89 +358,87 @@ def generate_questions_view(request):
     context['service_initialized'] = service_initialized
     
     max_q = getattr(settings, 'AI_MAX_QUESTIONS_PER_REQUEST', 150)
+    
+    # Inicializa form para GET e como base para POST com erros
+    form_instance = QuestionGeneratorForm(max_questions=max_q)
+    context['page_obj'] = None
+    context['paginator'] = None
+    context['main_motivador'] = None
 
     if request.method == 'POST':
         logger.info(f"POST generate_questions_view por {request.user.username}")
         request.session.pop('latest_ce_ids', None)
         request.session.pop('latest_ce_motivador', None)
 
-        # 1. Instanciar o formulário com request.POST e request.FILES
-        form = QuestionGeneratorForm(request.POST, request.FILES, max_questions=max_q)
+        form_instance = QuestionGeneratorForm(request.POST, request.FILES, max_questions=max_q)
         
         pdf_file_uploaded = False
         if 'pdf_contexto' in request.FILES and request.FILES.get('pdf_contexto'):
             pdf_file_uploaded = True
             logger.info(f"Arquivo PDF '{request.FILES['pdf_contexto'].name}' foi detectado no POST.")
 
-        # 2. Ajustar a obrigatoriedade do campo 'topic' ANTES de form.is_valid()
         if pdf_file_uploaded:
-            if 'topic' in form.fields:
-                form.fields['topic'].required = False
+            if 'topic' in form_instance.fields:
+                form_instance.fields['topic'].required = False
                 logger.info("Campo 'topic' tornado NÃO obrigatório porque um PDF foi enviado.")
         else:
-            if 'topic' in form.fields:
-                form.fields['topic'].required = True 
+            if 'topic' in form_instance.fields:
+                form_instance.fields['topic'].required = True 
                 logger.info("Nenhum PDF enviado, campo 'topic' permanece/torna-se obrigatório.")
         
-        context['form'] = form 
+        context['form'] = form_instance 
 
-        if form.is_valid():
+        if form_instance.is_valid():
             logger.info("Formulário de Geração C/E é VÁLIDO.")
             if not service_initialized or not service:
                 messages.error(request, context.get('error_message', "Serviço de IA indisponível para processar."))
                 return render(request, 'generator/question_generator.html', context)
 
-            num_questions = form.cleaned_data.get('num_questions')
-            difficulty = form.cleaned_data.get('difficulty_level')
-            area_obj = form.cleaned_data.get('area')
+            num_questions = form_instance.cleaned_data.get('num_questions')
+            difficulty = form_instance.cleaned_data.get('difficulty_level')
+            area_obj = form_instance.cleaned_data.get('area')
             
             contexto_para_ia = ""
             fonte_contexto = ""
             
-            pdf_file_cleaned = form.cleaned_data.get('pdf_contexto') # Do form.cleaned_data
-            topic_text_cleaned = form.cleaned_data.get('topic', '').strip()
+            pdf_file_cleaned = form_instance.cleaned_data.get('pdf_contexto')
+            topic_text_cleaned = form_instance.cleaned_data.get('topic', '').strip()
 
-            # 3. Determinar o contexto para a IA (PDF ou Texto), AGORA USANDO A EXTRAÇÃO REAL
             if pdf_file_cleaned:
                 try:
-                    # ***** USA A FUNÇÃO DE EXTRAÇÃO REAL AGORA *****
+                    # ***** USANDO A FUNÇÃO DE EXTRAÇÃO DE TEXTO COMPLETO DO PDF *****
                     contexto_para_ia = extrair_texto_completo_pdf(pdf_file_cleaned)
                     fonte_contexto = f"PDF: {pdf_file_cleaned.name}"
                     
-                    if not contexto_para_ia.strip(): # Verifica se a extração retornou texto
-                        messages.error(request, f"Não foi possível extrair conteúdo textual do PDF '{pdf_file_cleaned.name}'. O arquivo pode ser uma imagem, estar protegido ou vazio. Tente o contexto textual.")
-                        return render(request, 'generator/question_generator.html', context) # Re-renderiza com form e erro
-                    logger.info(f"Contexto para IA obtido do PDF: {pdf_file_cleaned.name} ({len(contexto_para_ia)} caracteres)")
+                    if not contexto_para_ia.strip():
+                        messages.error(request, f"Não foi possível extrair conteúdo textual útil do PDF '{pdf_file_cleaned.name}'. O arquivo pode ser uma imagem, estar protegido, ser muito complexo ou estar vazio. Tente o contexto textual.")
+                        return render(request, 'generator/question_generator.html', context)
+                    logger.info(f"Contexto para IA obtido do PDF: '{pdf_file_cleaned.name}' ({len(contexto_para_ia)} caracteres). Início: '{contexto_para_ia[:250]}...'")
 
-                except ValueError as ve: # Erro específico da extração de PDF
-                    messages.error(request, str(ve))
+                except ValueError as ve: 
+                    messages.error(request, str(ve)) # Erro vindo da função de extração
                     return render(request, 'generator/question_generator.html', context)
-                except Exception as e_pdf_extract: # Outros erros inesperados na extração
+                except Exception as e_pdf_extract: 
                     logger.error(f"Erro crítico ao extrair texto do PDF '{pdf_file_cleaned.name}': {e_pdf_extract}", exc_info=True)
                     messages.error(request, "Ocorreu um erro inesperado ao tentar ler o arquivo PDF.")
                     return render(request, 'generator/question_generator.html', context)
             elif topic_text_cleaned:
                 contexto_para_ia = topic_text_cleaned
                 fonte_contexto = "Tópico Textual"
-                logger.info("Usando contexto do campo Tópico.")
-            # Não precisa de 'else' aqui, pois form.clean() já validou que pelo menos um existe.
+                logger.info(f"Usando contexto do campo Tópico ({len(contexto_para_ia)} caracteres). Início: '{contexto_para_ia[:250]}...'")
             
-            # Checagem adicional de segurança para o contexto final
-            if not contexto_para_ia.strip():
-                messages.error(request, "Contexto para IA está vazio mesmo após processamento. Forneça um tópico ou PDF com conteúdo legível.")
+            if not contexto_para_ia.strip(): # Checagem final do contexto antes de enviar para IA
+                messages.error(request, "Contexto para IA está vazio. Forneça um tópico ou PDF com conteúdo legível.")
                 return render(request, 'generator/question_generator.html', context)
 
-            # 4. Chamar o serviço de IA (Sua lógica existente)
-            # (O resto da lógica POST permanece como no seu código original,
-            #  usando `contexto_para_ia` e `fonte_contexto` determinados acima)
-            logger.info(f"Gerando {num_questions}q para {fonte_contexto}...")
+            logger.info(f"Preparando para chamar IA. Fonte: {fonte_contexto}. Num Questões: {num_questions}. Dificuldade: {difficulty}.")
             try:
                 main_motivador, generated_items_data = service.generate_questions(
                     topic=contexto_para_ia, 
                     num_questions=num_questions, 
                     difficulty_level=difficulty
                 )
-                
+                # ... (Sua lógica de salvar questões na sessão, etc. continua aqui) ...
                 if not generated_items_data or not isinstance(generated_items_data, list):
                     messages.warning(request,"IA retornou dados inválidos."); generated_items_data = []
                 saved_question_ids = []
@@ -476,8 +449,7 @@ def generate_questions_view(request):
                             if not isinstance(item_data, dict): continue
                             gabarito = item_data.get('gabarito'); afirmacao = item_data.get('afirmacao')
                             if not gabarito or gabarito not in ['C', 'E'] or not afirmacao or not afirmacao.strip(): continue
-                            texto_motiv_para_salvar = main_motivador
-                            q = Questao(tipo='CE', texto_motivador=texto_motiv_para_salvar, texto_comando=afirmacao, gabarito_ce=gabarito, justificativa_gabarito=item_data.get('justificativa'), dificuldade=(difficulty or 'medio'), area=area_obj, criado_por=request.user)
+                            q = Questao(tipo='CE', texto_motivador=main_motivador, texto_comando=afirmacao, gabarito_ce=gabarito, justificativa_gabarito=item_data.get('justificativa'), dificuldade=(difficulty or 'medio'), area=area_obj, criado_por=request.user)
                             q.save(); saved_question_ids.append(q.id)
                         except Exception as save_error: logger.error(f"Erro salvar C/E item: {save_error}", exc_info=True)
                 if saved_question_ids:
@@ -485,27 +457,26 @@ def generate_questions_view(request):
                     request.session['latest_ce_ids'] = saved_question_ids
                     request.session['latest_ce_motivador'] = main_motivador if main_motivador else ""
                 else:
-                    if generated_items_data: messages.warning(request,"Nenhuma questão válida salva.")
-                    else: messages.warning(request,"IA não retornou questões válidas.")
+                    if generated_items_data: messages.warning(request,"Nenhuma questão válida foi salva (verifique formato/dados da IA).")
+                    else: messages.warning(request,"IA não retornou questões válidas para salvar.")
                 if generated_items_data and len(saved_question_ids) < len(generated_items_data):
                     messages.warning(request,"Alguns itens podem não ter sido salvos.")
-                return redirect(reverse('generator:generate_questions'))
+                
+                return redirect(reverse('generator:generate_questions')) 
 
-            # except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as e:
-            #     logger.error(f"Erro GERAL C/E Geração: {e}", exc_info=False); context['error_message'] = f"Falha: {e}"
-            #     return render(request, 'generator/question_generator.html', context)
-            except Exception as e:
-                logger.error(f"Erro INESPERADO C/E Geração: {e}", exc_info=True); context['error_message'] = f"Erro inesperado: {e}"
+            except Exception as e: 
+                logger.error(f"Erro INESPERADO na Geração ou Salvamento C/E: {e}", exc_info=True)
+                context['error_message'] = f"Erro inesperado: {e}"
                 return render(request, 'generator/question_generator.html', context)
         else: 
-            logger.warning(f"Form Geração C/E inválido: {form.errors.as_json()}")
+            logger.warning(f"Formulário de Geração C/E INVÁLIDO: {form_instance.errors.as_json()}")
             messages.error(request, "Por favor, corrija os erros indicados no formulário.")
             return render(request, 'generator/question_generator.html', context)
 
     # --- Lógica GET ---
     else: 
-        form = QuestionGeneratorForm(max_questions=max_q)
-        context['form'] = form 
+        form_instance = QuestionGeneratorForm(max_questions=max_q)
+        context['form'] = form_instance 
 
         logger.debug(f"GET generate_questions_view por {request.user.username}")
         if request.GET.get('action') == 'clear':
@@ -516,31 +487,45 @@ def generate_questions_view(request):
             return redirect(reverse('generator:generate_questions'))
 
         latest_ids = request.session.get('latest_ce_ids')
-        main_motivador_sessao = request.session.get('latest_ce_motivador') # Renomeado para evitar conflito
+        context['main_motivador'] = request.session.get('latest_ce_motivador')
         
         if latest_ids:
+            logger.info(f"GET: IDs encontrados na sessão para paginação: {latest_ids}.")
             try:
                 question_list = Questao.objects.filter(id__in=latest_ids).select_related('area', 'criado_por').order_by('id')
+                logger.info(f"GET: Número de questões encontradas no DB: {question_list.count()}")
+
                 if question_list.exists():
                     items_per_page = getattr(settings, 'ITEMS_PER_PAGE_GENERATOR', 20)
-                    paginator_obj = Paginator(question_list, items_per_page) # Nome diferente
+                    paginator = Paginator(question_list, items_per_page) 
+                    logger.info(f"GET: Paginator. Total de itens: {paginator.count}, Total de páginas: {paginator.num_pages}")
+
                     page_number = request.GET.get('page')
-                    context['page_obj'] = paginator_obj.get_page(page_number)
-                    context['paginator'] = paginator_obj 
-                    context['main_motivador'] = main_motivador_sessao
-                    logger.info(f"Exibindo lote da sessão. Página: {context['page_obj'].number}/{paginator_obj.num_pages}")
+                    try:
+                        page_obj = paginator.get_page(page_number)
+                    except PageNotAnInteger:
+                        page_obj = paginator.get_page(1)
+                    except EmptyPage:
+                        page_obj = paginator.get_page(paginator.num_pages)
+                    
+                    context['page_obj'] = page_obj
+                    context['paginator'] = paginator
+                    
+                    logger.info(f"GET: Paginação configurada. Página: {page_obj.number} de {paginator.num_pages}.")
                 else:
-                    logger.warning(f"IDs {latest_ids} na sessão, mas não encontrados no DB. Limpando.")
+                    logger.warning(f"GET: IDs {latest_ids} na sessão, mas NENHUMA questão encontrada. Limpando sessão.")
                     request.session.pop('latest_ce_ids', None); request.session.pop('latest_ce_motivador', None)
                     context['main_motivador'] = None 
             except Exception as e:
-                logger.error(f"Erro buscar/paginar da sessão: {e}", exc_info=True)
-                messages.error(request, "Erro carregar/paginar questões.")
+                logger.error(f"GET: Erro ao buscar/paginar questões da sessão: {e}", exc_info=True)
+                messages.error(request, "Erro ao carregar ou paginar as questões da sessão.")
                 request.session.pop('latest_ce_ids', None); request.session.pop('latest_ce_motivador', None)
                 context['main_motivador'] = None
         else:
+            logger.info("GET: Nenhum 'latest_ce_ids' encontrado na sessão.")
             context['main_motivador'] = None
-            logger.debug("Nenhum lote 'latest_ce' na sessão para exibir.")
+            context['page_obj'] = None # Garante que page_obj seja None se não houver latest_ids
+            context['paginator'] = None # Garante que paginator seja None se não houver latest_ids
         
     return render(request, 'generator/question_generator.html', context)
 
@@ -672,20 +657,6 @@ def validate_answers_view(request):
     return render(request, 'generator/question_generator.html', context)
 
 
-# generator/views.py
-# (Imports: render, redirect, login_required, messages, Questao, DiscursiveExamForm, get_object_or_404, services, exceptions, logging)
-from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .models import Questao, AreaConhecimento # Garanta que Questao e AreaConhecimento estão importados
-from .forms import DiscursiveExamForm # Garanta que o form está importado
-from .services import QuestionGenerationService # Importe seu serviço
-from .exceptions import ( # Importe exceptions
-    ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError
-)
-import logging
-
 logger = logging.getLogger('generator')
 
 # Função auxiliar _get_base_context_and_service (mantenha a sua)
@@ -699,216 +670,126 @@ def _get_base_context_and_service(): # Exemplo básico
     return context, service, service_initialized
 
 
+logger = logging.getLogger(__name__)
+
+
 @login_required
 def generate_discursive_exam_view(request):
-    """
-    View Geradora Discursiva - Com Debug no GET:
-    - POST: Gera nova questão.
-    - GET: Se ?questao_id=, carrega questão existente; senão, mostra form vazio.
-    """
-    context, service, service_initialized = _get_base_context_and_service()
-    # Inicializa variáveis que serão definidas no GET ou POST
+    base_context, service, service_initialized = _get_base_context_and_service()
+    context = base_context.copy() # Inicia com o contexto base (que deve ter 'all_areas')
+    context['service_initialized'] = service_initialized
+    
     discursive_exam_text = None
     questao_id = None
+    # context['error_message'] já vem de base_context, se houver
 
-    context['error_message'] = context.get('error_message')
-
-    # --- Lógica POST (Permanece igual) ---
     if request.method == 'POST':
-        form = DiscursiveExamForm(request.POST)
-        context['form'] = form # Passa o form preenchido (com erros ou não)
-        # ... (Toda a lógica do POST para gerar e salvar questão como antes) ...
-        # ... (Se gerar com sucesso, define questao_id e discursive_exam_text) ...
-        # ... (Se der erro, define context['error_message']) ...
-
-        # --- Bloco POST (resumido para focar no GET) ---
+        form = DiscursiveExamForm(request.POST) # Seu DiscursiveExamForm
         if form.is_valid():
             if not service_initialized or not service:
-                messages.error(request, context.get('error_message', "Serviço de IA indisponível."))
+                messages.error(request, context.get('error_message', "Serviço de IA indisponível para processar."))
+                context['form'] = form 
                 return render(request, 'generator/discursive_exam_generator.html', context)
+
             base_topic_or_context = form.cleaned_data.get('base_topic_or_context')
-            num_aspects = form.cleaned_data.get('num_aspects', 3); area_obj = form.cleaned_data.get('area'); complexity = form.cleaned_data.get('complexity', 'Intermediária'); language = form.cleaned_data.get('language', 'pt-br')
+            num_aspects = form.cleaned_data.get('num_aspects', 3)
+            area_obj = form.cleaned_data.get('area')
+            
+            # Obter difficulty_level do formulário validado
+            difficulty = form.cleaned_data.get('difficulty_level', 'medio') # Use o default do seu form se houver
+            
+            # 'complexity' é o nome do parâmetro esperado pelo seu service.generate_discursive_exam_question
+            complexity_for_service = difficulty 
+            language = 'pt-br' # Defina ou pegue do form se necessário
+
+            current_user = request.user if request.user.is_authenticated else None
+            
+            logger.info(f"POST Gerador Discursiva: Tópico='{base_topic_or_context[:50]}...', Aspectos={num_aspects}, Área={area_obj}, Dificuldade={complexity_for_service}")
+
             try:
-                discursive_exam_text = service.generate_discursive_exam_question(base_topic_or_context=base_topic_or_context, num_aspects=num_aspects, area=area_obj.nome if area_obj else None, complexity=complexity, language=language)
+                discursive_exam_text = service.generate_discursive_exam_question(
+                    base_topic_or_context=base_topic_or_context, 
+                    num_aspects=num_aspects, 
+                    area=area_obj.nome if area_obj else None, 
+                    complexity=complexity_for_service, 
+                    language=language
+                )
+                
                 if discursive_exam_text and isinstance(discursive_exam_text, str) and discursive_exam_text.strip():
                     try:
-                        q = Questao(tipo='DISC', texto_comando=discursive_exam_text, aspectos_discursiva=f"Avaliar {num_aspects} aspecto(s).", dificuldade=complexity, area=area_obj, criado_por=request.user)
-                        q.save(); questao_id = q.id; logger.info(f"Discursiva ID {questao_id} salva.")
-                        messages.success(request, f"Questão discursiva gerada (ID: {questao_id})! Responda abaixo.")
-                    except Exception as db_error: logger.error(f"Erro salvar DISC: {db_error}", exc_info=True); messages.error(request, "Erro ao salvar questão."); questao_id = None; discursive_exam_text = None
-                else: messages.warning(request, "IA não retornou questão válida."); discursive_exam_text = None; questao_id = None
-            except Exception as e: logger.error(f"Erro gerar DISC: {e}", exc_info=True); context['error_message'] = f"Falha: {e}"; discursive_exam_text = None; questao_id = None
-        # Fim if form.is_valid() (Continua abaixo para setar contexto e renderizar)
-    # --- Fim Lógica POST ---
+                        q = Questao(
+                            tipo='DISC',
+                            texto_comando=discursive_exam_text,
+                            aspectos_discursiva=f"Avaliar {num_aspects} aspecto(s) solicitado(s).",
+                            dificuldade=difficulty, # Salva a dificuldade selecionada
+                            area=area_obj, 
+                            criado_por=current_user
+                        )
+                        q.save()
+                        questao_id = q.id
+                        logger.info(f"Questão Discursiva ID {questao_id} salva com sucesso.")
+                        messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso! Você pode respondê-la abaixo ou buscar por ela mais tarde.")
+                        return redirect(f"{reverse('generator:generate_discursive_exam')}?questao_id={questao_id}")
+                    except Exception as db_error:
+                        logger.error(f"Erro ao salvar questão discursiva no banco de dados: {db_error}", exc_info=True)
+                        messages.error(request, "Ocorreu um erro ao tentar salvar a questão discursiva gerada.")
+                        questao_id = None 
+                else:
+                    messages.warning(request, "A IA não retornou um texto válido para a questão discursiva.")
+                    discursive_exam_text = None 
+                    questao_id = None
+            # except (ParsingError, AIResponseError, etc.) as e: # Suas exceções específicas
+            #     logger.error(f"Erro específico da IA ao gerar questão discursiva: {e}", exc_info=False)
+            #     context['error_message'] = f"Falha na geração pela IA: {e}"
+            #     discursive_exam_text = None; questao_id = None
+            except Exception as e: 
+                logger.error(f"Erro inesperado ao gerar questão discursiva: {e}", exc_info=True)
+                context['error_message'] = f"Falha inesperada durante a geração da questão: {e}"
+                discursive_exam_text = None; questao_id = None
+        else: 
+            logger.warning(f"Formulário Gerador Discursiva INVÁLIDO: {form.errors.as_json()}")
+            messages.error(request, "Por favor, corrija os erros indicados no formulário.")
+        
+        context['form'] = form # Passa o form (com dados e/ou erros) para o contexto
 
     # --- Lógica GET ---
     else: # request.method == 'GET'
         form = DiscursiveExamForm() # Form vazio para nova geração
-        context['form'] = form
-        logger.debug(f"GET generate_discursive_exam por {request.user.username}")
-
+        
         questao_id_from_url = request.GET.get('questao_id')
-        print(f"\n--- DEBUG DISCURSIVA GET ---") # Início do Debug
-        print(f"Parametro questao_id da URL: {questao_id_from_url}")
+        logger.debug(f"GET generate_discursive_exam por {request.user.username}. questao_id_from_url: {questao_id_from_url}")
 
         if questao_id_from_url and questao_id_from_url.isdigit():
             qid = int(questao_id_from_url)
-            print(f"Tentando buscar Questao ID={qid}, tipo='DISC'")
+            logger.info(f"Tentando carregar Questão Discursiva ID={qid} via GET.")
             try:
-                # Busca a questão específica ou dá erro 404
-                questao_para_responder = get_object_or_404(Questao, id=qid, tipo='DISC')
-                print(f"Questão encontrada: {questao_para_responder}")
-                discursive_exam_text = questao_para_responder.texto_comando # Pega o texto
-                questao_id = questao_para_responder.id # Pega o ID
-                print(f"Definindo discursive_exam_text: {'Sim' if discursive_exam_text else 'Não'}")
-                print(f"Definindo questao_id: {questao_id}")
-                logger.info(f"Questão ID {questao_id} carregada para resposta.")
-            except Exception as e:
-                 # Captura get_object_or_404 ou outros erros
-                 print(f"!!! ERRO ao buscar questão ID {qid}: {e}")
-                 logger.error(f"Erro buscar discursiva ID {qid}: {e}", exc_info=True)
-                 messages.error(request, f"Erro ao carregar questão discursiva {qid}.")
-                 # Garante que variáveis fiquem None se der erro
-                 discursive_exam_text = None
-                 questao_id = None
-        else:
-            print("Nenhum questao_id válido encontrado na URL.")
-            # Garante que variáveis são None se não veio ID
-            discursive_exam_text = None
-            questao_id = None
+                # USA get_object_or_404 AGORA QUE ESTÁ IMPORTADO
+                questao_para_exibir = get_object_or_404(Questao, id=qid, tipo='DISC')
+                discursive_exam_text = questao_para_exibir.texto_comando
+                questao_id = questao_para_exibir.id
+                logger.info(f"Questão Discursiva ID {questao_id} carregada para exibição.")
+                # Opcional: Preencher o form com os dados da questão carregada
+                # form = DiscursiveExamForm(initial={
+                #     'base_topic_or_context': questao_para_exibir.texto_comando_original_ou_topico,
+                #     'num_aspects': ..., 
+                #     'area': questao_para_exibir.area,
+                #     'difficulty_level': questao_para_exibir.dificuldade 
+                # })
+            except Questao.DoesNotExist: # Erro mais específico se get_object_or_404 não for usado ou falhar por outro motivo
+                 logger.warning(f"Questão discursiva ID {qid} não encontrada ou não é do tipo DISC.", exc_info=True)
+                 messages.warning(request, f"A questão discursiva com ID {qid} não foi encontrada.")
+                 discursive_exam_text = None; questao_id = None
+            except Exception as e: 
+                 logger.error(f"Erro ao buscar questão discursiva ID {qid} via GET: {e}", exc_info=True)
+                 messages.error(request, f"Erro ao tentar carregar a questão discursiva com ID {qid}.")
+                 discursive_exam_text = None; questao_id = None
+        
+        context['form'] = form # Adiciona o form (limpo ou com 'initial') ao contexto
 
-        print(f"Valores FINAIS para contexto: questao_id={questao_id}, tem_texto={discursive_exam_text is not None}")
-        print(f"--- FIM DEBUG ---") # Fim do Debug
-
-    # Atualiza contexto ANTES de renderizar (para GET ou POST)
-    # As variáveis locais 'discursive_exam_text' e 'questao_id' terão os valores corretos
-    # vindos do POST ou do GET (se questao_id foi passado e encontrado)
     context['discursive_exam_text'] = discursive_exam_text
     context['questao_id'] = questao_id
 
-    # Renderiza o template do GERADOR DISCURSIVO
     return render(request, 'generator/discursive_exam_generator.html', context)
-
-# # --- VISÃO GERAR QUESTÃO DISCURSIVA ---
-# @login_required
-# def generate_discursive_exam_view(request):
-#     context, service, service_initialized = _get_base_context_and_service()
-#     discursive_exam_text = None # Texto bruto da IA
-#     questao_salva = None # Objeto Questao salvo
-#     questao_id = None # <<< Adicionado para passar o ID consistentemente
-#     form = DiscursiveExamForm(request.POST or None)
-#     context['form'] = form
-#     context['error_message'] = context.get('error_message') # Pega erro inicial
-
-#     if request.method == 'POST':
-#         if not service_initialized or not service:
-#             logger.error(f"POST generate_discursive_exam_view sem serviço IA por {request.user.username}.")
-#             context['error_message'] = context.get('error_message', "Serviço de IA indisponível no momento.")
-#             # Renderiza com erro, mas garante que as variáveis do template existem como None
-#             context['discursive_exam_text'] = None
-#             context['questao_id'] = None
-#             return render(request, 'generator/discursive_exam_generator.html', context)
-#         else:
-#             logger.info(f"POST generate_discursive_exam_view por {request.user.username}")
-#             if form.is_valid():
-#                 base_topic_or_context = form.cleaned_data.get('base_topic_or_context')
-#                 num_aspects = form.cleaned_data.get('num_aspects', 3)
-#                 area_obj = form.cleaned_data.get('area') # Agora pega o objeto diretamente
-#                 complexity = form.cleaned_data.get('complexity', 'Intermediária')
-#                 language = form.cleaned_data.get('language', 'pt-br')
-
-#                 # Validação extra (embora o form já deva fazer isso)
-#                 if not base_topic_or_context or not base_topic_or_context.strip():
-#                     form.add_error('base_topic_or_context', 'Este campo é obrigatório.')
-#                     logger.warning(f"Tentativa de Geração Q. Discursiva sem tópico base por {request.user.username}.")
-#                     context['error_message'] = "Erro no formulário: Verifique os campos obrigatórios."
-#                     context['discursive_exam_text'] = None # Garante que não haja texto
-#                     context['questao_id'] = None # Garante que não haja ID
-#                     return render(request, 'generator/discursive_exam_generator.html', context)
-#                 else:
-#                     area_nome_log = area_obj.nome if area_obj else "Nenhuma"
-#                     logger.info(f"Form Gerar Q. Disc. válido. Tópico: '{base_topic_or_context[:80]}...' Área: {area_nome_log}, Idioma: {language} (User: {request.user.username})")
-#                     try:
-#                         # Tenta gerar o texto da questão
-#                         discursive_exam_text = service.generate_discursive_exam_question(
-#                             base_topic_or_context=base_topic_or_context,
-#                             num_aspects=num_aspects,
-#                             area=area_obj.nome if area_obj else None, # Passa o nome da área para o serviço
-#                             complexity=complexity,
-#                             language=language
-#                         )
-#                         logger.info("Estrutura da questão discursiva recebida da IA.")
-#                         context['error_message'] = None # Limpa erro se sucesso na geração
-
-#                         # Verifica se o texto gerado é válido antes de tentar salvar
-#                         if discursive_exam_text and isinstance(discursive_exam_text, str) and discursive_exam_text.strip():
-#                             # Tenta salvar a questão no banco
-#                             try:
-#                                 questao_obj = Questao(
-#                                     tipo='DISC',
-#                                     texto_comando=discursive_exam_text, # Salva o texto completo retornado
-#                                     aspectos_discursiva=f"Avaliar conforme o comando e {num_aspects} aspecto(s) principal(is).",
-#                                     dificuldade=complexity,
-#                                     area=area_obj, # Associa o objeto AreaConhecimento
-#                                     criado_por=request.user
-#                                 )
-#                                 questao_obj.save()
-#                                 questao_salva = questao_obj # Guarda o objeto salvo
-#                                 questao_id = questao_salva.id # <<< GUARDA O ID AQUI >>>
-#                                 logger.info(f"Questão Discursiva ID {questao_id} salva no DB.")
-#                                 messages.success(request, f"Questão discursiva gerada e salva (ID: {questao_id})!")
-#                                 # Limpa o form após sucesso completo (geração E salvamento)
-#                                 form = DiscursiveExamForm() # <<<< REINSTANCIA O FORM AQUI
-
-#                             except Exception as db_error:
-#                                 logger.error(f"Erro ao salvar Questão Discursiva no DB: {db_error}", exc_info=True)
-#                                 messages.error(request, "Questão gerada pela IA, mas houve um erro ao salvá-la no banco de dados.")
-#                                 # Mantém o texto gerado para exibição, mas sem ID salvo
-#                                 questao_salva = None
-#                                 questao_id = None # <<< GARANTE QUE ID É NONE SE SALVAR FALHAR >>>
-#                         else:
-#                              logger.warning("IA retornou texto vazio ou inválido para questão discursiva.")
-#                              messages.warning(request, "A IA não retornou uma questão válida.")
-#                              discursive_exam_text = None # Garante que nada seja exibido
-#                              questao_salva = None
-#                              questao_id = None
-
-#                     # Captura erros durante a chamada da IA ou erros gerais
-#                     except (ParsingError, AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as e:
-#                         logger.error(f"Erro ao gerar Questão Discursiva (serviço/parse): {e}", exc_info=True)
-#                         context['error_message'] = f"Falha ao gerar questão: {e}"
-#                         discursive_exam_text = None; questao_salva = None; questao_id = None
-#                         # Mantém o form preenchido com os dados que deram erro
-#                     except Exception as e:
-#                          logger.error(f"Erro INESPERADO ao gerar Questão Discursiva: {e}", exc_info=True)
-#                          context['error_message'] = f"Ocorreu um erro inesperado: {e}"
-#                          discursive_exam_text = None; questao_salva = None; questao_id = None
-#                          # Mantém o form preenchido
-
-#             else: # Form inválido
-#                 logger.warning(f"Tentativa de Geração Q. Discursiva com formulário inválido por {request.user.username}: {form.errors.as_json()}")
-#                 context['error_message'] = "Formulário inválido. Por favor, corrija os erros indicados."
-#                 discursive_exam_text = None # Garante que não haja texto
-#                 questao_id = None # Garante que não haja ID
-#                 # O form com os erros já está no contexto
-
-#     # --- Lógica GET ---
-#     # (Não precisa fazer nada extra aqui, apenas renderiza o form vazio)
-#     elif request.method == 'GET':
-#          logger.debug(f"GET generate_discursive_exam_view por {request.user.username}")
-#          # Garante que as variáveis estejam como None em GET
-#          discursive_exam_text = None
-#          questao_id = None
-
-
-#     # Atualiza o contexto ANTES de renderizar (para GET ou POST)
-#     # Garante que as variáveis SEMPRE existam no contexto
-#     context['form'] = form # Passa o form (preenchido com erro, vazio ou re-instanciado)
-#     context['discursive_exam_text'] = discursive_exam_text # Texto da IA ou None
-#     context['questao_id'] = questao_id # ID da questão salva ou None
-
-#     logger.debug(f"Contexto final (generate_discursive_exam_view): User={request.user.username}, QuestaoID={questao_id}, HasText={discursive_exam_text is not None}")
-#     return render(request, 'generator/discursive_exam_generator.html', context)
 
 
 # --- VISÃO Configuração do Simulado (COM FILTRO DE TÓPICO) ---

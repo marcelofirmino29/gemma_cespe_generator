@@ -12,12 +12,12 @@
         /* .nav-tabs .nav-link.active { ... } */
 
         /* Estilos para o container de filtros/conteúdo */
-        .filters-container { 
+        .filters-container {
             border: 1px solid var(--bs-border-color);
             /* border-top: none; REMOVIDO: Não há mais abas diretamente acima neste bloco */
             padding: 1.5rem;
             border-radius: 0.375rem; /* Aplicar a todas as bordas */
-            background-color: var(--bs-body-bg); 
+            background-color: var(--bs-body-bg);
             margin-bottom: 1.5rem; /* Adiciona espaço antes do próximo elemento se houver */
         }
         .form-label { font-size: 0.85rem; margin-bottom: 0.3rem; }
@@ -28,12 +28,17 @@
         .verify-ce-btn { font-size: 0.8rem; }
         .motivador-text { background-color: var(--bs-secondary-bg); border-left: 5px solid var(--bs-info); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.95em; border-radius: 0.375rem; white-space: pre-wrap; }
         .question-item-minimal { padding: 1rem; border: 1px solid var(--bs-border-color); border-radius: 0.375rem; margin-bottom: 1rem; }
-        #id_topic { min-height: 120px; } 
+        #id_topic { min-height: 120px; }
         .btn-group .btn { margin: 0 !important; }
         .pdf-upload-section-generator { margin-top: 1rem; padding: 1rem; border: 1px dashed var(--bs-border-color); border-radius: 0.375rem; background-color: var(--bs-tertiary-bg); }
         .form-label.required::after { content: " *"; color: #dc3545; }
         .or-divider-generator { text-align: center; margin: 0.8rem 0; font-style: italic; color: var(--bs-secondary-color); font-size: 0.9em; }
         #addAreaQuickFormContainer { margin-top: 1rem; }
+
+        /* Estilos para paginação (podem ser ajustados conforme necessário) */
+        .pagination { margin-bottom: 1rem; }
+        .pagination .page-item .page-link { font-size: 0.9rem; } /* Ajuste opcional do tamanho da fonte dos links de paginacao */
+
     </style>
 {% endblock extra_head %}
 
@@ -43,26 +48,20 @@
     {% if not service_initialized and not error_message %} <div class="alert alert-warning alert-dismissible fade show"><strong>Atenção:</strong> Serviço de IA indisponível ou com erro na inicialização. <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div> {% endif %}
     {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show"> {{ message|safe }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
 
-    {# --- ABAS DE NAVEGAÇÃO FORAM REMOVIDAS DESTE BLOCO --- #}
-    {# Elas agora são gerenciadas pelo generator/base.html (na navbar) #}
-
     {# O container principal da página do Gerador C/E #}
-    {# Como as abas foram para a navbar, o tab-content e tab-pane podem ser simplificados #}
-    {# ou removidos se esta página agora só tem um "painel" de conteúdo. #}
-    {# Vou manter o filters-container como o principal container de conteúdo para esta página. #}
-    <div class="filters-container shadow-sm"> {# Este era o antigo contentor da aba #}
-        <h1 class="h4 mb-4 text-center">Gerador de Questões Certo/Errado</h1> {# Título da página #}
-        <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}" 
-              {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %} 
+    <div class="filters-container shadow-sm">
+        <h1 class="h4 mb-4 text-center">Gerador de Questões Certo/Errado</h1>
+        <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}"
+              {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}
               enctype="multipart/form-data">
             {% csrf_token %}
             <input type="hidden" name="generation_mode" value="ce_only_from_generator_page">
 
             <div class="row g-3">
-                <div class="col-lg-7"> 
+                <div class="col-lg-7">
                     <div class="mb-3">
-                        <label for="{{ form.topic.id_for_label|default:'id_topic' }}" 
-                               class="form-label fw-medium" 
+                        <label for="{{ form.topic.id_for_label|default:'id_topic' }}"
+                               class="form-label fw-medium"
                                id="label_for_topic_ce_page">{{ form.topic.label|default:"1. Forneça um Tópico ou Contexto Textual" }}</label>
                         {{ form.topic }}
                         <div class="form-text text-muted mt-1" id="help_text_for_topic_ce_page">
@@ -107,7 +106,7 @@
                             {{ form.area }}
                             {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
                         </div>
-                    </div> 
+                    </div>
                     <div class="btn-group w-100 mt-4 flex-wrap" role="group" aria-label="Grupo de Ações do Gerador">
                         <button type="reset" form="generator-form" class="btn btn-outline-secondary btn-sm col-6 col-md-3 mb-1 mb-md-0" title="Limpa os campos do formulário"> <i class="bi bi-x-lg"></i> Limpar </button>
                         <a href="{% url 'generator:generate_questions' %}?action=clear" class="btn btn-outline-warning btn-sm col-6 col-md-3 mb-1 mb-md-0" role="button" title="Remove o último lote gerado da tela"> <i class="bi bi-eraser"></i> Limpar Res.</a>
@@ -118,14 +117,14 @@
             </div>
         </form>
 
-        <div id="addAreaQuickFormContainer" class="mt-3"> 
-            <form id="addAreaQuickFormGenerator" method="post" action="{% url 'generator:add_area_quick_from_generator' %}" > 
-                {% csrf_token %} 
-                <div class="input-group input-group-sm"> 
-                    <input type="text" class="form-control form-control-sm" name="nome" placeholder="Não encontrou a área? Adicione-a aqui rapidamente." required maxlength="100" aria-label="Nome da nova área"> 
-                    <button type="submit" class="btn btn-outline-primary btn-sm"> <i class="bi bi-plus-lg"></i> Add Área</button> 
-                </div> 
-            </form> 
+        <div id="addAreaQuickFormContainer" class="mt-3">
+            <form id="addAreaQuickFormGenerator" method="post" action="{% url 'generator:add_area_quick_from_generator' %}" >
+                {% csrf_token %}
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control form-control-sm" name="nome" placeholder="Não encontrou a área? Adicione-a aqui rapidamente." required maxlength="100" aria-label="Nome da nova área">
+                    <button type="submit" class="btn btn-outline-primary btn-sm"> <i class="bi bi-plus-lg"></i> Add Área</button>
+                </div>
+            </form>
         </div>
     </div> {# Fim .filters-container #}
 
@@ -134,6 +133,7 @@
 
     {# SEÇÃO DE RESULTADOS (para exibir questões geradas após redirect ou se passadas no contexto) #}
     {% if main_motivador %} <hr class="my-4"> <div class="motivador-text"> <h2 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador da Última Geração</h2> <div class="small">{{ main_motivador|linebreaksbr }}</div> </div> {% endif %}
+
     {% if page_obj %}
         {% if not main_motivador %}<hr class="my-4">{% endif %}
         <div class="mt-4">
@@ -141,33 +141,80 @@
             <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}"> {# ID para o ce_validator.js #}
                 {% csrf_token %}
                 <div class="question-list">
-                    {% for item in page_obj %} 
-                    <div class="question-item-minimal" id="question-item-{{ item.id }}"> 
-                        <p class="mb-2"><strong>Item {{ page_obj.start_index|add:forloop.counter0 }}:</strong> (ID: {{item.id}})</p> 
-                        <p class="ms-3">{{ item.texto_comando|linebreaksbr }}</p> 
-                        <div class="d-flex align-items-center flex-wrap mt-3"> 
-                            <div class="form-check form-check-inline me-3"> 
-                                <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="certo_{{ item.id }}" value="C" required> 
-                                <label class="form-check-label small" for="certo_{{ item.id }}">Certo</label> 
-                            </div> 
-                            <div class="form-check form-check-inline me-3"> 
-                                <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="errado_{{ item.id }}" value="E" required> 
-                                <label class="form-check-label small" for="errado_{{ item.id }}">Errado</label> 
-                            </div> 
-                            <button type="button" class="btn btn-outline-info btn-sm ms-md-auto mt-2 mt-md-0 verify-ce-btn" data-questao-id="{{ item.id }}"> <i class="bi bi-check-lg"></i> Verificar Item </button> 
-                        </div> 
-                        <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ item.id }}"></div> 
-                    </div> 
-                    {% empty %} <div class="alert alert-info" role="alert">Nenhuma questão gerada para exibir neste lote/página. Tente gerar novas questões.</div> 
+                    {% for item in page_obj %}
+                    <div class="question-item-minimal" id="question-item-{{ item.id }}">
+                        <p class="mb-2"><strong>Item {{ page_obj.start_index|add:forloop.counter0 }}:</strong> (ID: {{item.id}})</p>
+                        <p class="ms-3">{{ item.texto_comando|linebreaksbr }}</p>
+                        <div class="d-flex align-items-center flex-wrap mt-3">
+                            <div class="form-check form-check-inline me-3">
+                                <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="certo_{{ item.id }}" value="C" required>
+                                <label class="form-check-label small" for="certo_{{ item.id }}">Certo</label>
+                            </div>
+                            <div class="form-check form-check-inline me-3">
+                                <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="errado_{{ item.id }}" value="E" required>
+                                <label class="form-check-label small" for="errado_{{ item.id }}">Errado</label>
+                            </div>
+                            <button type="button" class="btn btn-outline-info btn-sm ms-md-auto mt-2 mt-md-0 verify-ce-btn" data-questao-id="{{ item.id }}"> <i class="bi bi-check-lg"></i> Verificar Item </button>
+                        </div>
+                        <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ item.id }}"></div>
+                    </div>
+                    {% empty %} <div class="alert alert-info" role="alert">Nenhuma questão gerada para exibir neste lote/página. Tente gerar novas questões.</div>
                     {% endfor %}
                 </div>
-                {% if paginator.num_pages > 1 %} <nav aria-label="Navegação dos itens gerados" class="mt-4 d-flex justify-content-center"> {# ... Paginação ... #} </nav> {% endif %}
+
+                {# Controles de Paginação inseridos aqui #}
+                {% if paginator.num_pages > 1 %}
+                <nav aria-label="Navegação dos itens gerados" class="mt-4 d-flex justify-content-center">
+                    <ul class="pagination flex-wrap">
+                        {% if page_obj.number > 1 %}
+                            <li class="page-item"><a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeira">&laquo;&laquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
+                        {% endif %}
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">&laquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                        {% endif %}
+
+                        {% for num in paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                            {% elif num == 1 %}
+                                <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                                {% if page_obj.number > 4 %} {# Ajustado para mostrar reticências mais cedo se necessário #}
+                                    <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>
+                                {% endif %}
+                            {% elif num == paginator.num_pages %}
+                                {% if page_obj.number < paginator.num_pages|add:'-3' %} {# Ajustado para mostrar reticências mais cedo se necessário #}
+                                    <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>
+                                {% endif %}
+                                <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">&raquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        {% endif %}
+                        {% if page_obj.number < paginator.num_pages %}
+                            <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Última">&raquo;&raquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
             </form>
         </div>
     {% elif request.method == 'POST' and not form.errors %}
         <div class="alert alert-info mt-4" role="alert">Geração de questões C/E solicitada. Os resultados aparecerão aqui ou no <a href="{% url 'generator:questions_ce' %}" class="alert-link">Banco de Questões</a> após o processamento (geralmente após um redirecionamento).</div>
     {% endif %}
-    {% if results %} <hr class="my-4"> <div class="results-validation mt-4"> <h2 class="h5 mb-3 fw-normal">Resultado da Verificação Geral:</h2> {# ... #} </div> {% endif %}
+
+    {% if results %} <hr class="my-4"> <div class="results-validation mt-4"> <h2 class="h5 mb-3 fw-normal">Resultado da Verificação Geral:</h2> {# ... (código results/performance se houver) ... #} </div> {% endif %}
 
 {% endblock content %}
 
@@ -177,15 +224,12 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // ... (seu JavaScript existente para "Buscar no Banco" e a lógica condicional do Tópico/PDF) ...
-        // A lógica para updateInputRequirements() e os listeners para os campos de geração já estão aqui
-        // e devem funcionar como antes.
-        console.log("PÁGINA GERADOR C/E (com upload PDF): DOM Carregado.");
+        console.log("PÁGINA GERADOR C/E (com upload PDF e Paginação): DOM Carregado.");
 
         const generatorForm = document.getElementById('generator-form');
         const topicTextarea = document.getElementById('{{ form.topic.id_for_label|default:"id_topic" }}');
-        const pdfUploadInput = document.getElementById('id_pdf_contexto_ce_page'); // ID do input de PDF
-        const topicLabel = document.getElementById('label_for_topic_ce_page'); // ID do label do textarea
+        const pdfUploadInput = document.getElementById('id_pdf_contexto_ce_page');
+        const topicLabel = document.getElementById('label_for_topic_ce_page');
         const helpTextForTopic = document.getElementById('help_text_for_topic_ce_page');
         const helpTextForPdf = document.getElementById('help_text_for_pdf_ce_page');
 
@@ -199,15 +243,15 @@
             const isTopicFilled = topicTextarea.value.trim() !== "";
 
             if (isPdfSelected) {
-                topicTextarea.required = false; 
+                topicTextarea.required = false;
                 topicLabel.classList.remove('required');
                 if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Contexto textual opcional quando um PDF é enviado."|safe|escapejs }}";
                 if(helpTextForPdf) helpTextForPdf.textContent = "PDF selecionado. O Tópico textual é opcional.";
-            } else { 
-                topicTextarea.required = true; 
+            } else {
+                topicTextarea.required = true;
                 if (isTopicFilled) {
-                    topicLabel.classList.remove('required');
-                    if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Continue editando seu contexto textual."|safe|escapejs }}";
+                    topicLabel.classList.remove('required'); // Mantém sem 'required' se preenchido, mesmo que PDF não selecionado
+                     if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Continue editando seu contexto textual."|safe|escapejs }}";
                 } else {
                     topicLabel.classList.add('required');
                     if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Digite ou cole o texto base. Obrigatório se nenhum PDF for enviado."|safe|escapejs }}";
@@ -222,13 +266,20 @@
         if (topicTextarea) {
             topicTextarea.addEventListener('input', updateInputRequirements);
         }
-        
-        if (topicLabel && topicTextarea.hasAttribute('required') && topicTextarea.value.trim() === '' && !(pdfUploadInput && pdfUploadInput.files && pdfUploadInput.files.length > 0) ) {
-             topicLabel.classList.add('required');
-        }
-        updateInputRequirements();
 
-        const submitButton = document.getElementById('submit-button'); 
+        // Assegura que o estado inicial da classe 'required' no label e o required do textarea estejam corretos
+        if (topicLabel && topicTextarea && ! (pdfUploadInput && pdfUploadInput.files && pdfUploadInput.files.length > 0) && topicTextarea.value.trim() === '') {
+             topicLabel.classList.add('required');
+             topicTextarea.required = true;
+        } else if (topicLabel && topicTextarea) {
+            topicTextarea.required = !(pdfUploadInput && pdfUploadInput.files && pdfUploadInput.files.length > 0);
+            if (!topicTextarea.required) {
+                 topicLabel.classList.remove('required');
+            }
+        }
+        updateInputRequirements(); // Chamada inicial para configurar o estado correto
+
+        const submitButton = document.getElementById('submit-button');
         const loadingSpinner = document.getElementById('loading-spinner');
         const buttonText = document.getElementById('button-text');
 
@@ -236,12 +287,11 @@
             generatorForm.addEventListener('submit', function(event) {
                 const isPdfSelected = pdfUploadInput.files && pdfUploadInput.files.length > 0;
                 const isTopicFilled = topicTextarea.value.trim() !== "";
-                // Use o ID correto para o select de área do formulário de geração
-                const areaGeneratorField = document.getElementById('{{ form.area.id_for_label|default:"id_area" }}'); 
+                const areaGeneratorField = document.getElementById('{{ form.area.id_for_label|default:"id_area" }}');
 
                 if (!isPdfSelected && !isTopicFilled) {
                     alert("Por favor, forneça um Tópico/Contexto Textual ou envie um arquivo PDF para gerar questões.");
-                    event.preventDefault(); 
+                    event.preventDefault();
                     return;
                 }
                 if (areaGeneratorField && areaGeneratorField.value === "") {
@@ -251,20 +301,23 @@
                 }
                 submitButton.disabled = true;
                 loadingSpinner.classList.remove('d-none');
-                buttonText.textContent = ' Gerando...'; 
+                buttonText.textContent = ' Gerando...';
             });
         }
 
         // Script do botão "Buscar no Banco"
         const searchDbButton = document.getElementById('search-db-button');
+        // Usa os IDs corretos dos campos do formulário de geração, como já estava no primeiro template
         const areaSelectForSearch = document.getElementById('{{ form.area.id_for_label|default:"id_area" }}');
+        const topicInputForSearch = document.getElementById('{{ form.topic.id_for_label|default:"id_topic" }}');
 
-        if (searchDbButton && topicTextarea && areaSelectForSearch) {
+
+        if (searchDbButton && topicInputForSearch && areaSelectForSearch) {
             searchDbButton.addEventListener('click', function(event) {
                 event.preventDefault();
-                const topicValue = topicTextarea.value.trim();
-                const areaValue = areaSelectForSearch.value; 
-                
+                const topicValue = topicInputForSearch.value.trim();
+                const areaValue = areaSelectForSearch.value;
+
                 const baseUrl = searchDbButton.href.split('?')[0];
                 const params = new URLSearchParams();
                 if (topicValue) { params.append('q', topicValue); }
@@ -275,12 +328,17 @@
                 console.log('Redirecionando para busca no banco com filtros do Gerador C/E:', finalUrl);
                 window.location.href = finalUrl;
             });
+        } else {
+            console.warn("Elementos para 'Buscar no Banco' não encontrados. Verifique os IDs: #search-db-button, {{ form.topic.id_for_label|default:'id_topic' }}, {{ form.area.id_for_label|default:'id_area' }}");
         }
-        
+
         // Depuração para botões 'Verificar Item' na lista de resultados (se houver)
         const validationFormResults = document.getElementById('validate-form');
         if(validationFormResults){
-            // ... (logs de depuração para validate-form e verify-ce-btn)
+            // console.log("Formulário de validação 'validate-form' encontrado.");
+            // document.querySelectorAll('.verify-ce-btn').forEach(button => {
+            //     console.log("Botão 'Verificar Item' encontrado:", button.dataset.questaoId);
+            // });
         }
     });
     </script>
