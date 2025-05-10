@@ -10,7 +10,7 @@ import datetime
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from datetime import datetime
+from datetime import datetime,timedelta
 from django.views.decorators.http import require_POST
 import json
 import re # Para expressões regulares (limpeza de texto)
@@ -1218,7 +1218,7 @@ def dashboard_view(request):
             todas_tentativas_qs = todas_tentativas_qs.filter(data_resposta__date__gte=date_from_obj)
         if date_to_obj:
             # Adiciona 1 dia ao date_to para incluir o dia inteiro
-            date_to_inclusive = date_to_obj + datetime.timedelta(days=1)
+            date_to_inclusive = date_to_obj + timedelta(days=1)
             todas_tentativas_qs = todas_tentativas_qs.filter(data_resposta__lt=date_to_inclusive) # Usa __lt com dia seguinte
         if area_filter_obj:
              todas_tentativas_qs = todas_tentativas_qs.filter(questao__area=area_filter_obj)
