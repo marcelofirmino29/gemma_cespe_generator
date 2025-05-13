@@ -4,16 +4,11 @@ import logging
 from django.conf import settings
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig
-# <<< Importa os PARSERS e EXCEÇÕES locais >>>
-# Garanta que este utils.py exista e contenha as funções
 from .utils import parse_ai_response_to_questions, parse_evaluation_scores
-# Garanta que este exceptions.py exista
 from .exceptions import ConfigurationError, AIServiceError, AIResponseError, ParsingError
 
-# Define o logger UMA VEZ
 logger = logging.getLogger('generator')
 
-# --- CLASSE QuestionGenerationService (DEFINIÇÃO ÚNICA E CORRIGIDA) ---
 class QuestionGenerationService:
     def __init__(self):
         """Inicializa o serviço, configurando a API e o modelo."""

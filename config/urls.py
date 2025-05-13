@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from generator.views import register_view  # Aqui sim você importa views
+from generator.views import register_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),

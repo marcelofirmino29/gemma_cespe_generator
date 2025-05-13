@@ -47,18 +47,13 @@ if not GOOGLE_API_KEY:
          print("\n\nAVISO: GOOGLE_API_KEY não definida. A geração de questões falhará.\nCrie um arquivo .env na raiz do projeto com GOOGLE_API_KEY=SUA_CHAVE\n")
 
 
-# Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    # Whitenoise (opcional aqui, mas útil para runserver_nostatic)
-    # 'whitenoise.runserver_nostatic', # Descomente se quiser testar em dev
-    'django.contrib.staticfiles', # Deve vir DEPOIS de whitenoise se runserver_nostatic for usado
-    # Nossos Apps:
+    'django.contrib.staticfiles', 
     'generator',
     'markdownify.apps.MarkdownifyConfig',
     'django.contrib.humanize',
@@ -66,10 +61,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # <<< ADICIONADO WHITENOISE MIDDLEWARE AQUI >>>
-    # Deve vir logo após SecurityMiddleware
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    # <<< FIM ADIÇÃO WHITENOISE >>>
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,7 +70,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls' # Aponta para o urls.py principal em config/
+ROOT_URLCONF = 'config.urls' 
 
 TEMPLATES = [
     {
