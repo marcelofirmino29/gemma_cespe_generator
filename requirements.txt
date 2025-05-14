@@ -34,6 +34,7 @@ pyasn1_modules==0.4.2
 pydantic==2.11.3
 pydantic_core==2.33.1
 pyparsing==3.2.3
+PyPDF2==3.0.1
 python-dotenv==1.1.0
 requests==2.32.3
 rsa==4.9
@@ -46,5 +47,3 @@ uritemplate==4.1.1
 urllib3==2.4.0
 webencodings==0.5.1
 whitenoise==6.9.0
-celery>=5.0.0
-redis>=4.0.0

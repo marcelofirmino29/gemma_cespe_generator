@@ -15,17 +15,34 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+# generator/views.py (ou seu arquivo de views específico)
 
+import json
+import logging
+import re
+from collections import Counter
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+# Removi Paginator, PageNotAnInteger, EmptyPage se não forem usados nesta view específica
+# from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+# import requests # Não é usado diretamente aqui, scraper_logic lida com isso
+
+from generator.models import AreaConhecimento, Questao
+from .. import scraper_logic # Ajuste o caminho se necessário
+
+logger = logging.getLogger(__name__)
+
+@login_required
 def landing_page_view(request):
-    """Renderiza a página inicial, incluindo dados para a nuvem de palavras extraídos das questões."""
-    context, _, service_initialized = _get_base_context_and_service()
-    context['error_message'] = context.get('error_message') # Pega erro da inicialização do serviço, se houver
+    """Renderiza a página inicial, incluindo dados para a nuvem de palavras e concursos em destaque."""
+    context = {}
+    context['error_message'] = None
+    context['erro_destaques'] = None # Inicializa para mensagens de erro específicas dos destaques
 
-    # --- Lógica para buscar palavras das Questões para a Nuvem ---
-    word_cloud_data = [] # Lista vazia por padrão
+    # --- Lógica para buscar palavras das Questões para a Nuvem (EXISTENTE) ---
+    word_cloud_data = []
     try:
-        # 1. Buscar textos das questões recentes (ajuste o limite conforme necessário)
-        # Considera questões C/E e Discursivas. Pega os últimos 100, por exemplo.
         questoes_recentes = Questao.objects.order_by('-criado_em')[:100]
         textos_combinados = ""
         for q in questoes_recentes:
@@ -33,54 +50,80 @@ def landing_page_view(request):
                 textos_combinados += q.texto_motivador + " "
             if q.texto_comando:
                 textos_combinados += q.texto_comando + " "
-            # Adicionar 'justificativa_gabarito' ou 'aspectos_discursiva' se relevante
-            # if q.justificativa_gabarito:
-            #     textos_combinados += q.justificativa_gabarito + " "
-
+        
         if not textos_combinados:
-            logger.info("Nenhum texto encontrado nas questões recentes para gerar nuvem de palavras.")
-
+            logger.info("LandingPage: Nenhum texto encontrado nas questões recentes para gerar nuvem de palavras.")
         else:
-            # 2. Limpar e Tokenizar o texto
-            # Converte para minúsculas, remove pontuação básica (exceto hífens internos), e divide em palavras
             textos_combinados = textos_combinados.lower()
-            # Remove pontuações comuns, mantendo hífens e acentos por enquanto
             textos_combinados = re.sub(r'[.,!?;:()\[\]"\'“”‘’`]', ' ', textos_combinados)
-            # Remove múltiplos espaços
             textos_combinados = re.sub(r'\s+', ' ', textos_combinados).strip()
-            # Divide em palavras
             palavras = textos_combinados.split(' ')
-
-            # 3. Filtrar stop words e palavras curtas/numéricas
             palavras_filtradas = [
                 palavra for palavra in palavras
-                if palavra not in STOP_WORDS_PT and len(palavra) > 2 and not palavra.isdigit()
+                if palavra not in STOP_WORDS_PT and len(palavra) > 3 and not palavra.isdigit()
             ]
-
             if not palavras_filtradas:
-                 logger.info("Nenhuma palavra relevante encontrada após filtragem para a nuvem.")
+                 logger.info("LandingPage: Nenhuma palavra relevante encontrada após filtragem para a nuvem.")
             else:
-                # 4. Contar frequência
                 contagem = Counter(palavras_filtradas)
-
-                # 5. Pegar as N palavras mais comuns (ex: 50 mais comuns)
                 num_palavras_nuvem = 50
                 palavras_mais_comuns = contagem.most_common(num_palavras_nuvem)
-
-                # A nuvem espera apenas a lista de palavras (strings)
                 word_cloud_data = [palavra for palavra, freq in palavras_mais_comuns]
-                logger.info(f"Extraídas {len(word_cloud_data)} palavras das questões para a nuvem.")
-
+                logger.info(f"LandingPage: Extraídas {len(word_cloud_data)} palavras das questões para a nuvem.")
     except Exception as e:
-        # Captura erros gerais durante o processo
-        logger.error(f"Erro ao processar textos das questões para nuvem: {e}", exc_info=True)
-        word_cloud_data = ["Erro", "processar", "palavras"] # Fallback
-
-    # Adiciona a lista de palavras (ou fallback) ao contexto
+        logger.error(f"LandingPage: Erro ao processar textos das questões para nuvem: {e}", exc_info=True)
+        word_cloud_data = ["Erro", "ao", "processar", "palavras", "nuvem"]
     context['word_cloud_data'] = word_cloud_data
-    # --------------------------------------------------------
+    # ------------------------------------------------------------------
 
-    # Renderiza o template da landing page com o contexto atualizado
+    # --- LÓGICA para buscar Concursos em Destaque para o Marquee ---
+    destaques_concursos_data = []
+    MAX_DESTAQUES = 10 # Pode pegar mais itens para um marquee mais longo
+
+    try:
+        logger.info("LandingPage: Buscando concursos destaque para marquee (Fonte: ConcursosNoBrasil - Nacional)")
+        target_url, err_cat = scraper_logic.get_target_url_and_validate_category_cnb('br') 
+        
+        if err_cat:
+            logger.error(f"LandingPage: Erro ao obter URL para CNB 'br': {err_cat}")
+            raise Exception(err_cat)
+
+        soup, err_init = scraper_logic.init_web_scraper(target_url)
+        if err_init:
+            logger.error(f"LandingPage: Erro ao inicializar scraper para CNB 'br': {err_init}")
+            raise Exception(err_init)
+        
+        if soup:
+            scraped_data, err_extract = scraper_logic.extract_concursos_data_cnb(soup)
+            if err_extract and scraped_data is None:
+                logger.error(f"LandingPage: Erro crítico ao extrair dados CNB 'br': {err_extract}")
+                raise Exception(err_extract)
+            
+            if scraped_data:
+                logger.info(f"LandingPage: Recebidos {len(scraped_data)} concursos do CNB 'br'. Selecionando até {MAX_DESTAQUES} para marquee.")
+                for item in scraped_data[:MAX_DESTAQUES]:
+                    destaques_concursos_data.append({
+                        "organizacao": item.get("organizacao", "Não informado"),
+                        "vagas": str(item.get("vagasDisponiveis", "N/I")), 
+                        "status": item.get("status", "Não informado").capitalize(),
+                        "link": item.get("link", "#")
+                    })
+            elif err_extract:
+                logger.info(f"LandingPage: Mensagem da extração CNB 'br' (sem dados para marquee): {err_extract}")
+        else:
+            logger.error("LandingPage: Falha ao obter soup para CNB 'br' (marquee).")
+    except Exception as e:
+        context['erro_destaques'] = "Não foi possível carregar os concursos em destaque no momento."
+        logger.error(f"LandingPage: Erro final ao buscar destaques para marquee: {e}", exc_info=False) 
+
+    # MUDANÇA AQUI: Passar a lista diretamente, não como JSON
+    context['concursos_destaque_marquee'] = destaques_concursos_data
+    # context['concursos_destaque_json'] = json.dumps(destaques_concursos_data) # Linha anterior removida/comentada
+    # ---------------------------------------------------------------
+
+    # Adicione aqui qualquer outro dado de contexto que sua landing page precise
+    # context['outra_coisa'] = "Valor"
+
     return render(request, 'generator/landing_page.html', context)
 
 

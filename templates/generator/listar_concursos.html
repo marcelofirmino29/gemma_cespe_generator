@@ -1,85 +1,106 @@
 {% extends "generator/base.html" %}
 {% load static %}
-{% load generator_tags %} {# <<< USA A MESMA TAG para paginação com filtros #}
+{% load generator_tags %}
 
 {% block title %}Concursos Públicos Abertos{% endblock title %}
 
 {% block extra_head %}
-    {# Estilos específicos para esta página #}
     <style>
+        /* Seus estilos existentes... */
         .search-filters { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1.5rem; border: 1px solid var(--bs-border-color-translucent); }
-        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; }
+        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; font-weight: 500; }
         .concurso-card { margin-bottom: 1.5rem; height: 100%; }
         .concurso-card .card-body { display: flex; flex-direction: column; }
         .concurso-card .card-title { font-size: 1.1em; font-weight: 600; }
         .concurso-card .card-subtitle { font-size: 0.9em; }
-        .concurso-card ul { font-size: 0.85em; padding-left: 1.2rem; list-style: none; }
-        .concurso-card ul li strong { min-width: 120px; display: inline-block;} /* Alinha os valores */
-        .concurso-card .card-footer { background-color: var(--bs-secondary-bg); margin-top: auto; /* Empurra para baixo */ }
+        .concurso-card ul { font-size: 0.85em; padding-left: 0; list-style: none; }
+        .concurso-card ul li { margin-bottom: 0.3rem; }
+        .concurso-card ul li strong { min-width: 90px; display: inline-block; color: var(--bs-secondary-color);}
+        .concurso-card .card-footer { background-color: var(--bs-secondary-bg); margin-top: auto; }
+        .concurso-card .pci-resumo { font-size: 0.8em; margin-top: 8px; color: #555; font-style: italic; max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;}
         .pagination { margin-bottom: 1rem; }
-        /* Badge Nível */
         .badge.bg-nivel-medio { background-color: #0d6efd !important; color: white;}
         .badge.bg-nivel-tecnico { background-color: #6f42c1 !important; color: white;}
         .badge.bg-nivel-superior { background-color: #198754 !important; color: white;}
         .badge.bg-nivel-fundamental { background-color: #fd7e14 !important; color: white;}
         .badge.bg-nivel-default { background-color: #6c757d !important; color: white;}
-
+        .badge.bg-status-aberto { background-color: #198754 !important; color: white; }
+        .badge.bg-status-previsto { background-color: #ffc107 !important; color: black; } /* Para CNB e PCI status 'previsto', 'prorrogado', etc. */
     </style>
 {% endblock extra_head %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Concursos Públicos Abertos (API Externa)</h2>
+    <h2 class="mb-4">Concursos Públicos</h2>
 
-    {# Mensagens de Erro ou Info #}
-    {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
+    {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
     {% if error_message %} <div class="alert alert-danger">{{ error_message }}</div> {% endif %}
+    {% if info_message %} <div class="alert alert-info">{{ info_message }}</div> {% endif %}
 
-    {# Formulário de Filtro/Busca #}
     <div class="search-filters mb-4">
-        <form method="GET" action="{% url 'generator:listar_concursos' %}" class="row g-2 align-items-end">
-            <div class="col-md-4">
-                <label for="search-q" class="form-label form-label-sm">Buscar por Título:</label>
-                <input type="text" class="form-control form-control-sm" id="search-q" name="q" value="{{ filtro_titulo_atual|default:'' }}" placeholder="Ex: Prefeitura, TRT, Banco...">
+        <form method="GET" action="{% url 'generator:listar_concursos' %}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="search-source" class="form-label form-label-sm">Fonte dos Dados:</label>
+                <select class="form-select form-select-sm" id="search-source" name="source">
+                    <option value="concursosnobrasil" {% if fonte_dados_atual == 'concursosnobrasil' or not fonte_dados_atual %}selected{% endif %}>ConcursosNoBrasil.com</option>
+                    <option value="pciconcursos" {% if fonte_dados_atual == 'pciconcursos' %}selected{% endif %}>PCI Concursos (Capa)</option>
+                    <option value="api_vercel" {% if fonte_dados_atual == 'api_vercel' %}selected{% endif %} disabled>API Externa (Offline)</option>
+                </select>
             </div>
             <div class="col-md-3">
-                <label for="search-estado" class="form-label form-label-sm">Filtrar por Estado (Sigla):</label>
-                <input type="text" class="form-control form-control-sm" id="search-estado" name="estado" value="{{ filtro_estado_atual|default:'' }}" placeholder="Ex: SP, RJ, MG..." maxlength="2" pattern="[A-Za-z]{2}" title="Digite a sigla do estado com 2 letras">
+                <label for="search-q" class="form-label form-label-sm">Título/Organização:</label>
+                <input type="text" class="form-control form-control-sm" id="search-q" name="q" value="{{ filtro_titulo_atual|default:'' }}" placeholder="Ex: Prefeitura, TRT...">
             </div>
-            <div class="col-md-3">
-                <label for="search-regiao" class="form-label form-label-sm">Filtrar por Região:</label>
+            <div class="col-md-2">
+                <label for="search-estado" class="form-label form-label-sm">Estado:</label>
+                <input type="text" class="form-control form-control-sm" id="search-estado" name="estado" value="{{ filtro_estado_atual|default:'' }}" placeholder="Ex: SP, RJ ou BR (p/ CNB)" maxlength="2" pattern="[A-Za-z]{2}" title="Sigla (2 letras) ou BR para Nacional em ConcursosNoBrasil.com. Não aplicável diretamente ao PCI (Capa).">
+            </div>
+            <div class="col-md-2">
+                <label for="search-regiao" class="form-label form-label-sm">Região:</label>
                 <select class="form-select form-select-sm" id="search-regiao" name="regiao">
                     <option value="">-- Todas --</option>
                     {% for reg in regioes_validas %}
-                        <option value="{{ reg }}" {% if filtro_regiao_atual == reg %}selected{% endif %}>{{ reg }}</option>
+                        <option value="{{ reg|capfirst }}" {% if filtro_regiao_atual|capfirst == reg|capfirst %}selected{% endif %}>{{ reg|capfirst }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> Filtrar</button>
             </div>
-             <div class="col-12 text-end">
+            <div class="col-12 text-end mt-1">
                 <a href="{% url 'generator:listar_concursos' %}" class="btn btn-link btn-sm p-0">Limpar filtros</a>
-             </div>
+            </div>
         </form>
+        {% if fonte_dados_atual == 'concursosnobrasil' %}
+        <p class="form-text mt-2 mb-0">
+            <small><strong>Usando ConcursosNoBrasil.com:</strong> O filtro "Estado" aceita siglas (ex: SP) ou "BR" para Nacional (padrão se vazio). O filtro "Título/Organização" é aplicado após a busca. "Região" não é um filtro direto para esta fonte.</small>
+        </p>
+        {% elif fonte_dados_atual == 'pciconcursos' %}
+        <p class="form-text mt-2 mb-0">
+            <small><strong>Usando PCI Concursos (Notícias da Capa):</strong> Busca notícias da página principal. O filtro "Título/Organização" é aplicado aos resultados. Filtros de "Estado" e "Região" não são usados diretamente para esta fonte.</small>
+        </p>
+        {% endif %}
     </div>
 
-    {# Exibição dos Resultados #}
     <div class="row">
         {% for concurso in page_obj %}
-            <div class="col-md-6 col-lg-4"> {# 2 ou 3 colunas dependendo da tela #}
+            <div class="col-md-6 col-lg-4">
                 <div class="card concurso-card shadow-sm">
                     <div class="card-body">
-                        <h3 class="card-title h6 mb-1">{{ concurso.concurso }}</h3>
-                        <h4 class="card-subtitle mb-2 text-muted">
-                            {% if concurso.estado %}{{ concurso.estado }}{% endif %}
-                            {% if concurso.estado and concurso.regiao %}-{% endif %}
-                            {% if concurso.regiao %}{{ concurso.regiao }}{% endif %}
-                        </h4>
+                        <h5 class="card-title">{{ concurso.concurso }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            {% if concurso.estado and concurso.estado != "N/A" %}{{ concurso.estado }}{% endif %}
+                            {% if concurso.estado and concurso.estado != "N/A" and concurso.regiao and concurso.regiao != "N/A" %} - {% endif %}
+                            {% if concurso.regiao and concurso.regiao != "N/A" %}{{ concurso.regiao }}{% endif %}
+                            {% if concurso.origem_concurso == "PCIConcursos" and concurso.estado == "N/A" and concurso.regiao == "N/A" %}
+                                <small>(Fonte: PCI Concursos - Notícia)</small>
+                            {% endif %}
+                        </h6>
 
-                        {% with detalhes=concurso.detalhes %} {# Atalho para acessar detalhes #}
-                            <ul class="list-unstyled mt-2 mb-3">
-                                {% if detalhes.nivel %}
+                        {% with detalhes=concurso.detalhes %}
+                            <ul class="mt-2 mb-3">
+                                {% if detalhes.nivel and detalhes.nivel != "Não informado" and detalhes.nivel != "Ver detalhes" %}
+                                    <li class="mb-1">
                                     {% with nivel_lower=detalhes.nivel|lower %}
                                         {% if "superior" in nivel_lower %} <span class="badge bg-nivel-superior">Superior</span>
                                         {% elif "médio" in nivel_lower or "medio" in nivel_lower %} <span class="badge bg-nivel-medio">Médio</span>
@@ -88,19 +109,40 @@
                                         {% else %} <span class="badge bg-nivel-default">{{ detalhes.nivel }}</span>
                                         {% endif %}
                                     {% endwith %}
+                                    </li>
                                 {% endif %}
 
-                                {% if detalhes.vagas %}<li><strong>Vagas:</strong> {{ detalhes.vagas }}</li>{% endif %}
-                                {% if detalhes.salario %}<li><strong>Salário:</strong> {{ detalhes.salario }}</li>{% endif %}
-                                {% if detalhes.periodo_inscricao %}<li><strong>Inscrição:</strong> {{ detalhes.periodo_inscricao }}</li>{% endif %}
+                                {% if concurso.origem_concurso == "ConcursosNoBrasil" and detalhes.status_cnb and detalhes.status_cnb != "Não informado" %}
+                                   <li class="mb-1"><strong>Status CNB:</strong>
+                                        {% if detalhes.status_cnb == "aberto" %} <span class="badge bg-status-aberto">Aberto</span>
+                                        {% elif detalhes.status_cnb == "previsto" %} <span class="badge bg-status-previsto">Previsto</span>
+                                        {% else %} <span class="badge bg-nivel-default">{{ detalhes.status_cnb|capfirst }}</span>
+                                        {% endif %}
+                                   </li>
+                                {% elif concurso.origem_concurso == "PCIConcursos" and detalhes.status_pci and detalhes.status_pci != "Não informado" %}
+                                   <li class="mb-1"><strong>Status PCI:</strong>
+                                        {% if detalhes.status_pci == "aberto" %} <span class="badge bg-status-aberto">Aberto</span>
+                                        {% elif "previsto" in detalhes.status_pci or "prorrogado" in detalhes.status_pci or "reaberto" in detalhes.status_pci or "retifica" in detalhes.status_pci %} <span class="badge bg-status-previsto">{{ detalhes.status_pci|capfirst }}</span>
+                                        {% else %} <span class="badge bg-nivel-default">{{ detalhes.status_pci|capfirst }}</span>
+                                        {% endif %}
+                                   </li>
+                                {% endif %}
+
+                                {% if detalhes.vagas and detalhes.vagas != "Não informado" %}<li><strong>Vagas:</strong> {{ detalhes.vagas }}</li>{% endif %}
+                                {% if detalhes.salario and detalhes.salario != "Não informado" and detalhes.salario != "Ver detalhes" %}<li><strong>Salário:</strong> {{ detalhes.salario }}</li>{% endif %}
+                                {% if detalhes.periodo_inscricao and detalhes.periodo_inscricao != "Não informado" and detalhes.periodo_inscricao != "Ver detalhes" %}<li><strong>Inscrição:</strong> {{ detalhes.periodo_inscricao }}</li>{% endif %}
+                                
+                                {% if concurso.origem_concurso == "PCIConcursos" and detalhes.resumo_pci %}
+                                    <p class="pci-resumo"><strong>Resumo:</strong> {{ detalhes.resumo_pci }}</p>
+                                {% endif %}
                             </ul>
                         {% endwith %}
-
                     </div>
-                    {% if concurso.detalhes.link_inscricao %}
+                    {% if concurso.detalhes.link_inscricao and concurso.detalhes.link_inscricao != "#" %}
                         <div class="card-footer text-center">
                             <a href="{{ concurso.detalhes.link_inscricao }}" class="btn btn-sm btn-info" target="_blank" rel="noopener noreferrer">
-                                <i class="bi bi-box-arrow-up-right"></i> Ver Edital/Inscrição
+                                <i class="bi bi-box-arrow-up-right"></i> 
+                                {% if concurso.origem_concurso == "PCIConcursos" %}Ver Notícia Completa{% else %}Ver Detalhes/Inscrição{% endif %}
                             </a>
                         </div>
                     {% endif %}
@@ -108,29 +150,32 @@
             </div>
         {% empty %}
             <div class="col-12">
-                <div class="alert alert-warning text-center">Nenhum concurso encontrado {% if filtro_ativo %} para "{{ filtro_ativo }}"{% endif %}.</div>
+                <div class="alert alert-warning text-center">
+                    Nenhum concurso encontrado
+                    {% if filtro_ativo %} para "{{ filtro_ativo }}"{% endif %}.
+                    {% if fonte_dados_atual == 'concursosnobrasil' and not filtro_estado_atual and not filtro_titulo_atual %} (Mostrando Nacional CNB por padrão. Tente um filtro.)
+                    {% elif fonte_dados_atual == 'pciconcursos' and not filtro_titulo_atual %} (Mostrando notícias da capa do PCI. Tente um filtro de Título.)
+                    {% elif not page_obj and filtro_ativo %} Tente refinar sua busca.
+                    {% endif %}
+                </div>
             </div>
         {% endfor %}
     </div>
 
-    {# Paginação #}
+    {# Paginação - já inclui 'source' a partir da modificação anterior #}
     {% if paginator.num_pages > 1 %}
         <nav aria-label="Navegação dos concursos" class="mt-4 d-flex justify-content-center">
-             {# Passa os filtros ATUAIS para a tag url_params #}
-            {% url_params page=None q=filtro_titulo_atual estado=filtro_estado_atual regiao=filtro_regiao_atual as current_filters %}
+            {% url_params page=None q=filtro_titulo_atual estado=filtro_estado_atual regiao=filtro_regiao_atual source=fonte_dados_atual as current_filters %}
             <ul class="pagination flex-wrap">
-                {% if page_obj.number > 1 %}<li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>{% endif %}
-                {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
-                {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% if page_obj.number > 3 %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}{% elif num == paginator.num_pages %}{% if page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% endif %}{% endfor %}
-                {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próximo">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
-                {% if page_obj.number < paginator.num_pages %}<li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
+                {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li><li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li><li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
+                {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 and page_obj.number > 3 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li><li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% elif num == paginator.num_pages and page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li><li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 or num == paginator.num_pages %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% endif %}{% endfor %}
+                {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próximo">&raquo;</a></li><li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li><li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
             </ul>
         </nav>
     {% endif %}
 
-</div> {# Fim container #}
+</div>
 {% endblock content %}
 
 {% block extra_js %}
-    {# Nenhum JS específico necessário aqui (a menos que queira interatividade extra no filtro) #}
 {% endblock extra_js %}

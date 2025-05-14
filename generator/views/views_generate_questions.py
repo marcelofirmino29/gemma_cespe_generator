@@ -7,8 +7,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.urls import reverse
 from django.db.models import Q
-
-
 from generator.exceptions import AIResponseError, AIServiceError, ConfigurationError, GeneratorError, ParsingError
 from generator.forms import AreaConhecimentoForm, DiscursiveExamForm, QuestionGeneratorForm, SimuladoConfigForm
 from generator.models import AreaConhecimento, Avaliacao, Questao, TentativaResposta
