@@ -8,14 +8,8 @@
 {% endblock title %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}"> {# Adapte se necessário #}
+    <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
     <style>
-        /* Seus estilos CSS aqui... */
-        /* Os estilos para .nav-tabs podem ser removidos daqui se não houver outras abas nesta página específica */
-        /* .nav-tabs .nav-link { border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; border-bottom: none; color: var(--bs-secondary-color); background-color: var(--bs-tertiary-bg); border-color: var(--bs-border-color); padding: 0.5rem 1rem; }
-        .nav-tabs .nav-link.active { color: var(--bs-primary); background-color: var(--bs-body-bg); border-color: var(--bs-border-color); border-bottom-color: var(--bs-body-bg); font-weight: 600; }
-        */
-        
         .search-filters { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1.5rem; border: 1px solid var(--bs-border-color-translucent); }
         .question-list-item { padding: 1rem 1.25rem; border: 1px solid var(--bs-border-color-translucent); border-radius: 0.375rem; margin-bottom: 1rem; background-color: var(--bs-body-bg); box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
         .question-meta { font-size: 0.85em; color: var(--bs-secondary-color); }
@@ -24,23 +18,26 @@
         .ce-result-feedback { min-height: 1.5em; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); margin-top: 0.75rem; }
         .ce-result-feedback:empty { display: none; }
         .verify-ce-btn { font-size: 0.8rem; }
-        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; } /* Ajuste opcional para labels do filtro */
+        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; }
 
+        .comment-section .card-body { padding: 0.75rem; }
+        .comment-section .comment { font-size: 0.85rem; }
+        .comment-section .comment strong { font-size: 0.9rem; }
+        .comment-section .comment small { font-size: 0.75rem; }
+        .comment-section hr.my-2 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+        .comment-section .form-control-sm { font-size: 0.85rem; }
     </style>
 {% endblock extra_head %}
 
 
 {% block content %}
 <div class="container mt-4">
-    {# O título principal da página, sem as abas abaixo dele diretamente neste template #}
-    <h1 class="mb-4 h2"> {# Usando h1 para o título principal da página, estilizado como h2 #}
+    <h1 class="mb-4 h2">
         {% if id_filter_param %}Resultado da Geração (Questões C/E){% elif query_filter_param or area_filter_param %}Resultado da Busca{% else %}Banco de Questões Certo/Errado{% endif %}
     </h1>
 
-    {# Mensagens #}
-    {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
+    {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message|safe }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
 
-    {# Formulário de Busca/Filtro #}
     <div class="search-filters mb-4">
         <form method="GET" action="{% url 'generator:questions_ce' %}" class="row g-2 align-items-end">
             <div class="col-md-6">
@@ -64,10 +61,8 @@
         </form>
     </div>
 
-    {# Motivador Principal #}
     {% if id_filter_param and main_motivador %} <hr class="my-0 mb-4"> <div class="motivador-text"> <h3 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador Principal</h3> <div class="small">{{ main_motivador|linebreaksbr }}</div> </div> {% else %} <div class="mt-2"></div> {% endif %}
 
-    {# Lista Paginada #}
     {% if page_obj %}
         <p class="text-muted small mb-3 mt-2"> Exibindo página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}. (Questões {{ page_obj.start_index }} a {{ page_obj.end_index }} de um total de {{ page_obj.paginator.count }}).</p>
 
@@ -77,10 +72,16 @@
                 {% for questao in page_obj %}
                     <div class="question-list-item" id="question-item-{{ questao.id }}">
                         <div class="d-flex w-100 justify-content-between mb-1 flex-wrap">
-                            <h5 class="mb-1 h6 me-2"> Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão ID {{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %} </h5>
+                            <h5 class="mb-1 h6 me-2">Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão ID {{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %}</h5>
                             <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>
                         </div>
                         <p class="mb-2" style="white-space: pre-wrap;">{{ questao.texto_comando }}</p>
+                        {% if questao.texto_motivador and not id_filter_param %}
+                            <details class="mb-2 small">
+                                <summary class="text-muted" style="cursor: pointer;">Ver Texto Motivador Associado</summary>
+                                <div class="motivador-text mt-1 p-2 small">{{ questao.texto_motivador|linebreaksbr }}</div>
+                            </details>
+                        {% endif %}
                         <div class="d-flex align-items-center flex-wrap mt-3">
                             <div class="form-check form-check-inline me-3"> <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao.id }}" id="certo_{{ questao.id }}" value="C" required> <label class="form-check-label small" for="certo_{{ questao.id }}">Certo</label> </div>
                             <div class="form-check form-check-inline me-3"> <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao.id }}" id="errado_{{ questao.id }}" value="E" required> <label class="form-check-label small" for="errado_{{ questao.id }}">Errado</label> </div>
@@ -88,34 +89,101 @@
                         </div>
                         <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ questao.id }}"></div>
                         <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle">  Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} | Criada por: {{ questao.criado_por.username|default:"Desconhecido" }} </div>
-                    </div>
+
+                        <div class="collapse mt-2 comment-section" id="comments-area-{{ questao.id }}">
+                            <div class="card card-body">
+                                <h6 class="small mb-2">Comentários:</h6>
+                                <div id="comment-list-{{ questao.id }}" class="mb-3">
+                                    {% for comentario in questao.get_comments %}
+                                        <div class="comment" id="comentario-{{ comentario.id }}">
+                                            <p class="mb-0"><strong>{{ comentario.usuario.username }}</strong> <small class="text-muted">({{ comentario.data_criacao|date:"d/m/Y H:i" }}):</small></p>
+                                            <p style="white-space: pre-wrap;">{{ comentario.texto }}</p>
+                                            {% if comentario.usuario == request.user or request.user.is_staff %}
+                                                <form method="POST" action="{% url 'generator:delete_comment' comentario.id %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="next" value="{{ request.get_full_path }}#question-item-{{ questao.id }}">
+                                                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size: 0.7rem;" onclick="return confirm('Tem certeza que deseja excluir este comentário?');">Excluir</button>
+                                                </form>
+                                            {% endif %}
+                                            {% if not forloop.last %}<hr class="my-2">{% endif %}
+                                        </div>
+                                    {% empty %}
+                                        <p class="text-muted small" id="no-comments-{{ questao.id }}">Nenhum comentário ainda.</p>
+                                    {% endfor %}
+                                </div>
+
+                                {% if user.is_authenticated %}
+                                    {% if comentario_form %}
+                                    <form method="POST" action="{% url 'generator:add_comment_to_question' questao.id %}" class="add-comment-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}#question-item-{{ questao.id }}">
+                                        <div class="mb-2">{{ comentario_form.texto.label_tag }} {{ comentario_form.texto }}
+                                            {% for error in comentario_form.texto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-info">Adicionar Comentário</button>
+                                    </form>
+                                    {% else %}
+                                    <p class="small text-warning">Formulário de comentário não disponível (Certifique-se que 'comentario_form' é passado no contexto da view).</p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="small"><a href="{% url 'login' %}?next={{ request.get_full_path }}">Faça login</a> para comentar.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        </div> 
                 {% empty %}
                     <div class="alert alert-warning" role="alert"> {% if id_filter_param or query_filter_param or area_filter_param %} Nenhuma questão encontrada para os filtros aplicados. {% else %} Nenhuma questão Certo/Errado encontrada no banco de dados. {% endif %} </div>
                 {% endfor %}
             </div>
-        </form>
+        </form> 
 
         {% if paginator.num_pages > 1 %}
             <nav aria-label="Navegação das questões" class="mt-4 d-flex justify-content-center">
                 {% url_params page=None as current_filters %}
                 <ul class="pagination flex-wrap">
-                    {% if page_obj.number > 1 %}<li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>{% endif %}
-                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
-                    {% for num in paginator.page_range %}{% if page_obj.number == num %}<li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% elif num == 1 %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% if page_obj.number > 3 %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}{% elif num == paginator.num_pages %}{% if page_obj.number < paginator.num_pages|add:'-2' %}<li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>{% endif %}<li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>{% endif %}{% endfor %}
-                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próximo">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
-                    {% if page_obj.number < paginator.num_pages %}<li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>{% endif %}
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
+                        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                    {% endif %}
+                    {% for num in paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>
+                        {% elif num == 1 %}
+                            <li class="page-item d-none d-sm-block"><a class="page-link" href="?page=1{{ current_filters }}">1</a></li>
+                            {% if page_obj.number > 3 %} <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li> {% endif %}
+                        {% elif num == paginator.num_pages %}
+                            {% if page_obj.number < paginator.num_pages|add:'-2' %} <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li> {% endif %}
+                            <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}">{{ paginator.num_pages }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próxima">&raquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
+                    {% endif %}
                 </ul>
             </nav>
         {% endif %}
-    {% else %}
-        <div class="alert alert-info mt-4" role="alert"> Nenhuma questão C/E cadastrada para exibir {% if id_filter_param or query_filter_param or area_filter_param %} com os filtros aplicados{% endif %}. </div>
-    {% endif %}
 
-</div> {# Fim container #}
+    {% else %}
+        <div class="alert alert-info mt-4" role="alert">
+            Nenhuma questão para exibir. Tente refinar sua busca ou verifique se há questões geradas recentemente.
+        </div>
+    {% endif %}
+</div>
 {% endblock content %}
 
-
 {% block extra_js %}
+    {# ce_validator.js AGORA ATIVO para que "Verificar Item" funcione #}
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
-    {# Mantenha outros scripts JS se necessários para esta página #}
+
+    {# Script para Favoritar carregado de arquivo externo #}
+    <script src="{% static 'generator/js/favorite_handler.js' %}" defer></script>
 {% endblock extra_js %}
