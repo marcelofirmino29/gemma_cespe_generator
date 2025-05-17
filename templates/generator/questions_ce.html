@@ -4,37 +4,271 @@
 {% load generator_tags %} {# Necessário para url_params na paginação #}
 
 {% block title %}
-    {% if id_filter_param %}Resultado da Geração{% elif query_filter_param or area_filter_param %}Resultado da Busca{% else %}Banco de Questões C/E{% endif %}
+    {% if id_filter_param %}Resultado da Geração{% elif query_filter_param or area_filter_param|length > 0 %}Resultado da Busca{% else %}Banco de Questões C/E{% endif %}
 {% endblock title %}
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
     <style>
-        .search-filters { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1.5rem; border: 1px solid var(--bs-border-color-translucent); }
-        .question-list-item { padding: 1rem 1.25rem; border: 1px solid var(--bs-border-color-translucent); border-radius: 0.375rem; margin-bottom: 1rem; background-color: var(--bs-body-bg); box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-        .question-meta { font-size: 0.85em; color: var(--bs-secondary-color); }
+        /* Seus estilos existentes */
+        .search-filters { 
+            background-color: var(--bs-tertiary-bg);
+            padding: 1rem; 
+            border-radius: 0.375rem; 
+            margin-bottom: 1.5rem; 
+            border: 1px solid var(--bs-border-color-translucent);
+        }
+        .question-list-item { 
+            padding: 1rem 1.25rem; 
+            border: 1px solid var(--bs-border-color-translucent);
+            border-radius: 0.375rem; 
+            margin-bottom: 1rem; 
+            background-color: var(--bs-body-bg);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .question-meta { 
+            font-size: 0.85em; 
+            color: var(--bs-secondary-color);
+            padding-top: 0.5rem; 
+            border-top: 1px solid var(--bs-border-color-translucent); 
+            margin-top: 0.75rem; 
+        }
         .pagination { margin-bottom: 1rem; }
-        .motivador-text { background-color: var(--bs-secondary-bg); border-left: 5px solid var(--bs-info); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.95em; border-radius: 0.375rem; white-space: pre-wrap; }
-        .ce-result-feedback { min-height: 1.5em; padding-top: 0.5rem; border-top: 1px solid var(--bs-border-color-translucent); margin-top: 0.75rem; }
+        .motivador-text { 
+            background-color: var(--bs-secondary-bg);
+            border-left: 5px solid var(--bs-info);
+            padding: 1rem; 
+            margin-bottom: 1.5rem; 
+            font-size: 0.95em; 
+            border-radius: 0.375rem; 
+            white-space: pre-wrap; 
+        }
+        .ce-result-feedback { 
+            min-height: 1.5em; 
+            padding-top: 0.5rem; 
+        }
         .ce-result-feedback:empty { display: none; }
         .verify-ce-btn { font-size: 0.8rem; }
-        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; }
-
+        .form-label-sm { 
+            font-size: 0.8rem !important; 
+            margin-bottom: 0.2rem !important; 
+        }
         .comment-section .card-body { padding: 0.75rem; }
-        .comment-section .comment { font-size: 0.85rem; }
-        .comment-section .comment strong { font-size: 0.9rem; }
-        .comment-section .comment small { font-size: 0.75rem; }
-        .comment-section hr.my-2 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-        .comment-section .form-control-sm { font-size: 0.85rem; }
+        /* ... (outros estilos como .multi-select-dropdown, .multi-select-btn etc. permanecem os mesmos) ... */
+        .multi-select-dropdown .dropdown-menu {
+            padding: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 100%;
+            background-color: var(--bs-dropdown-bg);
+            border-color: var(--bs-dropdown-border-color);
+        }
+        .multi-select-dropdown .dropdown-item-text {
+            padding: 0.25rem 0.5rem;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: var(--bs-dropdown-link-color);
+        }
+        .multi-select-dropdown .dropdown-item-text:hover {
+            background-color: var(--bs-dropdown-link-hover-bg);
+            color: var(--bs-dropdown-link-hover-color);
+        }
+        .multi-select-dropdown .dropdown-item-text input[type="checkbox"] {
+            margin-right: 0.5rem;
+            pointer-events: none; 
+        }
+        .multi-select-dropdown .dropdown-item-text label {
+            margin-bottom: 0;
+            font-weight: normal;
+            width: 100%;
+            pointer-events: none;
+        }
+        .multi-select-btn {
+            min-height: calc(1.5em + .5rem + 2px); 
+            height: calc(1.5em + .5rem + 2px);    
+            padding: .25rem .5rem;               
+            font-size: .875rem;                  
+            line-height: 1.5;                    
+            text-align: left;
+            background-color: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
+            color: var(--bs-body-color);
+            width: 100%;                         
+            display: flex;                       
+            align-items: center;                 
+            justify-content: space-between;      
+        }
+        .multi-select-btn .btn-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            max-width: calc(100% - 25px); 
+        }
+        .form-check-input:checked {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        [data-bs-theme="dark"] .form-check-input {
+            background-color: var(--bs-gray-700);
+            border-color: var(--bs-gray-600);
+        }
+         [data-bs-theme="dark"] .form-check-input:focus {
+            border-color: var(--bs-primary-text-emphasis);
+            box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+        }
+        [data-bs-theme="dark"] .multi-select-dropdown .dropdown-item-text label {
+            color: var(--bs-emphasis-color);
+        }
+        [data-bs-theme="dark"] .multi-select-dropdown .dropdown-item-text:hover {
+             background-color: var(--bs-gray-700);
+             color: var(--bs-light);
+        }
+
+
+        /* Estilos para a seção de gabarito final (apenas para impressão) */
+        .gabarito-final-impressao {
+            display: none; /* Escondido por padrão na tela */
+        }
+        .gabarito-final-hr {
+            display: none;
+            border: 0;
+            height: 1px; /* Linha mais sutil */
+            background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.4), rgba(0,0,0,0));
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+        .gabarito-final-titulo {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .gabarito-final-lista {
+            list-style-type: none;
+            padding-left: 0;
+            columns: 2; /* Tenta dividir em 2 colunas se houver espaço */
+            column-gap: 30px;
+        }
+        .gabarito-final-lista li {
+            margin-bottom: 6px;
+            page-break-inside: avoid;
+        }
+
+
+        /* --- ESTILOS PARA IMPRESSÃO DAS QUESTÕES --- */
+        @media print {
+            body {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 11pt;
+                color: #000000 !important;
+                background-color: #ffffff !important;
+            }
+
+            header.fixed-top, footer, .search-filters, .pagination,
+            .verify-ce-btn, .comment-section, #validate-form button[type="submit"],
+            .alert, nav[aria-label="Navegação das questões"],
+            .container > .text-muted.small.mb-3.mt-2,
+            #decrease-font, #reset-font, #increase-font,
+            .bd-mode-toggle, #printQuestionsBtn
+            {
+                display: none !important;
+            }
+
+            .actions-to-hide-on-print .form-check {
+                display: none !important;
+            }
+            
+            .container > h1.mb-4.h2, .container > .d-flex > h1.h2.mb-0 {
+                 font-size: 16pt !important;
+                 text-align: center;
+                 margin-bottom: 20px !important;
+            }
+            .motivador-text {
+                border: 1px solid #ccc !important;
+                border-left: 3px solid #555 !important;
+                background-color: #f9f9f9 !important;
+                padding: 0.8rem !important;
+                margin-bottom: 1rem !important;
+                font-size: 0.9em !important;
+                color: #000000 !important;
+            }
+            .motivador-text h3, .motivador-text .small { color: #000000 !important; }
+            .question-list-item {
+                border: 1px solid #bbb !important;
+                padding: 0.8rem 1rem !important;
+                margin-bottom: 0.8rem !important;
+                box-shadow: none !important;
+                background-color: #ffffff !important;
+                page-break-inside: avoid;
+            }
+            .question-list-item h5, .question-list-item p, .question-list-item .question-meta {
+                 color: #000000 !important;
+            }
+            .question-list-item p.mb-2 { font-size: 1em; margin-bottom: 0.5rem !important; }
+            .question-list-item h5.mb-1.h6 { font-size: 1.1em; font-weight: bold; }
+            .question-list-item .badge {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                background-color: #eee !important;
+            }
+            .question-meta {
+                font-size: 0.8em !important;
+                border-top: 1px dotted #ccc !important;
+                padding-top: 0.5rem !important;
+                margin-top: 0.75rem !important;
+            }
+            .question-list-item details.mb-2.small { /* display: none !important; */ }
+            body { padding-top: 0 !important; }
+            main.app-main-content { padding-top: 0 !important; padding-bottom: 0 !important; }
+            .container {
+                max-width: 100% !important; width: 100% !important;
+                padding: 20px !important; margin: 0 !important;
+            }
+            .comment-section hr.my-2 { display: none !important; }
+            .ce-result-feedback { display: none !important; }
+
+            /* Mostrar e Estilizar a seção de gabarito final para impressão */
+            .gabarito-final-impressao {
+                display: block !important;
+                margin-top: 30px !important; /* Espaço antes do gabarito */
+                padding-top: 20px !important;
+                color: #000000 !important;
+                page-break-before: auto; /* Tenta colocar em nova página se não couber bem */
+            }
+            .gabarito-final-hr {
+                display: block !important; /* Mostra a linha na impressão */
+            }
+            .gabarito-final-titulo {
+                font-size: 14pt !important;
+                color: #000000 !important;
+            }
+            .gabarito-final-lista {
+                font-size: 11pt !important;
+                color: #000000 !important;
+                columns: 2; /* Mantém 2 colunas se possível */
+            }
+            .gabarito-final-lista li {
+                color: #000000 !important;
+            }
+        }
+        /* --- FIM ESTILOS PARA IMPRESSÃO --- */
     </style>
 {% endblock extra_head %}
 
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4 h2">
-        {% if id_filter_param %}Resultado da Geração (Questões C/E){% elif query_filter_param or area_filter_param %}Resultado da Busca{% else %}Banco de Questões Certo/Errado{% endif %}
-    </h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">
+            {% if id_filter_param %}Resultado da Geração (Questões C/E){% elif query_filter_param or area_filter_param|length > 0 %}Resultado da Busca{% else %}Banco de Questões Certo/Errado{% endif %}
+        </h1>
+        {% if page_obj and page_obj.object_list %}
+        <button id="printQuestionsBtn" class="btn btn-secondary btn-sm">
+            <i class="bi bi-printer-fill me-1"></i> Imprimir Questões
+        </button>
+        {% endif %}
+    </div>
 
     {% if messages %} {% for message in messages %} <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> {{ message|safe }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div> {% endfor %} {% endif %}
 
@@ -45,15 +279,35 @@
                 <input type="text" class="form-control form-control-sm" id="search-q" name="q" value="{{ query_filter_param|default:'' }}" placeholder="Digite termo ou ID...">
             </div>
             <div class="col-md-4">
-                <label for="search-area" class="form-label form-label-sm">Filtrar por Área:</label>
-                <select class="form-select form-select-sm" id="search-area" name="area">
-                    <option value="">-- Todas as Áreas --</option>
+                <label for="custom-area-filter-btn" class="form-label form-label-sm">Filtrar por Área:</label>
+                <select id="search-area" name="area" multiple class="d-none">
                     {% for area_obj in all_areas %}
-                        <option value="{{ area_obj.id }}" {% if area_filter_param == area_obj.id|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ area_obj.id }}" {% if area_obj.id|stringformat:"s" in area_filter_param %}selected{% endif %}>
                             {{ area_obj.nome }}
                         </option>
                     {% endfor %}
                 </select>
+                <div class="dropdown multi-select-dropdown">
+                    <button class="btn multi-select-btn dropdown-toggle" type="button" id="custom-area-filter-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <span class="btn-text">Selecione área(s)</span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="custom-area-filter-btn">
+                        {% for area_obj in all_areas %}
+                        <li>
+                            <div class="dropdown-item-text">
+                                <input class="form-check-input area-checkbox" type="checkbox" value="{{ area_obj.id }}" id="area-check-{{ area_obj.id }}"
+                                    {% if area_obj.id|stringformat:"s" in area_filter_param %}checked{% endif %}>
+                                <label class="form-check-label" for="area-check-{{ area_obj.id }}">
+                                    {{ area_obj.nome }}
+                                </label>
+                            </div>
+                        </li>
+                        {% endfor %}
+                        {% if not all_areas %}
+                        <li><span class="dropdown-item-text text-muted">Nenhuma área disponível</span></li>
+                        {% endif %}
+                    </ul>
+                </div>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-search"></i> Buscar</button>
@@ -63,7 +317,7 @@
 
     {% if id_filter_param and main_motivador %} <hr class="my-0 mb-4"> <div class="motivador-text"> <h3 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador Principal</h3> <div class="small">{{ main_motivador|linebreaksbr }}</div> </div> {% else %} <div class="mt-2"></div> {% endif %}
 
-    {% if page_obj %}
+    {% if page_obj and page_obj.object_list %}
         <p class="text-muted small mb-3 mt-2"> Exibindo página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}. (Questões {{ page_obj.start_index }} a {{ page_obj.end_index }} de um total de {{ page_obj.paginator.count }}).</p>
 
         <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}">
@@ -76,19 +330,22 @@
                             <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>
                         </div>
                         <p class="mb-2" style="white-space: pre-wrap;">{{ questao.texto_comando }}</p>
+
+                        {# Gabarito individual foi REMOVIDO daqui #}
+
                         {% if questao.texto_motivador and not id_filter_param %}
                             <details class="mb-2 small">
                                 <summary class="text-muted" style="cursor: pointer;">Ver Texto Motivador Associado</summary>
                                 <div class="motivador-text mt-1 p-2 small">{{ questao.texto_motivador|linebreaksbr }}</div>
                             </details>
                         {% endif %}
-                        <div class="d-flex align-items-center flex-wrap mt-3">
+                        <div class="d-flex align-items-center flex-wrap mt-3 actions-to-hide-on-print">
                             <div class="form-check form-check-inline me-3"> <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao.id }}" id="certo_{{ questao.id }}" value="C" required> <label class="form-check-label small" for="certo_{{ questao.id }}">Certo</label> </div>
                             <div class="form-check form-check-inline me-3"> <input class="form-check-input question-radio" type="radio" name="resposta_q{{ questao.id }}" id="errado_{{ questao.id }}" value="E" required> <label class="form-check-label small" for="errado_{{ questao.id }}">Errado</label> </div>
                             <button type="button" class="btn btn-outline-info btn-sm ms-md-auto mt-2 mt-md-0 verify-ce-btn" data-questao-id="{{ questao.id }}"> <i class="bi bi-check-lg"></i> Verificar Item </button>
                         </div>
                         <div class="ce-result-feedback mt-2 small" id="result-feedback-{{ questao.id }}"></div>
-                        <div class="question-meta mt-2 pt-2 border-top border-secondary-subtle">  Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} | Criada por: {{ questao.criado_por.username|default:"Desconhecido" }} </div>
+                        <div class="question-meta">Dificuldade: {{ questao.get_dificuldade_display|default:"Não definida" }} | Criada por: {{ questao.criado_por.username|default:"Desconhecido" }}</div>
 
                         <div class="collapse mt-2 comment-section" id="comments-area-{{ questao.id }}">
                             <div class="card card-body">
@@ -111,7 +368,6 @@
                                         <p class="text-muted small" id="no-comments-{{ questao.id }}">Nenhum comentário ainda.</p>
                                     {% endfor %}
                                 </div>
-
                                 {% if user.is_authenticated %}
                                     {% if comentario_form %}
                                     <form method="POST" action="{% url 'generator:add_comment_to_question' questao.id %}" class="add-comment-form">
@@ -130,20 +386,18 @@
                                 {% endif %}
                             </div>
                         </div>
-                        </div> 
-                {% empty %}
-                    <div class="alert alert-warning" role="alert"> {% if id_filter_param or query_filter_param or area_filter_param %} Nenhuma questão encontrada para os filtros aplicados. {% else %} Nenhuma questão Certo/Errado encontrada no banco de dados. {% endif %} </div>
+                    </div> 
                 {% endfor %}
             </div>
         </form> 
 
         {% if paginator.num_pages > 1 %}
             <nav aria-label="Navegação das questões" class="mt-4 d-flex justify-content-center">
-                {% url_params page=None as current_filters %}
+                {% url_params page=None as current_filters_for_pagination %}
                 <ul class="pagination flex-wrap">
                     {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page=1{{ current_filters }}" aria-label="Primeira">&laquo;&laquo;</a></li>
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters }}" aria-label="Anterior">&laquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?page=1{{ current_filters_for_pagination }}" aria-label="Primeira">&laquo;&laquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ current_filters_for_pagination }}" aria-label="Anterior">&laquo;</a></li>
                     {% else %}
                         <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
                         <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
@@ -152,18 +406,18 @@
                         {% if page_obj.number == num %}
                             <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters }}">{{ num }}</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{{ current_filters_for_pagination }}">{{ num }}</a></li>
                         {% elif num == 1 %}
-                            <li class="page-item d-none d-sm-block"><a class="page-link" href="?page=1{{ current_filters }}">1</a></li>
+                            <li class="page-item d-none d-sm-block"><a class="page-link" href="?page=1{{ current_filters_for_pagination }}">1</a></li>
                             {% if page_obj.number > 3 %} <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li> {% endif %}
                         {% elif num == paginator.num_pages %}
                             {% if page_obj.number < paginator.num_pages|add:'-2' %} <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li> {% endif %}
-                            <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}">{{ paginator.num_pages }}</a></li>
+                            <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters_for_pagination }}">{{ paginator.num_pages }}</a></li>
                         {% endif %}
                     {% endfor %}
                     {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters }}" aria-label="Próxima">&raquo;</a></li>
-                        <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters }}" aria-label="Última">&raquo;&raquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{{ current_filters_for_pagination }}" aria-label="Próxima">&raquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{{ current_filters_for_pagination }}" aria-label="Última">&raquo;&raquo;</a></li>
                     {% else %}
                         <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
                         <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
@@ -172,18 +426,94 @@
             </nav>
         {% endif %}
 
+        {# --- INÍCIO: Seção do Gabarito Final para Impressão --- #}
+        <div class="gabarito-final-impressao">
+            <hr class="gabarito-final-hr">
+            <h4 class="gabarito-final-titulo">GABARITO</h4>
+            <ul class="gabarito-final-lista">
+                {% for questao in page_obj %}
+                    {% if questao.gabarito_ce %}
+                    <li>Item {{ page_obj.start_index|add:forloop.counter0 }}: Gabarito {% if questao.gabarito_ce == 'C' %}CERTO{% elif questao.gabarito_ce == 'E' %}ERRADO{% else %}{{ questao.gabarito_ce }}{% endif %}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {# --- FIM: Seção do Gabarito Final para Impressão --- #}
+
     {% else %}
         <div class="alert alert-info mt-4" role="alert">
-            Nenhuma questão para exibir. Tente refinar sua busca ou verifique se há questões geradas recentemente.
+             Nenhuma questão para exibir.
+            {% if request.GET.q or request.GET.area %}
+                (Filtros aplicados podem não ter retornado resultados).
+            {% else %}
+                Tente refinar sua busca ou verifique se há questões geradas recentemente.
+            {% endif %}
         </div>
     {% endif %}
 </div>
 {% endblock content %}
 
 {% block extra_js %}
-    {# ce_validator.js AGORA ATIVO para que "Verificar Item" funcione #}
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
-
-    {# Script para Favoritar carregado de arquivo externo #}
     <script src="{% static 'generator/js/favorite_handler.js' %}" defer></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const realSelect = document.getElementById('search-area');
+        const customDropdownBtn = document.getElementById('custom-area-filter-btn');
+        if (!realSelect || !customDropdownBtn) {
+            return; 
+        }
+        const dropdownMenu = customDropdownBtn.nextElementSibling; 
+        if (!dropdownMenu) {
+            return;
+        }
+
+        const customDropdownBtnText = customDropdownBtn.querySelector('.btn-text');
+        const areaCheckboxContainers = dropdownMenu.querySelectorAll('.dropdown-item-text');
+
+        function updateDropdownButtonText() {
+            if (!customDropdownBtnText) return;
+            const selectedOptions = Array.from(realSelect.options).filter(option => option.selected);
+            if (selectedOptions.length === 0) {
+                customDropdownBtnText.textContent = 'Selecione área(s)';
+            } else if (selectedOptions.length === 1) {
+                customDropdownBtnText.textContent = selectedOptions[0].text;
+            } else {
+                customDropdownBtnText.textContent = selectedOptions.length + ' áreas selecionadas';
+            }
+        }
+
+        areaCheckboxContainers.forEach(function(container) {
+            const checkbox = container.querySelector('.area-checkbox');
+            if (!checkbox) return;
+
+            checkbox.addEventListener('change', function() {
+                const value = this.value;
+                const correspondingOption = realSelect.querySelector('option[value="' + value + '"]');
+                if (correspondingOption) {
+                    correspondingOption.selected = this.checked;
+                }
+                updateDropdownButtonText();
+            });
+
+            container.addEventListener('click', function(e) {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    const event = new Event('change', { bubbles: true });
+                    checkbox.dispatchEvent(event);
+                }
+            });
+        });
+        
+        updateDropdownButtonText();
+
+        const printButton = document.getElementById('printQuestionsBtn');
+        if (printButton) {
+            printButton.addEventListener('click', function() {
+                window.print();
+            });
+        }
+    });
+    </script>
 {% endblock extra_js %}

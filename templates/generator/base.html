@@ -117,6 +117,14 @@
                         {% if user.is_authenticated %}
                             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'generate_questions' %}active{% endif %}" href="{% url 'generator:generate_questions' %}?action=clear" title="Gerador Certo/Errado" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="bi bi-check2-square"></i><span class="link-text-hidden">Gerador C/E</span></a></li>
                             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'generate_discursive_exam' %}active{% endif %}" href="{% url 'generator:generate_discursive_exam' %}" title="Gerador Discursiva" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="bi bi-pencil-square"></i><span class="link-text-hidden">Gerador Discursiva</span></a></li>
+                            
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'pdf_summary' %}active{% endif %}"
+                                   href="{% url 'generator:pdf_summary' %}"
+                                   title="Resumo Rápido de PDF" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                                    <i class="bi bi-file-earmark-ppt-fill"></i><span class="link-text-hidden">Resumir PDF</span>
+                                </a>
+                            </li>
                             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'questions_ce' %}active{% endif %}" href="{% url 'generator:questions_ce' %}" title="Banco de Questões C/E" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="bi bi-archive-fill"></i><span class="link-text-hidden">Banco C/E</span></a></li>
                             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'configurar_simulado' %}active{% endif %}" href="{% url 'generator:configurar_simulado' %}" title="Configurar Simulado" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="bi bi-ui-checks-grid"></i><span class="link-text-hidden">Simulado</span></a></li>
                             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'generator:dashboard' %}" title="Meu Desempenho" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="bi bi-graph-up"></i><span class="link-text-hidden">Desempenho</span></a></li>

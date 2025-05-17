@@ -1,3 +1,4 @@
+import logging
 from venv import logger
 import PyPDF2
 from django.contrib.auth.decorators import login_required
@@ -5,7 +6,7 @@ from datetime import datetime,timedelta
 from django.contrib import messages
 from django.shortcuts import render
 from generator.exceptions import AIServiceError, ConfigurationError, ParsingError
-from generator.forms import PDFUploadForm
+from generator.forms import PDFSummaryForm, PDFUploadForm
 from generator.models import AreaConhecimento, Questao, TentativaResposta
 from generator.services import QuestionGenerationService
 from generator.views.views_service_context import _get_base_context_and_service
@@ -322,3 +323,108 @@ def upload_pdf_and_generate_questions_view(request):
         'generated_discursive_question_text': generated_discursive_question_text,
     }
     return render(request, 'generator/upload_pdf_form.html', context)
+
+# --- NOVA VIEW: Resumo Rápido de PDF ---
+@login_required
+def pdf_summary_view(request):
+    context, service, _ = _get_base_context_and_service() # Pega o contexto base e o serviço de IA
+    form = PDFSummaryForm()
+    resumo_gerado = None
+
+    if request.method == 'POST':
+        form = PDFSummaryForm(request.POST, request.FILES)
+        if form.is_valid():
+            pdf_file = form.cleaned_data['pdf_file']
+            texto_extraido = ""
+            try:
+                logging.info(f"Iniciando resumo para o arquivo: {pdf_file.name} por {request.user.username}")
+                texto_extraido = extrair_texto_completo_pdf(pdf_file)
+
+                if not texto_extraido.strip():
+                    messages.error(request, "Não foi possível extrair texto do PDF. Verifique se o arquivo contém texto selecionável ou não está protegido/corrompido.")
+                    # Não redireciona, apenas re-renderiza com a mensagem de erro
+                    return render(request, 'generator/pdf_summary.html', {'form': form, 'resumo_gerado': None, **context})
+
+
+                # Define um limite de caracteres para o prompt para evitar exceder limites da API
+                # Este é um exemplo, ajuste conforme necessário e de acordo com os limites do modelo da IA.
+                MAX_CHARS_FOR_SUMMARY_PROMPT = 25000 # Ajuste conforme necessário
+                if len(texto_extraido) > MAX_CHARS_FOR_SUMMARY_PROMPT:
+                    texto_para_resumo = texto_extraido[:MAX_CHARS_FOR_SUMMARY_PROMPT]
+                    messages.warning(request, f"O texto do PDF é muito longo ({len(texto_extraido)} caracteres). Apenas os primeiros {MAX_CHARS_FOR_SUMMARY_PROMPT} caracteres serão usados para o resumo.")
+                else:
+                    texto_para_resumo = texto_extraido
+
+# Dentro da sua view pdf_summary_view, após extrair 'texto_para_resumo':
+
+                prompt_resumo = (
+                    f"**Persona:** Você é um especialista em preparação para concursos públicos, com profundo conhecimento em identificar nuances e pontos críticos em textos jurídicos e técnicos.\n\n"
+                    f"**Tarefa Principal:** Analisar o texto fornecido e produzir um resumo estratégico focado em concursos.\n\n"
+                    f"**Texto Original para Análise:**\n"
+                    f"```\n"
+                    f"{texto_para_resumo}\n"
+                    f"```\n\n"
+                    f"**Instruções Detalhadas para o Resumo Estratégico:**\n\n"
+                    f"1.  **Sumarização Direta e Concisa:**\n"
+                    f"    * Inicie com um resumo geral do tema central do texto (2-3 frases no máximo).\n"
+                    f"    * Evite frases introdutórias genéricas como 'Este texto trata de...' ou 'O resumo a seguir...'. Vá direto ao ponto.\n\n"
+                    f"2.  **Identificação de Pontos Críticos para Concursos (Máximo de 5-7 pontos):**\n"
+                    f"    * Analise o texto minuciosamente para identificar aspectos que são frequentemente objeto de questionamento em provas de concurso. Isso inclui, mas não se limita a:\n"
+                    f"        * **Exceções a regras gerais.**\n"
+                    f"        * **Prazos e condições específicas.**\n"
+                    f"        * **Competências e atribuições.**\n"
+                    f"        * **Requisitos e vedações.**\n"
+                    f"        * **Classificações e nomenclaturas importantes.**\n"
+                    f"        * **Entendimentos jurisprudenciais ou doutrinários relevantes (se mencionados ou implícitos).**\n"
+                    f"        * **Detalhes que podem gerar confusão ou 'pegadinhas' comuns.**\n"
+                    f"    * Para cada ponto crítico identificado, explique-o de forma clara e objetiva, destacando por que é relevante para concursos.\n\n"
+                    f"3.  **Principais Conclusões/Tópicos Relevantes:**\n"
+                    f"    * Liste os principais argumentos, tópicos ou conclusões do texto que um candidato precisa reter.\n\n"
+                    f"**Formato Obrigatório de Saída (Use EXATAMENTE esta estrutura e os marcadores em negrito):**\n\n"
+                    f"**Resumo Geral do Tema:**\n"
+                    f"[Aqui o resumo geral conciso do tema central do texto]\n\n"
+                    f"**Pontos Críticos para Concursos (Análise Detalhada):**\n\n"
+                    f"1.  **Ponto Crítico:** [Descrição do primeiro ponto crítico/detalhe/exceção]\n"
+                    f"    **Relevância/Alerta para Concurso:** [Explicação de por que este ponto é crucial ou pode ser uma pegadinha]\n\n"
+                    f"2.  **Ponto Crítico:** [Descrição do segundo ponto crítico/detalhe/exceção]\n"
+                    f"    **Relevância/Alerta para Concurso:** [Explicação]\n\n"
+                    f"    *(Continue com até 5-7 pontos, se aplicável)*\n\n"
+                    f"**Principais Tópicos e Conclusões do Texto:**\n"
+                    f"* [Primeiro tópico/conclusão principal]\n"
+                    f"* [Segundo tópico/conclusão principal]\n"
+                    f"* [E assim por diante...]\n"
+                )
+
+                # logging.info(f"Enviando {len(texto_para_resumo)} caracteres para sumarização pela IA com prompt AVANÇADO.")
+                # resumo_gerado = service.get_ai_response(prompt_resumo_avancado)
+                # messages.success(request, "Resumo estratégico gerado com sucesso!")
+                # logging.info(f"Resumo estratégico gerado para {pdf_file.name}.")
+
+
+                logging.info(f"Enviando {len(texto_para_resumo)} caracteres para sumarização pela IA.")
+                resumo_gerado = service.get_ai_response(prompt_resumo)
+                messages.success(request, "Resumo gerado com sucesso!")
+                logging.info(f"Resumo gerado para {pdf_file.name}.")
+
+            except ValueError as e: # Erro na extração do PDF
+                logging.error(f"Erro ao extrair texto do PDF para resumo: {e}", exc_info=True)
+                messages.error(request, str(e))
+            except ConfigurationError as e:
+                logging.error(f"Erro de configuração do serviço de IA para resumo: {e}", exc_info=True)
+                messages.error(request, f"Erro de configuração do sistema ao tentar resumir: {e}")
+            except AIServiceError as e:
+                logging.error(f"Erro no serviço de IA ao tentar resumir: {e}", exc_info=True)
+                messages.error(request, f"Erro ao comunicar com o serviço de IA para resumo: {e}")
+            except Exception as e:
+                logging.error(f"Erro inesperado ao gerar resumo do PDF: {e}", exc_info=True)
+                messages.error(request, f"Ocorreu um erro inesperado durante a geração do resumo: {e}")
+        else:
+            messages.error(request, "Houve um erro no formulário. Por favor, verifique os dados inseridos.")
+
+    context.update({
+        'form': form,
+        'resumo_gerado': resumo_gerado
+    })
+    return render(request, 'generator/pdf_summary.html', context)
+# --- FIM NOVA VIEW ---
+

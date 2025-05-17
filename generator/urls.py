@@ -15,6 +15,7 @@ urlpatterns = [
     path('validate/', views.validate_answers_view, name='validate_answers'),
 
     path('upload-pdf-generate/', views.upload_pdf_and_generate_questions_view, name='upload_pdf_generate'),
+    path('resumo-rapido-pdf/', views.pdf_summary_view, name='pdf_summary'),
 
     path('generate-discursive-exam/', views.generate_discursive_exam_view, name='generate_discursive_exam'),
     path('evaluate-discursive/', views.evaluate_discursive_answer_view, name='evaluate_discursive_answer'),

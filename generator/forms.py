@@ -59,21 +59,7 @@ LANGUAGE_CHOICES = [
     ('pt-br', 'Português (Brasil)'),
     ('en', 'Inglês'),
 ]
-# No seu arquivo forms.py (ex: generator/forms.py)
 
-from django import forms
-from django.conf import settings # Para getattr(settings, ...)
-from django.core.exceptions import ValidationError
-from .models import AreaConhecimento # Certifique-se que o import está correto
-
-# Supondo que DIFFICULTY_CHOICES está definido globalmente ou importado
-# Exemplo (certifique-se que corresponde ao seu):
-DIFFICULTY_CHOICES = [
-    ('facil', 'Fácil'),
-    ('medio', 'Médio'),
-    ('dificil', 'Difícil'),
-    # ('qualquer', 'Qualquer'), # Removido pelo seu código se a chave for vazia
-]
 
 class QuestionGeneratorForm(forms.Form):
     topic = forms.CharField(
@@ -210,33 +196,88 @@ class QuestionGeneratorForm(forms.Form):
     
 # --- Formulário para Gerar Questão Discursiva ---
 class DiscursiveExamForm(forms.Form):
-    base_topic_or_context = forms.CharField(label="Tópico Geral ou Contexto Base", widget=forms.Textarea(attrs={'rows': 8,'placeholder': 'Forneça o tema geral...','class': 'form-control'}), required=True, help_text="Insumo para IA.")
-    num_aspects = forms.IntegerField(label="Nº Aspectos", min_value=1, max_value=5, initial=3, required=False, widget=forms.NumberInput(attrs={'class': 'form-control', 'style': 'max-width: 120px;'}), help_text="Sub-itens (Padrão: 3).")
+    base_topic_or_context = forms.CharField(
+        label="Tópico Geral ou Contexto Base (Opcional se PDF fornecido)",
+        widget=forms.Textarea(attrs={
+            'rows': 6, # Reduzido um pouco para dar espaço ao campo de PDF
+            'placeholder': 'Forneça o tema geral, ou cole um texto base, ou envie um PDF abaixo...',
+            'class': 'form-control',
+            'id': 'id_base_topic_discursive'
+        }),
+        required=False, # Tornando opcional, a validação cruzada será no clean()
+        help_text="Insira o tópico/contexto manualmente OU envie um arquivo PDF."
+    )
+    pdf_file = forms.FileField(
+        label="OU Envie um Arquivo PDF como Contexto",
+        required=False, # Não obrigatório por si só
+        widget=forms.ClearableFileInput(attrs={
+            'accept': '.pdf',
+            'class': 'form-control form-control-sm mt-2', # Adicionado mt-2 para espaçamento
+            'id': 'id_pdf_file_discursive'
+        }),
+        help_text="Se um PDF for enviado, seu conteúdo será usado como base para a questão."
+    )
+    num_aspects = forms.IntegerField(
+        label="Nº Aspectos",
+        min_value=1, max_value=7, # Ajustado max_value se necessário
+        initial=3, required=True, # Mantido como True
+        widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm'}),
+        help_text="Sub-itens da questão (Padrão: 3)."
+    )
     area = forms.ModelChoiceField(
-        queryset=AreaConhecimento.objects.all(),
-        label="Área de Conhecimento (Opcional)",
-        required=False,
-        empty_label="Todas as Áreas",
-        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 250px;'}),
-        help_text="Contextualiza vocabulário."
+        queryset=AreaConhecimento.objects.all().order_by('nome'),
+        label="Área de Conhecimento",
+        required=False, # Já era opcional
+        empty_label="-- Qualquer Área --",
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        help_text="Contextualiza a questão."
     )
     complexity = forms.ChoiceField(
-        label="Complexidade (Opcional)",
+        label="Complexidade",
         choices=COMPLEXITY_CHOICES,
-        required=False, initial='Intermediária',
-        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 200px;'}), help_text="Profundidade da questão."
+        required=True, initial='Intermediária', # Mantido como True
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        help_text="Define a profundidade."
     )
     language = forms.ChoiceField(
         label="Idioma",
         choices=LANGUAGE_CHOICES,
-        required=False, initial='pt-br',
-        widget=forms.Select(attrs={'class': 'form-select', 'style': 'max-width: 200px;'}), help_text="Idioma da questão gerada."
-        )
-    def clean_base_topic_or_context(self):
-        text = self.cleaned_data.get('base_topic_or_context', '').strip()
-        if not text:
-            raise ValidationError("O tópico/contexto base deve ser preenchido.")
-        return text
+        required=True, initial='pt-br', # Mantido como True
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        help_text="Idioma da questão gerada."
+    )
+
+    def clean_pdf_file(self):
+        file = self.cleaned_data.get('pdf_file')
+        if file:
+            if file.content_type != 'application/pdf':
+                raise forms.ValidationError('Arquivo inválido. Por favor, envie um arquivo PDF.')
+            # Limite de tamanho (ex: 10MB) - ajuste conforme necessidade
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('Arquivo PDF muito grande. O limite é de 10MB.')
+        return file
+
+    def clean(self):
+        cleaned_data = super().clean()
+        base_topic = cleaned_data.get('base_topic_or_context')
+        pdf_file = cleaned_data.get('pdf_file')
+
+        if not base_topic and not pdf_file:
+            raise ValidationError(
+                "Por favor, forneça um Tópico/Contexto textual OU envie um arquivo PDF.",
+                code='required_source'
+            )
+        
+        # Se ambos forem fornecidos, você pode decidir uma prioridade
+        # ou concatenar, ou lançar um erro.
+        # Exemplo: Priorizar PDF se ambos estiverem presentes (a view pode lidar com isso).
+        # if base_topic and pdf_file:
+        #     logger.info("Ambos, texto e PDF, foram fornecidos para questão discursiva. PDF será priorizado pela view.")
+            # self.add_warning("Ambos, texto e PDF, foram fornecidos. O PDF será usado como base principal.")
+            # Não é um erro de validação, mas um aviso que a view pode tratar.
+
+        return cleaned_data
+
 
 # --- Formulário para Geração de Resposta Modelo Discursiva ---
 class DiscursiveAnswerForm(forms.Form):
@@ -366,6 +407,7 @@ class AreaConhecimentoForm(forms.ModelForm):
         # Adicionar outras validações se necessário
         return question
 # --- FIM NOVO FORMULÁRIO ---
+
 class PDFUploadForm(forms.Form):
     pdf_file = forms.FileField(
         label='Selecione o arquivo PDF',
@@ -428,5 +470,86 @@ class PDFUploadForm(forms.Form):
     def clean_num_aspects_discursive(self):
         num = self.cleaned_data.get('num_aspects_discursive')
         if num is None: 
+            return 0
+        return num
+    
+class PDFSummaryForm(forms.Form):
+    pdf_file = forms.FileField(
+        label='Selecione o arquivo PDF para resumir',
+        help_text='Máximo de 50MB. Apenas arquivos .pdf são permitidos.',
+        widget=forms.ClearableFileInput(attrs={'accept': '.pdf', 'class': 'form-control'})
+    )
+
+    def clean_pdf_file(self):
+        file = self.cleaned_data.get('pdf_file')
+        if file:
+            if file.content_type != 'application/pdf':
+                raise forms.ValidationError('Arquivo inválido. Por favor, envie um arquivo PDF.')
+            if file.size > 50 * 1024 * 1024: # Limite de 50MB
+                raise forms.ValidationError('Arquivo muito grande. O limite é de 50MB.')
+        return file
+
+class PDFUploadForm(forms.Form):
+    pdf_file = forms.FileField(
+        label='Selecione o arquivo PDF',
+        help_text='Máximo de 50MB. Apenas arquivos .pdf são permitidos.',
+        widget=forms.ClearableFileInput(attrs={'accept': '.pdf', 'class': 'form-control'})
+    )
+    num_questions_ce = forms.IntegerField(
+        label='Número de Questões Certo/Errado',
+        min_value=0,
+        max_value=20,
+        initial=5,
+        required=False,
+        help_text='Deixe em 0 ou em branco se não desejar questões C/E.',
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    num_aspects_discursive = forms.IntegerField(
+        label='Número de Aspectos para Questão Discursiva',
+        min_value=0,
+        max_value=5,
+        initial=3,
+        required=False,
+        help_text='Deixe em 0 ou em branco se não desejar questão discursiva.',
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    difficulty_level = forms.ChoiceField(
+        label='Nível de Dificuldade',
+        choices=[
+            ('facil', 'Fácil'),
+            ('medio', 'Médio'),
+            ('dificil', 'Difícil')
+        ],
+        initial='medio',
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    area = forms.ModelChoiceField(
+        queryset=AreaConhecimento.objects.all().order_by('nome'),
+        required=False,
+        label="Área de Conhecimento (Opcional)",
+        help_text="Selecione uma área para associar às questões geradas.",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        empty_label="-- Nenhuma Área Específica --"
+    )
+
+    def clean_pdf_file(self):
+        file = self.cleaned_data.get('pdf_file')
+        if file:
+            if file.content_type != 'application/pdf':
+                raise forms.ValidationError('Arquivo inválido. Por favor, envie um arquivo PDF.')
+            if file.size > 50 * 1024 * 1024: # Limite de 50MB
+                raise forms.ValidationError('Arquivo muito grande. O limite é de 50MB.')
+        return file
+
+    def clean_num_questions_ce(self):
+        num = self.cleaned_data.get('num_questions_ce')
+        if num is None:
+            return 0
+        return num
+
+    def clean_num_aspects_discursive(self):
+        num = self.cleaned_data.get('num_aspects_discursive')
+        if num is None:
             return 0
         return num

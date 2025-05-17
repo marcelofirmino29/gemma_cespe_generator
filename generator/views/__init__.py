@@ -8,7 +8,8 @@ from .views_validators import (landing_page_view,
 
 from .views_functions import (extrair_texto_completo_pdf,
                               dashboard_view,
-                              upload_pdf_and_generate_questions_view
+                              upload_pdf_and_generate_questions_view,
+                              pdf_summary_view
 )
 
 from .views_generate_questions import (
@@ -40,6 +41,7 @@ __all__ = {
     'register_view',
     'landing_page_view',
     'extrair_texto_completo_pdf', # Adicionado se esta é uma função pública pretendida
+    'pdf_summary_view', # Adicionado se esta é uma função pública pretendida
     'generate_questions_view',    # Adicionado se esta é uma view pública pretendida
     'validate_answers_view',      # Adicionado se esta é uma view pública pretendida
     'validate_single_ce_view',    # Adicionado se esta é uma view pública pretendida

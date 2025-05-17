@@ -214,81 +214,116 @@ def generate_questions_view(request):
 @login_required
 def generate_discursive_exam_view(request):
     base_context, service, service_initialized = _get_base_context_and_service()
-    context = base_context.copy() # Inicia com o contexto base (que deve ter 'all_areas')
+    context = base_context.copy()
     context['service_initialized'] = service_initialized
     
     discursive_exam_text = None
-    questao_id = None
-    # context['error_message'] já vem de base_context, se houver
+    questao_id = None # Esta variável será usada para o ID da questão exibida (carregada ou gerada)
 
     if request.method == 'POST':
-        form = DiscursiveExamForm(request.POST) # Seu DiscursiveExamForm
+        # Esta seção é para GERAR UMA NOVA QUESTÃO
+        form = DiscursiveExamForm(request.POST, request.FILES or None) # Adicionar request.FILES
         if form.is_valid():
             if not service_initialized or not service:
                 messages.error(request, context.get('error_message', "Serviço de IA indisponível para processar."))
                 context['form'] = form 
                 return render(request, 'generator/discursive_exam_generator.html', context)
 
-            base_topic_or_context = form.cleaned_data.get('base_topic_or_context')
+            base_topic_or_context_manual = form.cleaned_data.get('base_topic_or_context')
+            pdf_file_uploaded = form.cleaned_data.get('pdf_file') # NOVO: Obter PDF
+            
+            final_context_for_ia = base_topic_or_context_manual # Começa com o texto manual
+
+            if pdf_file_uploaded:
+                try:
+                    logger.info(f"Processando PDF '{pdf_file_uploaded.name}' para NOVA questão discursiva.")
+                    texto_do_pdf = extrair_texto_completo_pdf(pdf_file_uploaded) # Certifique-se que extrair_texto_completo_pdf está importado
+                    if texto_do_pdf and texto_do_pdf.strip():
+                        final_context_for_ia = texto_do_pdf # PDF tem prioridade
+                        if base_topic_or_context_manual and base_topic_or_context_manual.strip():
+                            final_context_for_ia += "\n\n--- Tópico adicional fornecido manualmente ---\n" + base_topic_or_context_manual
+                            messages.info(request, "Conteúdo do PDF combinado com texto manual para nova questão.")
+                        # else:
+                            # messages.info(request, "Conteúdo do PDF usado como base para nova questão.")
+                        logger.info(f"Texto extraído do PDF para nova questão: {len(final_context_for_ia)} caracteres.")
+                    elif not (base_topic_or_context_manual and base_topic_or_context_manual.strip()):
+                        # PDF sem texto E texto manual vazio
+                        messages.error(request, f"PDF '{pdf_file_uploaded.name}' não contém texto extraível e nenhum tópico manual foi fornecido.")
+                        context['form'] = form
+                        context['error_message'] = "Fonte de contexto insuficiente."
+                        return render(request, 'generator/discursive_exam_generator.html', context)
+                    # Se PDF sem texto, mas há texto manual, final_context_for_ia já é o texto manual
+                except ValueError as e_pdf:
+                    logger.error(f"Erro ao processar PDF para nova questão: {e_pdf}", exc_info=True)
+                    messages.error(request, f"Erro ao processar o arquivo PDF: {e_pdf}")
+                    if not (base_topic_or_context_manual and base_topic_or_context_manual.strip()):
+                        context['form'] = form
+                        context['error_message'] = "Erro no PDF e nenhum tópico manual fornecido."
+                        return render(request, 'generator/discursive_exam_generator.html', context)
+            
+            # Verifica se temos um contexto final após processar PDF e/ou texto manual
+            if not final_context_for_ia or not final_context_for_ia.strip():
+                messages.error(request, "É necessário fornecer um tópico/contexto textual ou um PDF com conteúdo para gerar a questão.")
+                context['form'] = form
+                return render(request, 'generator/discursive_exam_generator.html', context)
+
             num_aspects = form.cleaned_data.get('num_aspects', 3)
             area_obj = form.cleaned_data.get('area')
-            
-            # Obter difficulty_level do formulário validado
-            difficulty = form.cleaned_data.get('difficulty_level', 'medio') # Use o default do seu form se houver
-            
-            # 'complexity' é o nome do parâmetro esperado pelo seu service.generate_discursive_exam_question
+            difficulty = form.cleaned_data.get('complexity', 'Intermediária') # No seu form original, parece que 'complexity' era o campo.
+                                                                            # Se for 'difficulty_level' no DiscursiveExamForm, ajuste aqui.
             complexity_for_service = difficulty 
-            language = 'pt-br' # Defina ou pegue do form se necessário
-
+            language = form.cleaned_data.get('language', 'pt-br') # Pegar do form
             current_user = request.user if request.user.is_authenticated else None
             
-            logger.info(f"POST Gerador Discursiva: Tópico='{base_topic_or_context[:50]}...', Aspectos={num_aspects}, Área={area_obj}, Dificuldade={complexity_for_service}")
+            logger.info(f"POST Gerador Discursiva: Contexto_len={len(final_context_for_ia)}, Aspectos={num_aspects}, Área={area_obj}, Dificuldade={complexity_for_service}")
 
             try:
-                discursive_exam_text = service.generate_discursive_exam_question(
-                    base_topic_or_context=base_topic_or_context, 
+                # Esta chamada agora usa final_context_for_ia
+                generated_text = service.generate_discursive_exam_question(
+                    base_topic_or_context=final_context_for_ia, 
                     num_aspects=num_aspects, 
                     area=area_obj.nome if area_obj else None, 
                     complexity=complexity_for_service, 
                     language=language
                 )
                 
-                if discursive_exam_text and isinstance(discursive_exam_text, str) and discursive_exam_text.strip():
-                    try:
-                        q = Questao(
-                            tipo='DISC',
-                            texto_comando=discursive_exam_text,
-                            aspectos_discursiva=f"Avaliar {num_aspects} aspecto(s) solicitado(s).",
-                            dificuldade=difficulty, # Salva a dificuldade selecionada
-                            area=area_obj, 
-                            criado_por=current_user
-                        )
-                        q.save()
-                        questao_id = q.id
-                        logger.info(f"Questão Discursiva ID {questao_id} salva com sucesso.")
-                        messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso! Você pode respondê-la abaixo ou buscar por ela mais tarde.")
-                        return redirect(f"{reverse('generator:generate_discursive_exam')}?questao_id={questao_id}")
-                    except Exception as db_error:
-                        logger.error(f"Erro ao salvar questão discursiva no banco de dados: {db_error}", exc_info=True)
-                        messages.error(request, "Ocorreu um erro ao tentar salvar a questão discursiva gerada.")
-                        questao_id = None 
+                if generated_text and isinstance(generated_text, str) and generated_text.strip():
+                    # Mapear 'complexity_for_service' (ex: 'Intermediária') para os valores do modelo ('facil', 'medio', 'dificil')
+                    dificuldade_db = 'medio' # Valor padrão
+                    if complexity_for_service:
+                        comp_lower = complexity_for_service.lower()
+                        if comp_lower in ['fácil', 'facil', 'simples']: dificuldade_db = 'facil'
+                        elif comp_lower in ['difícil', 'dificil', 'complexa']: dificuldade_db = 'dificil'
+
+                    q = Questao(
+                        tipo='DISC',
+                        texto_comando=generated_text,
+                        aspectos_discursiva=f"Avaliar {num_aspects} aspecto(s) solicitado(s).",
+                        dificuldade=dificuldade_db, # Salva o valor mapeado
+                        area=area_obj, 
+                        criado_por=current_user
+                    )
+                    q.save()
+                    questao_id = q.id # ID da questão GERADA
+                    discursive_exam_text = generated_text # Texto da questão GERADA
+                    logger.info(f"Questão Discursiva ID {questao_id} salva com sucesso.")
+                    messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso! Você pode respondê-la abaixo ou buscar por ela mais tarde.")
+                    # Não faz redirect aqui, exibe a questão gerada na mesma página.
+                    # O form será re-renderizado (com ou sem dados, dependendo se você limpar)
+                    form = DiscursiveExamForm() # Limpa o formulário após sucesso na geração
+
                 else:
                     messages.warning(request, "A IA não retornou um texto válido para a questão discursiva.")
-                    discursive_exam_text = None 
-                    questao_id = None
-            # except (ParsingError, AIResponseError, etc.) as e: # Suas exceções específicas
-            #     logger.error(f"Erro específico da IA ao gerar questão discursiva: {e}", exc_info=False)
-            #     context['error_message'] = f"Falha na geração pela IA: {e}"
-            #     discursive_exam_text = None; questao_id = None
+                    # discursive_exam_text e questao_id permanecem None
             except Exception as e: 
-                logger.error(f"Erro inesperado ao gerar questão discursiva: {e}", exc_info=True)
-                context['error_message'] = f"Falha inesperada durante a geração da questão: {e}"
-                discursive_exam_text = None; questao_id = None
+                logger.error(f"Erro ao gerar ou salvar questão discursiva: {e}", exc_info=True)
+                messages.error(request, f"Falha durante a geração/salvamento da questão: {e}")
+                # discursive_exam_text e questao_id permanecem None
         else: 
             logger.warning(f"Formulário Gerador Discursiva INVÁLIDO: {form.errors.as_json()}")
             messages.error(request, "Por favor, corrija os erros indicados no formulário.")
         
-        context['form'] = form # Passa o form (com dados e/ou erros) para o contexto
+        context['form'] = form
 
     # --- Lógica GET ---
     else: # request.method == 'GET'
@@ -301,31 +336,25 @@ def generate_discursive_exam_view(request):
             qid = int(questao_id_from_url)
             logger.info(f"Tentando carregar Questão Discursiva ID={qid} via GET.")
             try:
-                # USA get_object_or_404 AGORA QUE ESTÁ IMPORTADO
+                # Certifique-se que get_object_or_404 está importado: from django.shortcuts import get_object_or_404
                 questao_para_exibir = get_object_or_404(Questao, id=qid, tipo='DISC')
-                discursive_exam_text = questao_para_exibir.texto_comando
-                questao_id = questao_para_exibir.id
-                logger.info(f"Questão Discursiva ID {questao_id} carregada para exibição.")
-                # Opcional: Preencher o form com os dados da questão carregada
-                # form = DiscursiveExamForm(initial={
-                #     'base_topic_or_context': questao_para_exibir.texto_comando_original_ou_topico,
-                #     'num_aspects': ..., 
-                #     'area': questao_para_exibir.area,
-                #     'difficulty_level': questao_para_exibir.dificuldade 
-                # })
-            except Questao.DoesNotExist: # Erro mais específico se get_object_or_404 não for usado ou falhar por outro motivo
-                 logger.warning(f"Questão discursiva ID {qid} não encontrada ou não é do tipo DISC.", exc_info=True)
+                discursive_exam_text = questao_para_exibir.texto_comando # Texto da questão CARREGADA
+                questao_id = questao_para_exibir.id # ID da questão CARREGADA
+                logger.info(f"Questão Discursiva ID {questao_id} carregada para exibição e resolução.")
+                messages.info(request, f"Modo Resolução: Questão ID {questao_id} carregada. Responda abaixo.")
+            except Questao.DoesNotExist:
+                 logger.warning(f"Questão discursiva ID {qid} não encontrada.", exc_info=False) # exc_info=False para não poluir log por algo comum
                  messages.warning(request, f"A questão discursiva com ID {qid} não foi encontrada.")
-                 discursive_exam_text = None; questao_id = None
+                 # discursive_exam_text e questao_id permanecem None
             except Exception as e: 
                  logger.error(f"Erro ao buscar questão discursiva ID {qid} via GET: {e}", exc_info=True)
                  messages.error(request, f"Erro ao tentar carregar a questão discursiva com ID {qid}.")
-                 discursive_exam_text = None; questao_id = None
+                 # discursive_exam_text e questao_id permanecem None
         
-        context['form'] = form # Adiciona o form (limpo ou com 'initial') ao contexto
+        context['form'] = form
 
     context['discursive_exam_text'] = discursive_exam_text
-    context['questao_id'] = questao_id
+    context['questao_id'] = questao_id # Esta é a chave para o template exibir a questão e a área de resposta
 
     return render(request, 'generator/discursive_exam_generator.html', context)
 
@@ -854,11 +883,10 @@ def add_area_quick_from_generator_view(request):
     # independentemente de ter tido sucesso ou falha na adição da área.
     # As mensagens (success ou error) serão exibidas na página recarregada.
     return redirect('generator:generate_questions')
-
 @login_required
 def listar_questoes_ce_view(request):
     """
-    Lista questões C/E com paginação e filtros: q (keyword), area (id).
+    Lista questões C/E com paginação e filtros: q (keyword), area (lista de IDs).
     Também trata filtro por 'ids' vindo do redirect da geração.
     Passa todas as áreas para o contexto para o formulário de busca.
     """
@@ -869,67 +897,136 @@ def listar_questoes_ce_view(request):
     main_motivador = None
     id_list_str = request.GET.get('ids')
     query_filter_param = request.GET.get('q', '').strip()
-    area_filter_param = request.GET.get('area', '')
+    
+    # Modificado para lidar com múltiplos IDs de área
+    area_filter_params_str = request.GET.getlist('area') # Recebe uma lista de strings (IDs das áreas)
 
-    # Prioridade 1: Filtro por IDs específicos
+    # Prioridade 1: Filtro por IDs específicos (vindo da geração de questões)
     if id_list_str:
-        # ... (lógica para filtrar por IDs e buscar main_motivador como antes) ...
-        logger.info(f"Listando por IDs: [{id_list_str}]")
+        logger.info(f"Listando por IDs específicos: [{id_list_str}]")
         try:
             id_list = [int(id_val.strip()) for id_val in id_list_str.split(',') if id_val.strip().isdigit()]
             if id_list:
-                questoes_list = Questao.objects.filter(id__in=id_list).select_related('area', 'criado_por').order_by('id')
-                is_filtered_list = True
-                context['id_filter_param'] = id_list_str
-                try:
-                    first_q = questoes_list.first()
-                    if first_q: main_motivador = first_q.texto_motivador
-                except Exception as e_motiv: logger.error(f"Erro buscar motivador: {e_motiv}")
-            else: messages.warning(request, "IDs inválidos.")
-        except (ValueError, TypeError) as e: logger.error(f"Erro converter IDs: {e}"); messages.error(request, "Erro IDs.")
+                # Certifique-se de que Questao.objects está disponível
+                if Questao.objects:
+                    questoes_list = Questao.objects.filter(id__in=id_list).select_related('area', 'criado_por').order_by('id')
+                    is_filtered_list = True
+                    context['id_filter_param'] = id_list_str # Mantém para saber que veio da geração
+                    try:
+                        first_q = questoes_list.first()
+                        if first_q:
+                            main_motivador = first_q.texto_motivador
+                    except Exception as e_motiv:
+                        logger.error(f"Erro ao buscar texto motivador para lista de IDs: {e_motiv}")
+                else:
+                    messages.error(request, "Modelo Questao não carregado corretamente.") # pragma: no cover
+            else:
+                messages.warning(request, "IDs fornecidos para filtro são inválidos.")
+        except (ValueError, TypeError) as e:
+            logger.error(f"Erro ao converter IDs da lista: {e}")
+            messages.error(request, "Erro ao processar IDs para filtro.")
 
-    # Prioridade 2: Filtro por 'q' ou 'area' (ou lista geral)
-    if questoes_list is None:
-        logger.info(f"Listando com filtros: q='{query_filter_param}', area='{area_filter_param}'")
-        questoes_list = Questao.objects.filter(tipo='CE').select_related('area', 'criado_por')
+    # Prioridade 2: Filtro por palavra-chave 'q' e/ou lista de 'area_ids' (ou lista geral se nenhum filtro)
+    if questoes_list is None: # Só executa se o filtro por IDs específicos não foi aplicado ou falhou
+        log_msg_parts = []
         if query_filter_param:
-            questoes_list = questoes_list.filter( Q(texto_comando__icontains=query_filter_param) | Q(texto_motivador__icontains=query_filter_param) | Q(id__icontains=query_filter_param) )
+            log_msg_parts.append(f"q='{query_filter_param}'")
+        if area_filter_params_str:
+            log_msg_parts.append(f"areas='{','.join(area_filter_params_str)}'")
+        
+        logger.info(f"Listando questões C/E com filtros: {', '.join(log_msg_parts) if log_msg_parts else 'Geral (sem filtros específicos q/area)'}")
+
+        if not Questao.objects: # pragma: no cover
+            messages.error(request, "Modelo Questao não carregado corretamente.")
+            # Retorna o render aqui ou define questoes_list como uma lista vazia para evitar erros na paginação
+            context['page_obj'] = None
+            context['paginator'] = None
+            # Adicionar outras chaves do contexto como None ou valor padrão
+            context['is_filtered_list'] = False
+            context['main_motivador'] = None
+            context['id_filter_param'] = None
+            context['query_filter_param'] = query_filter_param
+            context['area_filter_param'] = area_filter_params_str # Passa os params originais para o template
+            context['all_areas'] = AreaConhecimento.objects.all().order_by('nome') if AreaConhecimento.objects else []
+            return render(request, 'generator/questions_ce.html', context)
+
+        base_queryset = Questao.objects.filter(tipo='CE').select_related('area', 'criado_por')
+
+        if query_filter_param:
+            base_queryset = base_queryset.filter(
+                Q(texto_comando__icontains=query_filter_param) |
+                Q(texto_motivador__icontains=query_filter_param) |
+                Q(id__icontains=query_filter_param)  # Permitir busca por ID numérico também
+            )
             is_filtered_list = True
-        if area_filter_param and area_filter_param.isdigit():
-            try:
-                questoes_list = questoes_list.filter(area_id=int(area_filter_param))
-                is_filtered_list = True
-            except ValueError: messages.warning(request, f"ID Área inválido: {area_filter_param}"); area_filter_param = ''
-        elif area_filter_param: messages.warning(request, f"Filtro Área inválido: {area_filter_param}"); area_filter_param = ''
-        questoes_list = questoes_list.order_by('-criado_em')
-        main_motivador = None
+        
+        # Nova lógica para filtrar por múltiplas áreas
+        valid_area_ids = []
+        if area_filter_params_str: # Se a lista não estiver vazia
+            has_valid_area_filter = False
+            for area_id_str in area_filter_params_str:
+                if area_id_str.strip().isdigit(): # Verifica se é um ID numérico válido
+                    valid_area_ids.append(int(area_id_str.strip()))
+                    has_valid_area_filter = True
+                elif area_id_str.strip(): # Se não for numérico mas não for vazio (ex: "-- Todas --" que tem value="")
+                    messages.warning(request, f"Filtro de área inválido ou não numérico ignorado: '{area_id_str}'.")
+            
+            if valid_area_ids:
+                base_queryset = base_queryset.filter(area_id__in=valid_area_ids)
+                is_filtered_list = True # Marcado como filtrado se ao menos um ID de área válido foi usado
+            elif area_filter_params_str and not any(s.strip() for s in area_filter_params_str):
+                # Caso onde 'area' foi enviado mas era uma lista de strings vazias (improvável com select multiple padrão)
+                # ou apenas a opção "Todas as áreas" foi selecionada e enviou um value=""
+                pass # Não filtra por área se apenas value="" foi enviado
+            elif area_filter_params_str and not has_valid_area_filter : # Se havia params de área mas nenhum era ID válido
+                 messages.warning(request, "Nenhum ID de área válido foi fornecido para o filtro. Exibindo todas as áreas que correspondem a outros filtros.")
+
+
+        questoes_list = base_queryset.order_by('-criado_em')
+        main_motivador = None # Para busca geral/filtrada, o motivador principal não é aplicável como na geração.
 
     # --- PAGINAÇÃO ---
-    items_per_page = 20
+    # Garante que questoes_list seja uma lista ou queryset antes de paginar
+    if questoes_list is None:
+        questoes_list = [] # Evita erro se nenhuma query anterior populou questoes_list
+
+    items_per_page = getattr(settings, 'ITEMS_PER_PAGE_QUESTOES_CE', 20) # Usar uma config específica se houver
     paginator = Paginator(questoes_list, items_per_page)
     page_number = request.GET.get('page')
-    try: page_obj = paginator.get_page(page_number)
-    except PageNotAnInteger: page_obj = paginator.get_page(1)
-    except EmptyPage: page_obj = paginator.get_page(paginator.num_pages)
+
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
 
     # --- ADICIONA TUDO AO CONTEXTO ---
     context['page_obj'] = page_obj
     context['paginator'] = paginator
     context['is_filtered_list'] = is_filtered_list
     context['main_motivador'] = main_motivador
-    context['id_filter_param'] = id_list_str
+    context['id_filter_param'] = id_list_str # Se veio da geração, será preenchido
     context['query_filter_param'] = query_filter_param
-    context['area_filter_param'] = area_filter_param
+    
+    # Importante: area_filter_param no contexto deve ser a lista de strings dos IDs das áreas selecionadas
+    # para que o template possa marcar corretamente as options no select multiple.
+    context['area_filter_param'] = area_filter_params_str
 
     # +++++ ADICIONA TODAS AS ÁREAS PARA O DROPDOWN DO FILTRO +++++
     try:
-        context['all_areas'] = AreaConhecimento.objects.all().order_by('nome')
-    except Exception as e_area:
+        if AreaConhecimento.objects:
+            context['all_areas'] = AreaConhecimento.objects.all().order_by('nome')
+        else: # pragma: no cover
+            context['all_areas'] = []
+            messages.error(request, "Modelo AreaConhecimento não carregado.")
+    except Exception as e_area: # pragma: no cover
         logger.error(f"Erro ao buscar todas as áreas para filtro: {e_area}")
-        context['all_areas'] = None # Evita erro no template se a busca falhar
+        context['all_areas'] = [] # Evita erro no template se a busca falhar
+        messages.error(request, "Erro ao carregar lista de áreas para filtro.")
     # +++++ FIM ADIÇÃO all_areas +++++
 
-    logger.info(f"Renderizando lista C/E. Filtrada: {is_filtered_list}. Página: {page_obj.number}/{paginator.num_pages}")
+    logger.info(f"Renderizando lista C/E. Filtrada: {is_filtered_list}. Página: {page_obj.number if page_obj else 'N/A'} de {paginator.num_pages if paginator else 'N/A'}")
 
     # Renderiza o template de LISTAGEM
     return render(request, 'generator/questions_ce.html', context)

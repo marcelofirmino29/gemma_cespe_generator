@@ -93,6 +93,15 @@
         .card.landing-card.text-white .card-icon-caption {
             color: white;
         }
+        /* Ajuste para garantir que texto dentro de cards bg-light e bg-warning seja legível */
+        .card.landing-card.bg-light .card-icon-main,
+        .card.landing-card.bg-light .card-icon-caption,
+        .card.landing-card.bg-warning .card-icon-main, /* Já tinha text-dark, mas reforça para caption */
+        .card.landing-card.bg-warning .card-icon-caption {
+            color: var(--bs-dark) !important; /* Ou uma cor específica como #212529 */
+        }
+
+
         .card.landing-card .stretched-link::after {
             content: "";
             position: absolute;
@@ -235,7 +244,7 @@
             {# Card 1: Gerador C/E - Azul (Primary) #}
             <div class="col">
                 <div class="card landing-card shadow-sm h-100 bg-primary text-white">
-                    <a href="{% url 'generator:generate_questions' %}" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
+                    <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
                     <div class="card-body">
                         <i class="bi bi-check2-square card-icon-main"></i>
                         <span class="card-icon-caption">Gerador C/E por Tópico</span>
@@ -292,6 +301,44 @@
                     </div>
                 </div>
             </div>
+
+            {# --- INÍCIO DOS NOVOS CARDS --- #}
+            {# Card 7: Banco de Questões - Cinza (Secondary) #}
+            <div class="col">
+                <div class="card landing-card shadow-sm h-100 bg-secondary text-white">
+                    <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
+                    <div class="card-body">
+                        <i class="bi bi-collection-fill card-icon-main"></i>
+                        <span class="card-icon-caption">Banco de Questões</span>
+                    </div>
+                </div>
+            </div>
+
+            {# Card 8: Resumo Rápido de PDF - Lilás (Custom ou um Bootstrap text-dark para contraste) #}
+            {# Usando bg-light com text-dark para simplicidade e contraste #}
+            <div class="col">
+                <div class="card landing-card shadow-sm h-100 bg-light text-dark">
+                    <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
+                    <div class="card-body">
+                        <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
+                        <span class="card-icon-caption">Resumo Rápido de PDF</span>
+                    </div>
+                </div>
+            </div>
+
+            {# Card 9: Concursos no Brasil - Azul Petróleo (Teal - Custom) ou outro Bootstrap #}
+            {# Reutilizando bg-info que já tem bom contraste com texto branco #}
+            <div class="col">
+                <div class="card landing-card shadow-sm h-100 bg-info text-white">
+                     <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
+                    <div class="card-body">
+                        <i class="bi bi-briefcase-fill card-icon-main"></i>
+                        <span class="card-icon-caption">Concursos no Brasil</span>
+                    </div>
+                </div>
+            </div>
+            {# --- FIM DOS NOVOS CARDS --- #}
+
         </div> {# Fim da row dos cards #}
 
         {# --- Nuvem de Palavras --- #}
@@ -301,7 +348,7 @@
         <div id="wordCloudContainer">
             <span class="text-muted">Carregando palavras...</span>
         </div>
-        {# --- Fim da Seção da Nuvem de Palavras --- #}
+        {# --- FIM DA SEÇÃO DA Nuvem de Palavras --- #}
     </div> {# Fim do container geral #}
 {% endblock content %}
 

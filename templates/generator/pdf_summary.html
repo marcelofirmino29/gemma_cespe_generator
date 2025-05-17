@@ -1,0 +1,262 @@
+{% extends "generator/base.html" %}
+{% load static %}
+{% load markdownify %}
+
+{% block title %}Resumo Estratégico de PDF para Concursos{% endblock title %}
+
+{% block extra_head %}
+    <style>
+        .summary-container {
+            background-color: var(--bs-tertiary-bg);
+            padding: 1.5rem;
+            border-radius: 0.375rem;
+            margin-top: 1.5rem;
+            border: 1px solid var(--bs-border-color-translucent);
+        }
+        .summary-text-markdown {
+            font-size: 0.95em;
+            line-height: 1.6;
+            background-color: var(--bs-body-bg);
+            padding: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid var(--bs-border-color);
+        }
+        .summary-text-markdown h1,
+        .summary-text-markdown h2,
+        .summary-text-markdown h3,
+        .summary-text-markdown h4,
+        .summary-text-markdown h5,
+        .summary-text-markdown h6 {
+            margin-top: 1.2em;
+            margin-bottom: 0.6em;
+            font-weight: 600;
+            color: var(--bs-body-color); /* Garante que a cor do texto seja visível na impressão */
+        }
+        .summary-text-markdown h5 {
+             margin-top: 0;
+        }
+        .summary-text-markdown p {
+            margin-bottom: 0.8em;
+             color: var(--bs-body-color);
+        }
+        .summary-text-markdown ul,
+        .summary-text-markdown ol {
+            padding-left: 1.8em;
+            margin-bottom: 1em;
+             color: var(--bs-body-color);
+        }
+        .summary-text-markdown li {
+            margin-bottom: 0.4em;
+        }
+        .summary-text-markdown strong {
+            font-weight: 600;
+        }
+        .form-label-strong {
+            font-weight: 500;
+        }
+
+        /* --- ESTILOS PARA IMPRESSÃO --- */
+        @media print {
+            body {
+                font-family: 'Times New Roman', Times, serif; /* Fonte serifada para impressão */
+                font-size: 12pt; /* Tamanho de fonte comum para impressão */
+                color: #000000 !important; /* Garante texto preto */
+                background-color: #ffffff !important; /* Fundo branco */
+            }
+
+            /* Esconde elementos desnecessários na impressão */
+            header.fixed-top, /* Barra de navegação */
+            footer, /* Rodapé */
+            .btn, /* Todos os botões */
+            .alert, /* Alertas */
+            .card, /* O card do formulário de upload */
+            #decrease-font, #reset-font, #increase-font, /* Controles de fonte */
+            .bd-mode-toggle, /* Seletor de tema */
+            .lead, /* Parágrafo introdutório */
+            hr, /* Linhas horizontais, se houver fora do conteúdo principal */
+            .container > h1 /* O título principal da página, se desejar esconder */
+             {
+                display: none !important;
+            }
+
+            /* Garante que o conteúdo do resumo seja visível e ocupe a página */
+            .summary-container {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background-color: #ffffff !important;
+            }
+
+            .summary-text-markdown {
+                border: none !important;
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                max-height: none !important; /* Remove altura máxima */
+                overflow-y: visible !important; /* Remove scroll */
+            }
+            
+            .summary-text-markdown a { /* Estilo para links na impressão */
+                text-decoration: underline;
+                color: #000000; /* Links em preto */
+            }
+            
+            .summary-text-markdown a[href]:after { /* Adiciona URL do link após o texto */
+                content: " (" attr(href) ")";
+                font-size: 90%;
+            }
+
+            /* Remove o padding do body se ajustado por JS para a navbar */
+            body {
+                 padding-top: 0 !important;
+            }
+            main.app-main-content {
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+             .container {
+                max-width: 100% !important; /* Permite que o container use toda a largura da página de impressão */
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+        }
+        /* --- FIM ESTILOS PARA IMPRESSÃO --- */
+
+    </style>
+{% endblock extra_head %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4 h2">Resumo Estratégico de PDF para Concursos</h1>
+    <p class="lead mb-4">
+        Faça o upload de um arquivo PDF e obtenha um resumo focado em pontos críticos para concursos, gerado por Inteligência Artificial.
+    </p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm mb-4"> {# Adicionado mb-4 para espaçamento #}
+        <div class="card-body">
+            <h5 class="card-title mb-3">Enviar PDF para Resumo Estratégico</h5>
+            <form method="POST" enctype="multipart/form-data" action="{% url 'generator:pdf_summary' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="{{ form.pdf_file.id_for_label }}" class="form-label form-label-strong">{{ form.pdf_file.label }}</label>
+                    {{ form.pdf_file }}
+                    {% if form.pdf_file.help_text %}
+                        <div class="form-text">{{ form.pdf_file.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.pdf_file.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-file-earmark-text-fill me-2"></i>Gerar Resumo Estratégico
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if resumo_gerado %}
+        <div class="summary-container mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="h5 mb-0"><i class="bi bi-card-text me-2"></i>Resumo Gerado:</h3>
+                {# BOTÃO DE IMPRESSÃO ADICIONADO AQUI #}
+                <button id="printSummaryBtn" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-printer-fill me-1"></i> Imprimir Resumo
+                </button>
+            </div>
+            <div class="summary-text-markdown">
+                {{ resumo_gerado | markdownify | safe }}
+            </div>
+            <div class="mt-3"> {# Container para botões de cópia #}
+                <button id="copySummaryBtn" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-clipboard-check me-1"></i> Copiar Resumo (Texto)
+                </button>
+                <button id="copyMarkdownBtn" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-markdown me-1"></i> Copiar Markdown
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const copyButton = document.getElementById('copySummaryBtn');
+    const copyMarkdownButton = document.getElementById('copyMarkdownBtn');
+    const printSummaryButton = document.getElementById('printSummaryBtn'); // Botão de impressão
+    const summaryTextMarkdownElement = document.querySelector('.summary-text-markdown');
+    const rawMarkdownContent = {{ resumo_gerado_json|default:'null'|safe }};
+
+    if (copyButton && summaryTextMarkdownElement) {
+        copyButton.addEventListener('click', function() {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = summaryTextMarkdownElement.innerHTML;
+            let textToCopy = summaryTextMarkdownElement.innerText || summaryTextMarkdownElement.textContent;
+
+            navigator.clipboard.writeText(textToCopy.trim()).then(function() {
+                copyButton.innerHTML = '<i class="bi bi-check-lg me-1"></i> Texto Copiado!';
+                setTimeout(() => {
+                     copyButton.innerHTML = '<i class="bi bi-clipboard-check me-1"></i> Copiar Resumo (Texto)';
+                }, 2500);
+            }, function(err) {
+                console.error('Erro ao copiar o texto: ', err);
+                // Adiciona um feedback visual para o usuário em caso de falha
+                const originalText = copyButton.innerHTML;
+                copyButton.innerHTML = '<i class="bi bi-x-lg me-1"></i> Falha ao copiar';
+                copyButton.classList.add('btn-danger');
+                copyButton.classList.remove('btn-outline-secondary');
+                setTimeout(() => {
+                     copyButton.innerHTML = originalText;
+                     copyButton.classList.remove('btn-danger');
+                     copyButton.classList.add('btn-outline-secondary');
+                }, 3000);
+            });
+        });
+    }
+
+    if (copyMarkdownButton && rawMarkdownContent) {
+        copyMarkdownButton.addEventListener('click', function() {
+            navigator.clipboard.writeText(rawMarkdownContent).then(function() {
+                copyMarkdownButton.innerHTML = '<i class="bi bi-check-lg me-1"></i> Markdown Copiado!';
+                setTimeout(() => {
+                     copyMarkdownButton.innerHTML = '<i class="bi bi-markdown me-1"></i> Copiar Markdown';
+                }, 2500);
+            }, function(err) {
+                console.error('Erro ao copiar o Markdown: ', err);
+                 const originalText = copyMarkdownButton.innerHTML;
+                copyMarkdownButton.innerHTML = '<i class="bi bi-x-lg me-1"></i> Falha ao copiar';
+                copyMarkdownButton.classList.add('btn-danger');
+                copyMarkdownButton.classList.remove('btn-outline-info');
+                setTimeout(() => {
+                     copyMarkdownButton.innerHTML = originalText;
+                     copyMarkdownButton.classList.remove('btn-danger');
+                     copyMarkdownButton.classList.add('btn-outline-info');
+                }, 3000);
+            });
+        });
+    } else if (copyMarkdownButton && !rawMarkdownContent) {
+        copyMarkdownButton.style.display = 'none';
+    }
+
+    // Funcionalidade do botão de impressão
+    if (printSummaryButton) {
+        printSummaryButton.addEventListener('click', function() {
+            window.print();
+        });
+    }
+});
+</script>
+{% endblock extra_js %}
