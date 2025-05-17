@@ -1,10 +1,8 @@
 # generator/views.py
-import json
 import logging
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-import requests
 from generator.models import AreaConhecimento
 from .. import scraper_logic
 
