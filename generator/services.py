@@ -4,7 +4,7 @@ import logging
 from django.conf import settings
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig
-from .utils import parse_ai_response_to_questions
+from .utils import parse_ai_response_to_questions, parse_evaluation_scores
 from .exceptions import ConfigurationError, AIServiceError, AIResponseError, ParsingError
 
 logger = logging.getLogger('generator')

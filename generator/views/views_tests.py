@@ -1,17 +1,41 @@
 # generator/views.py
 
+from django.shortcuts import render, redirect, reverse, get_object_or_404 
+from django.urls import reverse 
+from urllib.parse import urlencode   
+from django.conf import settings
+from django.utils import timezone
 import logging
 import datetime
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from datetime import datetime
+from datetime import datetime,timedelta
+from django.views.decorators.http import require_POST
+import json
 import re # Para expressões regulares (limpeza de texto)
 from collections import Counter # Para contar frequência de palavras
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+import requests 
+import json 
+import PyPDF2 
 
+from generator.forms import PDFUploadForm
 # Importa Formulários
+from generator.forms import (
+    QuestionGeneratorForm, DiscursiveAnswerForm, DiscursiveExamForm, AskAIForm,
+    AreaConhecimentoForm, CustomUserCreationForm, SimuladoConfigForm
+)
 # Importa Serviço e Exceções
+from generator.services import QuestionGenerationService
+from generator.exceptions import (
+    GeneratorError, ConfigurationError, AIServiceError, AIResponseError, ParsingError
+)
 # Importa Parser e Models
+from generator.utils import parse_evaluation_scores
 # Remove a importação de PalavraChave se não for mais usada em outras views
+from generator.models import Questao, AreaConhecimento, TentativaResposta, Avaliacao
+from django.db.models import Q
 
 
 # # --- Função Auxiliar ---

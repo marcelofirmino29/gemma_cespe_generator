@@ -1,16 +1,41 @@
-
-
-
-
-
-
-from.views_areas import (
-    area_list_view,
-    add_area_quick_from_generator_view
+from .views_tests import * 
+from .views_auth import register_view
+from .views_validators import (landing_page_view,
+                            validate_answers_view,
+                            validate_single_ce_view,
+                            ask_ai_view
 )
 
+from .views_functions import (extrair_texto_completo_pdf,
+                              dashboard_view,
+                              upload_pdf_and_generate_questions_view,
+                              pdf_summary_view
+)
 
+from .views_generate_questions import (
+    generate_questions_view,
+    generate_discursive_exam_view,
+    evaluate_discursive_answer_view,
+    configurar_simulado_view,
+    realizar_simulado_view,
+    resultado_simulado_view,
+    area_list_view,
+    add_area_quick_from_generator_view,
+    listar_questoes_ce_view,
+    listar_questoes_discursivas_view
+)
 
+from .views_service_context import _get_base_context_and_service
+
+from .views_games import (
+    games_hub_view,
+    drag_drop_ml_game_view,
+    word_search_lgpd_view,
+    aventura_dados_view,
+    scratch_js_view,
+)   
+
+from .views_ext_api import listar_concursos_view
 
 __all__ = {
     'register_view',

@@ -9,8 +9,8 @@ from django.shortcuts import redirect, render
 from generator.exceptions import AIResponseError, AIServiceError
 from generator.forms import AskAIForm, QuestionGeneratorForm
 from generator.models import Avaliacao, Questao, TentativaResposta
-from generator.stopwords import STOP_WORDS_PT
-from generator.views.views_generate_ce_questions import _get_base_context_and_service
+from generator.utils import STOP_WORDS_PT
+from generator.views.views_generate_questions import _get_base_context_and_service
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -28,7 +28,7 @@ from django.contrib.auth.decorators import login_required
 # from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 # import requests # Não é usado diretamente aqui, scraper_logic lida com isso
 
-from generator.models import Questao
+from generator.models import AreaConhecimento, Questao
 from .. import scraper_logic # Ajuste o caminho se necessário
 
 logger = logging.getLogger(__name__)
