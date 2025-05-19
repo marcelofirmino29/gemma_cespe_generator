@@ -5,30 +5,7 @@
 
 {% block extra_head %}
     {# Link para CSS externo (se houver) #}
-    <link rel="stylesheet" href="{% static 'generator/css/dashboard_styles.css' %}"> {# Reutiliza estilos do dashboard para stats #}
-    <link rel="stylesheet" href="{% static 'generator/css/evaluation_result_styles.css' %}"> {# Para estilo dos cards de resultado #}
-    <style>
-        /* Estilos mínimos inline (ou mova para um CSS específico) */
-        .stat-value { font-size: 1.5rem; font-weight: bold; }
-        .stat-label { font-size: 0.85rem; }
-        .stats-section {
-            padding: 1.5rem;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.5rem;
-            background-color: var(--bs-tertiary-bg);
-            margin-bottom: 1.5rem; /* mb-4 */
-        }
-        .result-item {
-            padding: 1rem;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
-        }
-        .result-item.border-success { border-left-width: 5px; }
-        .result-item.border-danger { border-left-width: 5px; }
-        .score-highlight { font-weight: bold; color: var(--bs-primary); }
-        pre code { white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; }
-    </style>
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
 {% endblock extra_head %}
 
 

@@ -11,37 +11,6 @@
 {% block content %}
     <div class="container mt-4"> {# Adicionado um container geral para melhor espaçamento #}
         <div class="text-center mb-5">
-            <h1 class="display-6 fw-semibold text-body-emphasis mb-2">
-                {% now "H" as current_hour_str %}
-                {% now "H:i" as current_time_str %}
-                {% with current_hour_as_int=current_hour_str|add:0 %}
-                    {% if current_hour_as_int >= 6 and current_hour_as_int < 12 %}
-                        {% with greeting_text="Bom dia" %}
-                            {% if user.is_authenticated %}
-                                Bem-vindo(a), {{ user.username }}! Agora são {{ current_time_str }}. {{ greeting_text }}.
-                            {% else %}
-                                Bem-vindo(a) ao Questões de IA! Agora são {{ current_time_str }}. {{ greeting_text }}.
-                            {% endif %}
-                        {% endwith %}
-                    {% elif current_hour_as_int >= 12 and current_hour_as_int < 18 %}
-                        {% with greeting_text="Boa tarde" %}
-                            {% if user.is_authenticated %}
-                                Bem-vindo(a), {{ user.username }}! Agora são {{ current_time_str }}. {{ greeting_text }}.
-                            {% else %}
-                                Bem-vindo(a) ao Questões de IA! Agora são {{ current_time_str }}. {{ greeting_text }}.
-                            {% endif %}
-                        {% endwith %}
-                    {% else %}
-                        {% with greeting_text="Boa noite" %}
-                            {% if user.is_authenticated %}
-                                Bem-vindo(a), {{ user.username }}! Agora são {{ current_time_str }}. {{ greeting_text }}.
-                            {% else %}
-                                Bem-vindo(a) ao Questões de IA! Agora são {{ current_time_str }}. {{ greeting_text }}.
-                            {% endif %}
-                        {% endwith %}
-                    {% endif %}
-                {% endwith %}
-            </h1>
 
             {% if messages %}
                 {% for message in messages %}

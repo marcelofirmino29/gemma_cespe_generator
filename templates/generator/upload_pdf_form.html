@@ -6,113 +6,7 @@
 {% block extra_head %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'generator/css/question_generator_styles.css' %}">
-    <style>
-        /* Estilos Gerais do Card Principal */
-        .main-content-card {
-            background-color: var(--bs-dark-bg-subtle, #343a40);
-            padding: 2rem;
-            border-radius: 0.5rem;
-            margin-top: 1.5rem;
-            color: var(--bs-light-text-emphasis);
-        }
-        .main-content-card .form-label {
-            color: var(--bs-light-text-emphasis);
-        }
-        .main-content-card .form-label.required::after {
-            content: " *";
-            color: #dc3545; /* Vermelho Bootstrap para perigo */
-            font-weight: bold;
-        }
-        .main-content-card .form-control,
-        .main-content-card .form-select {
-            background-color: var(--bs-body-bg);
-            color: var(--bs-body-color);
-            border-color: var(--bs-border-color-translucent);
-        }
-        .main-content-card .form-control::placeholder {
-            color: var(--bs-secondary-color);
-        }
-        .main-content-card .form-text {
-            color: var(--bs-light-text-emphasis);
-            opacity: 0.8;
-        }
-        .main-content-card .btn-primary {
-            background-color: var(--bs-primary);
-            border-color: var(--bs-primary);
-        }
-        .main-content-card h2, .main-content-card h3, .main-content-card h4 {
-            color: var(--bs-light);
-        }
-
-        /* Estilos para Seções de Resultados */
-        .generated-questions-section {
-            margin-top: 2.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--bs-border-color);
-        }
-        .extracted-question-item {
-            background-color: var(--bs-tertiary-bg);
-            padding: 1rem;
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
-            border: 1px solid var(--bs-border-color);
-            white-space: pre-wrap;
-            color: var(--bs-body-color);
-        }
-        .motivador-text-display {
-            background-color: var(--bs-secondary-bg);
-            border-left: 5px solid var(--bs-info);
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.95em;
-            border-radius: 0.375rem;
-            white-space: pre-wrap;
-            color: var(--bs-body-color);
-        }
-        .question-item-display { /* Para itens C/E gerados pela IA */
-            padding: 1rem 1.25rem;
-            border: 1px solid var(--bs-border-color-translucent);
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
-            background-color: var(--bs-body-bg);
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            color: var(--bs-body-color);
-        }
-        .question-item-display h5 {
-            font-size: 1em;
-            font-weight: 600;
-            color: var(--bs-emphasis-color);
-        }
-        .question-item-display .item-text {
-            white-space: pre-wrap;
-            margin-bottom: 0.75rem;
-        }
-        .ce-response-options {
-            margin-top: 0.75rem;
-            margin-bottom: 0.75rem;
-        }
-        .ce-result-feedback {
-            min-height: 1.5em;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--bs-border-color-translucent);
-            margin-top: 0.75rem;
-            font-size: 0.9em;
-            color: var(--bs-body-color);
-        }
-        .ce-result-feedback:empty { display: none; }
-        .verify-ce-btn {
-            font-size: 0.8rem;
-        }
-        .discursive-question-display {
-            white-space: pre-wrap;
-            background-color: var(--bs-body-bg);
-            padding: 1rem;
-            border-radius: 0.375rem;
-            border: 1px solid var(--bs-border-color);
-            font-size: 0.95em;
-            color: var(--bs-body-color);
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'generator/css/upload_pdf_styles.css' %}">
 {% endblock extra_head %}
 
 {% block content %}
@@ -141,8 +35,14 @@
         {# Formulário Principal de Upload e Parâmetros de Geração #}
         <form method="post" enctype="multipart/form-data" action="{% url 'generator:upload_pdf_generate' %}" id="uploadPdfMainForm">
             {% csrf_token %}
-            
+
             <div class="mb-3">
+                {# Se você precisar que o JS identifique este campo de forma mais robusta sem depender do ID gerado,
+                   você pode adicionar um ID fixo ou uma classe específica.
+                   Exemplo com ID fixo (se 'id_pdf_file' for o ID que você quer usar no JS):
+                   {{ form.pdf_file.as_widget(attrs={'id': 'id_pdf_file_manual'}) }}
+                   Ou use o name como no JS sugerido.
+                #}
                 <label for="{{ form.pdf_file.id_for_label|default:'id_pdf_file' }}" class="form-label">{{ form.pdf_file.label|default:"Selecione o Arquivo PDF" }}</label>
                 {{ form.pdf_file }}
                 {% if form.pdf_file.help_text %}<div class="form-text">{{ form.pdf_file.help_text|safe }}</div>{% endif %}
@@ -164,7 +64,7 @@
                     {% for error in form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
             </div>
-            
+
             <div class="mb-3">
                 <label for="{{ form.area.id_for_label|default:'id_area' }}" class="form-label">{{ form.area.label|default:"Área de Conhecimento" }}</label>
                 {{ form.area }}
@@ -224,8 +124,7 @@
                     <div class="small">{{ motivador_texto_ce|linebreaksbr }}</div>
                 </div>
             {% endif %}
-            
-            {# Formulário para os botões "Verificar Item" - ID AJUSTADO #}
+
             <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}" novalidate>
                 {% csrf_token %}
                 {% for questao_data in generated_questions_ce_data %}
@@ -280,57 +179,5 @@
 {% block extra_js %}
     {{ block.super }}
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("PÁGINA UPLOAD PDF: DOM carregado.");
-
-        const pdfFileInput = document.getElementById('{{ form.pdf_file.id_for_label|default:"id_pdf_file" }}');
-        if (pdfFileInput) {
-            pdfFileInput.addEventListener('change', function(event) {
-                if (event.target.files.length > 0) {
-                    console.log("PÁGINA UPLOAD PDF: Arquivo selecionado:", event.target.files[0].name);
-                } else {
-                    console.log("PÁGINA UPLOAD PDF: Seleção de arquivo removida.");
-                }
-            });
-        } else {
-            // Este ID vem do Django Form, então {{ form.pdf_file.id_for_label }} deve funcionar se o campo existe no form.
-            // Se 'form.pdf_file' não é um campo do Django Form, você precisaria usar um ID fixo como 'id_pdf_file'.
-            console.warn("PÁGINA UPLOAD PDF: Campo de input PDF ('{{ form.pdf_file.id_for_label|default:"id_pdf_file" }}') não encontrado. Verifique o ID no HTML e se 'pdf_file' é um campo do form Django.");
-        }
-
-        // Verifica se o formulário de validação e os botões para os itens C/E existem
-        const validationForm = document.getElementById('validate-form'); // ID CORRIGIDO PARA CONSISTÊNCIA
-        if (validationForm) {
-            console.log("PÁGINA UPLOAD PDF: Formulário '#validate-form' (para itens C/E) encontrado.");
-            
-            const radioButtons = validationForm.querySelectorAll('.question-radio');
-            if (radioButtons.length > 0) {
-                console.log("PÁGINA UPLOAD PDF: " + radioButtons.length + " radio buttons (.question-radio) encontrados.");
-                radioButtons.forEach(function(radio) {
-                    radio.addEventListener('click', function(e) {
-                        console.log('DEBUG (UPLOAD PAGE): Radio button clicado:', e.target.id, 'Valor:', e.target.value, 'Name:', e.target.name, 'Checked:', e.target.checked);
-                    });
-                });
-            } else {
-                console.warn("PÁGINA UPLOAD PDF: NENHUM radio button (.question-radio) encontrado dentro do #validate-form.");
-            }
-
-            const verifyButtons = validationForm.querySelectorAll('.verify-ce-btn');
-            if (verifyButtons.length > 0) {
-                console.log("PÁGINA UPLOAD PDF: " + verifyButtons.length + " botão(ões) '.verify-ce-btn' encontrado(s) DENTRO do #validate-form.");
-            } else {
-                console.warn("PÁGINA UPLOAD PDF: Formulário '#validate-form' encontrado, mas NENHUM botão '.verify-ce-btn'.");
-            }
-        } else if (document.querySelector('.verify-ce-btn')) {
-             console.warn("PÁGINA UPLOAD PDF: Botões '.verify-ce-btn' encontrados, mas o formulário com id '#validate-form' NÃO foi encontrado. ce_validator.js provavelmente falhará.");
-        } else {
-            console.log("PÁGINA UPLOAD PDF: Formulário '#validate-form' (para itens C/E) NÃO encontrado. Isso é esperado se nenhuma questão C/E foi gerada ainda.");
-        }
-
-        // Lembre-se de adicionar console.log DENTRO do seu arquivo ce_validator.js
-        // para depurar o fluxo interno dele, como sugerido anteriormente.
-    });
-    </script>
+    <script src="{% static 'generator/js/upload_pdf_page.js' %}" defer></script>
 {% endblock extra_js %}

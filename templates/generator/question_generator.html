@@ -14,7 +14,6 @@
     {% if not service_initialized and not error_message %} <div class="alert alert-warning alert-dismissible fade show"><strong>Atenção:</strong> Serviço de IA indisponível ou com erro na inicialização. <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div> {% endif %}
     {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show"> {{ message|safe }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
 
-    {# O container principal da página do Gerador C/E #}
     <div class="filters-container shadow-sm">
         <h1 class="h4 mb-4 text-center">Gerador de Questões Certo/Errado</h1>
         <form method="post" id="generator-form" action="{% url 'generator:generate_questions' %}"
@@ -29,8 +28,11 @@
                         <label for="{{ form.topic.id_for_label|default:'id_topic' }}"
                                class="form-label fw-medium"
                                id="label_for_topic_ce_page">{{ form.topic.label|default:"1. Forneça um Tópico ou Contexto Textual" }}</label>
-                        {{ form.topic }}
-                        <div class="form-text text-muted mt-1" id="help_text_for_topic_ce_page">
+                        {{ form.topic }} {# Assume que form.topic renderiza com id="id_topic" ou o que for definido em form.topic.id_for_label #}
+                        <div class="form-text text-muted mt-1" id="help_text_for_topic_ce_page"
+                             data-help-optional="{{ form.topic.help_text|default:"Contexto textual opcional quando um PDF é enviado."|escapejs }}"
+                             data-help-editing="{{ form.topic.help_text|default:"Continue editando seu contexto textual."|escapejs }}"
+                             data-help-required="{{ form.topic.help_text|default:"Digite ou cole o texto base. Obrigatório se nenhum PDF for enviado."|escapejs }}">
                             {{ form.topic.help_text|default:"Este campo é obrigatório se nenhum PDF for enviado."|safe }}
                         </div>
                         {% if form.topic.errors %}
@@ -45,7 +47,9 @@
                     <div class="pdf-upload-section-generator mb-3">
                         <label for="id_pdf_contexto_ce_page" class="form-label fw-medium" id="label_for_pdf_ce_page"><i class="bi bi-file-earmark-pdf-fill"></i> 1. (Alternativa) Envie um PDF para Contexto</label>
                         <input class="form-control form-control-sm" type="file" id="id_pdf_contexto_ce_page" name="pdf_contexto" accept=".pdf">
-                        <div class="form-text text-muted mt-1" id="help_text_for_pdf_ce_page">
+                        <div class="form-text text-muted mt-1" id="help_text_for_pdf_ce_page"
+                             data-pdf-selected="PDF selecionado. O Tópico textual é opcional."
+                             data-pdf-optional="Se preferir, envie um PDF. (O Tópico textual é obrigatório se nenhum PDF for fornecido).">
                             Se um PDF for enviado, o campo "Tópico ou Contexto" acima se torna opcional.
                         </div>
                         {% if form.pdf_contexto.errors %}
@@ -59,17 +63,17 @@
                     <div class="row g-3">
                         <div class="col-md-12 mb-2">
                             <label for="{{ form.num_questions.id_for_label|default:'id_num_questions' }}" class="form-label fw-medium">{{ form.num_questions.label|default:"Nº Questões C/E" }}</label>
-                            {{ form.num_questions }}
+                            {{ form.num_questions }} {# Assume id="id_num_questions" #}
                             {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
                         </div>
                         <div class="col-md-12 mb-2">
                             <label for="{{ form.difficulty_level.id_for_label|default:'id_difficulty_level' }}" class="form-label fw-medium">{{ form.difficulty_level.label|default:"Dificuldade" }}</label>
-                            {{ form.difficulty_level }}
+                            {{ form.difficulty_level }} {# Assume id="id_difficulty_level" #}
                             {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
                         </div>
                         <div class="col-md-12 mb-3">
                             <label for="{{ form.area.id_for_label|default:'id_area' }}" class="form-label fw-medium">{{ form.area.label|default:"Área de Conhecimento" }}</label>
-                            {{ form.area }}
+                            {{ form.area }} {# Assume id="id_area" #}
                             {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
                         </div>
                     </div>
@@ -97,7 +101,7 @@
 
     <div class="alert alert-secondary mt-4 small text-center"> Forneça um contexto textual ou envie um PDF, defina os parâmetros e clique em "Gerar C/E". </div>
 
-    {# SEÇÃO DE RESULTADOS (para exibir questões geradas após redirect ou se passadas no contexto) #}
+    {# SEÇÃO DE RESULTADOS #}
     {% if main_motivador %} <hr class="my-4"> <div class="motivador-text"> <h2 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador da Última Geração</h2> <div class="small">{{ main_motivador|linebreaksbr }}</div> </div> {% endif %}
 
     {% if page_obj %}
@@ -187,125 +191,5 @@
 {% block extra_js %}
     <script src="{% static 'generator/js/question_generator_scripts.js' %}" defer></script>
     <script src="{% static 'generator/js/ce_validator.js' %}" defer></script>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("PÁGINA GERADOR C/E (com upload PDF e Paginação): DOM Carregado.");
-
-        const generatorForm = document.getElementById('generator-form');
-        const topicTextarea = document.getElementById('{{ form.topic.id_for_label|default:"id_topic" }}');
-        const pdfUploadInput = document.getElementById('id_pdf_contexto_ce_page');
-        const topicLabel = document.getElementById('label_for_topic_ce_page');
-        const helpTextForTopic = document.getElementById('help_text_for_topic_ce_page');
-        const helpTextForPdf = document.getElementById('help_text_for_pdf_ce_page');
-
-        function updateInputRequirements() {
-            if (!topicTextarea || !pdfUploadInput || !topicLabel ) {
-                console.warn("Gerador C/E: Elementos para obrigatoriedade condicional (Tópico/PDF) não encontrados.");
-                return;
-            }
-
-            const isPdfSelected = pdfUploadInput.files && pdfUploadInput.files.length > 0;
-            const isTopicFilled = topicTextarea.value.trim() !== "";
-
-            if (isPdfSelected) {
-                topicTextarea.required = false;
-                topicLabel.classList.remove('required');
-                if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Contexto textual opcional quando um PDF é enviado."|safe|escapejs }}";
-                if(helpTextForPdf) helpTextForPdf.textContent = "PDF selecionado. O Tópico textual é opcional.";
-            } else {
-                topicTextarea.required = true;
-                if (isTopicFilled) {
-                    topicLabel.classList.remove('required'); // Mantém sem 'required' se preenchido, mesmo que PDF não selecionado
-                     if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Continue editando seu contexto textual."|safe|escapejs }}";
-                } else {
-                    topicLabel.classList.add('required');
-                    if(helpTextForTopic) helpTextForTopic.textContent = "{{ form.topic.help_text|default:"Digite ou cole o texto base. Obrigatório se nenhum PDF for enviado."|safe|escapejs }}";
-                }
-                if(helpTextForPdf) helpTextForPdf.textContent = "Se preferir, envie um PDF. (O Tópico textual é obrigatório se nenhum PDF for fornecido).";
-            }
-        }
-
-        if (pdfUploadInput) {
-            pdfUploadInput.addEventListener('change', updateInputRequirements);
-        }
-        if (topicTextarea) {
-            topicTextarea.addEventListener('input', updateInputRequirements);
-        }
-
-        // Assegura que o estado inicial da classe 'required' no label e o required do textarea estejam corretos
-        if (topicLabel && topicTextarea && ! (pdfUploadInput && pdfUploadInput.files && pdfUploadInput.files.length > 0) && topicTextarea.value.trim() === '') {
-             topicLabel.classList.add('required');
-             topicTextarea.required = true;
-        } else if (topicLabel && topicTextarea) {
-            topicTextarea.required = !(pdfUploadInput && pdfUploadInput.files && pdfUploadInput.files.length > 0);
-            if (!topicTextarea.required) {
-                 topicLabel.classList.remove('required');
-            }
-        }
-        updateInputRequirements(); // Chamada inicial para configurar o estado correto
-
-        const submitButton = document.getElementById('submit-button');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const buttonText = document.getElementById('button-text');
-
-        if (generatorForm && submitButton && loadingSpinner && buttonText) {
-            generatorForm.addEventListener('submit', function(event) {
-                const isPdfSelected = pdfUploadInput.files && pdfUploadInput.files.length > 0;
-                const isTopicFilled = topicTextarea.value.trim() !== "";
-                const areaGeneratorField = document.getElementById('{{ form.area.id_for_label|default:"id_area" }}');
-
-                if (!isPdfSelected && !isTopicFilled) {
-                    alert("Por favor, forneça um Tópico/Contexto Textual ou envie um arquivo PDF para gerar questões.");
-                    event.preventDefault();
-                    return;
-                }
-                if (areaGeneratorField && areaGeneratorField.value === "") {
-                    alert("Por favor, selecione uma Área de Conhecimento para as novas questões.");
-                    event.preventDefault();
-                    return;
-                }
-                submitButton.disabled = true;
-                loadingSpinner.classList.remove('d-none');
-                buttonText.textContent = ' Gerando...';
-            });
-        }
-
-        // Script do botão "Buscar no Banco"
-        const searchDbButton = document.getElementById('search-db-button');
-        // Usa os IDs corretos dos campos do formulário de geração, como já estava no primeiro template
-        const areaSelectForSearch = document.getElementById('{{ form.area.id_for_label|default:"id_area" }}');
-        const topicInputForSearch = document.getElementById('{{ form.topic.id_for_label|default:"id_topic" }}');
-
-
-        if (searchDbButton && topicInputForSearch && areaSelectForSearch) {
-            searchDbButton.addEventListener('click', function(event) {
-                event.preventDefault();
-                const topicValue = topicInputForSearch.value.trim();
-                const areaValue = areaSelectForSearch.value;
-
-                const baseUrl = searchDbButton.href.split('?')[0];
-                const params = new URLSearchParams();
-                if (topicValue) { params.append('q', topicValue); }
-                if (areaValue) { params.append('area', areaValue); }
-                let finalUrl = baseUrl;
-                const queryString = params.toString();
-                if (queryString) { finalUrl += '?' + queryString; }
-                console.log('Redirecionando para busca no banco com filtros do Gerador C/E:', finalUrl);
-                window.location.href = finalUrl;
-            });
-        } else {
-            console.warn("Elementos para 'Buscar no Banco' não encontrados. Verifique os IDs: #search-db-button, {{ form.topic.id_for_label|default:'id_topic' }}, {{ form.area.id_for_label|default:'id_area' }}");
-        }
-
-        // Depuração para botões 'Verificar Item' na lista de resultados (se houver)
-        const validationFormResults = document.getElementById('validate-form');
-        if(validationFormResults){
-            // console.log("Formulário de validação 'validate-form' encontrado.");
-            // document.querySelectorAll('.verify-ce-btn').forEach(button => {
-            //     console.log("Botão 'Verificar Item' encontrado:", button.dataset.questaoId);
-            // });
-        }
-    });
-    </script>
+    <script src="{% static 'generator/js/ce_page_interactions.js' %}" defer></script> 
 {% endblock extra_js %}
