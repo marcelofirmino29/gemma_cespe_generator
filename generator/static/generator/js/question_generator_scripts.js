@@ -1,6 +1,5 @@
 // static/generator/js/question_generator_scripts.js
 
-// Espera o DOM carregar completamente
 document.addEventListener('DOMContentLoaded', function() {
 
     // Lógica do botão de Loading para o formulário de GERAÇÃO
@@ -50,4 +49,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-}); // Fim do DOMContentLoaded
+}); 

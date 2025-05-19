@@ -9,17 +9,7 @@
 {% endblock title %}
 
 {% block extra_head %}
-    {# Estilos podem ser os mesmos do questions_ce ou customizados #}
-    <style>
-        .search-filters { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1.5rem; border: 1px solid var(--bs-border-color-translucent); }
-        .question-list-item { padding: 1rem 1.25rem; border: 1px solid var(--bs-border-color-translucent); border-radius: 0.375rem; margin-bottom: 1rem; background-color: var(--bs-body-bg); box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-        .question-meta { font-size: 0.85em; color: var(--bs-secondary-color); }
-        .pagination { margin-bottom: 1rem; }
-        .discursive-command { font-size: 0.95em; line-height: 1.6; margin-bottom: 1rem; }
-        .aspects-details summary { cursor: pointer; }
-        .aspects-content { white-space: pre-wrap; background-color: var(--bs-tertiary-bg); padding: 0.75rem; border-radius: 0.25rem; margin-top: 0.5rem; font-size: 0.9em;}
-        .form-label-sm { font-size: 0.8rem !important; margin-bottom: 0.2rem !important; }
-    </style>
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
 {% endblock extra_head %}
 
 {% block content %}

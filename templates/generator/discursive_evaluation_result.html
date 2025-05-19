@@ -5,52 +5,7 @@
 {% block title %}Resultado da Avaliação - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'generator/css/evaluation_result_styles.css' %}">
-    <style>
-        /* Estilos mínimos inline ou mova para evaluation_result_styles.css */
-        .evaluation-section {
-            padding: 1.5rem;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.5rem;
-            background-color: var(--bs-tertiary-bg);
-            margin-bottom: 1.5rem; /* mb-4 */
-        }
-        /* Estilo para texto submetido e feedback (usando markdownify) */
-        .submitted-text-markdown,
-        .feedback-markdown {
-            white-space: pre-wrap; /* Mantém quebras de linha e espaços */
-            word-wrap: break-word;
-            font-size: 0.9em;
-            background-color: var(--bs-secondary-bg); /* Fundo leve */
-            padding: 1rem; /* Aumentado padding */
-            border-radius: 0.375rem;
-            border: 1px solid var(--bs-border-color-translucent); /* Borda suave */
-            line-height: 1.6; /* Melhora legibilidade */
-        }
-        .submitted-text-markdown p,
-        .feedback-markdown p { margin-bottom: 0.5rem; }
-        .submitted-text-markdown strong,
-        .feedback-markdown strong { font-weight: 600; }
-        .submitted-text-markdown ol, .submitted-text-markdown ul,
-        .feedback-markdown ol, .feedback-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;}
-
-        /* Estilo específico para feedback bruto (quando parse falha) */
-         .raw-feedback-pre pre {
-             white-space: pre-wrap;
-             word-wrap: break-word;
-             font-size: 0.85em;
-             background-color: var(--bs-body-bg); /* Fundo diferente para destacar */
-             padding: 0.75rem;
-             border-radius: 0.25rem;
-             border: 1px dashed var(--bs-danger-border-subtle); /* Borda tracejada de aviso */
-             color: var(--bs-secondary-color); /* Cor mais suave */
-         }
-
-        .score-highlight {
-            font-weight: bold;
-            color: var(--bs-primary); /* Ou outra cor de destaque */
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
 {% endblock extra_head %}
 
 

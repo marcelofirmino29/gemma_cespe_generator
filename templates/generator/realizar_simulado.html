@@ -4,34 +4,7 @@
 {% block title %}Simulado - Questão {{ indice_atual }} de {{ total_questoes }}{% endblock title %}
 
 {% block extra_head %}
-    {# Reutiliza estilos de item de question_generator se necessário #}
-    <style>
-        /* Estilos para layout de coluna única e itens */
-        .item-column-display {
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            /* border-bottom: 1px dashed var(--bs-border-color); */ /* Sem borda inferior aqui */
-        }
-        .item-number {
-            font-weight: 600;
-            margin-right: 0.5em;
-        }
-        .item-text {
-            font-size: 0.95rem; /* Tamanho da fonte do item do simulado */
-        }
-        .answer-options {
-            margin-top: 1rem; /* Aumenta espaço antes das opções */
-            padding-left: 1.5rem; /* Adiciona indentação para as opções */
-        }
-        .motivador-text { /* Estilo copiado de question_generator */
-            background-color: var(--bs-tertiary-bg);
-            border: 1px solid var(--bs-border-color);
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.9em;
-            border-radius: 0.375rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
 {% endblock extra_head %}
 
 {% block content %}

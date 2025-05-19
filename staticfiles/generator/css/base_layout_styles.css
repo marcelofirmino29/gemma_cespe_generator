@@ -1,0 +1,1322 @@
+/* Estilos gerais base e landingpage */
+
+/* --- Reset/Base --- */
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 56px; /* Ajuste se a altura da navbar fixa for diferente. */
+                       /* Nota: Um JS (base_layout_scripts.js) pode estar ajustando isso dinamicamente. */
+}
+
+/* --- Layout Principal --- */
+main.app-main-content {
+    flex-grow: 1;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+footer {
+    flex-shrink: 0;
+}
+
+/* --- Componentes Bootstrap Globais/Utilitários --- */
+.bd-placeholder-img {
+   font-size: 1.125rem;
+   text-anchor: middle;
+   -webkit-user-select: none;
+   -moz-user-select: none;
+   user-select: none;
+}
+
+@media (min-width: 768px) {
+   .bd-placeholder-img-lg {
+       font-size: 3.5rem;
+   }
+}
+
+.bi {
+   vertical-align: -.125em;
+   fill: currentColor;
+}
+
+.bd-mode-toggle {
+   z-index: 1500;
+}
+
+/* --- Navbar --- */
+/* Assumindo que sua tag <nav> principal tem id="main-navbar" */
+nav#main-navbar.fixed-top { /* Adicionado ID para especificidade */
+    z-index: 1030;
+}
+
+nav#main-navbar { /* Adicionado ID para especificidade */
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+nav#main-navbar .navbar-brand { /* Adicionado ID para especificidade */
+    font-size: 0.95rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+}
+nav#main-navbar .navbar-brand .bi-robot { /* Adicionado ID para especificidade */
+    font-size: 1.1rem;
+    vertical-align: text-bottom;
+}
+
+/* Estilos para os links na barra da navbar (quando horizontal E NÃO COLAPSADA) */
+/* O tema "Brite" deve cuidar do contraste aqui com base no .bg-body-tertiary e data-bs-theme="light" */
+nav#main-navbar .navbar-nav:not(.offcanvas-body .navbar-nav) .nav-link { /* Adicionado :not para não afetar offcanvas se usado */
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+nav#main-navbar .navbar-nav:not(.offcanvas-body .navbar-nav) .nav-link i.bi {
+    font-size: 1rem;
+    vertical-align: middle;
+}
+nav#main-navbar .navbar-nav:not(.offcanvas-body .navbar-nav) .nav-link span.ms-2 {
+    font-size: 0.85rem;
+}
+
+nav#main-navbar .navbar-toggler { /* Adicionado ID para especificidade */
+    padding: 0.15rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+/* --- Largura Customizada para Menu Navbar Colapsado --- */
+/* Ajusta a largura do menu dropdown da navbar principal quando aberto */
+#main-navbar #navbarPrincipal.collapse.show,
+#main-navbar #navbarPrincipal.collapse.collapsing { /* .collapsing é para o estado durante a animação */
+    width: 280px; /* <<< Defina a largura desejada aqui (ex: 250px, 300px, 25vw, etc.) */
+    
+    /* Opcional: Adicionar uma sombra para dar um efeito de "flutuação" */
+    /* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); */
+
+    /* Nota: A cor de fundo será tratada pelas regras de tema ([data-bs-theme='light/dark']) 
+       que você já possui mais abaixo neste arquivo. */
+}
+/* --- FIM do Bloco de Largura Customizada --- */
+
+
+/* --- Menu Navbar Colapsado (Dropdown) --- */
+/* Estilos para o menu quando ele é expandido (ocupa a largura da navbar e desce) */
+
+/* Contexto Geral para o menu colapsado */
+nav#main-navbar .navbar-collapse {
+    /* Limita a altura e adiciona rolagem se necessário */
+    max-height: calc(100vh - 65px); /* Altura da tela menos altura aproximada da navbar e uma margem */
+    overflow-y: auto;
+    /* Adiciona uma borda superior para separar visualmente da navbar se os fundos forem muito similares */
+    /* border-top: 1px solid var(--bs-border-color-translucent); */ /* Opcional, pode não ser necessário se o fundo for distinto */
+    /* margin-top: -1px; */ /* Compensa a borda para não adicionar altura extra */
+    padding-bottom: 0.5rem; /* Espaço no final da lista de links */
+}
+
+/* Estilos para o menu colapsado QUANDO data-bs-theme="light" (Ex: Tema Brite) */
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing {
+    background-color: #f8f9fa !important; /* Cor de fundo 'light' explícita, similar ao --bs-light-bg */
+}
+
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link {
+    color: #212529 !important; /* Cor de texto 'dark' explícita para contraste com fundo claro */
+}
+
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link .bi,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link .bi {
+    color: #212529 !important; /* Ícones também escuros */
+}
+
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:hover,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:focus,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:hover,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus {
+    color: #0056b3 !important; /* Um azul mais escuro para hover/focus, ou var(--bs-link-hover-color) se funcionar bem */
+    background-color: #e9ecef !important; /* Fundo de hover sutil */
+}
+
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:hover .bi,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:focus .bi,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:hover .bi,
+[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus .bi {
+    color: #0056b3 !important;
+}
+
+/* Estilos para o menu colapsado QUANDO data-bs-theme="dark" */
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing {
+    background-color: var(--bs-dark-bg-subtle, #2b3035) !important; /* Fundo escuro do tema, com fallback */
+}
+
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link {
+    color: var(--bs-light, #f8f9fa) !important; /* Texto claro */
+}
+
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link .bi,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link .bi {
+    color: var(--bs-light, #f8f9fa) !important; /* Ícones claros */
+}
+
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:hover,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:focus,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:hover,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus {
+    color: var(--bs-white, #fff) !important; /* Texto mais claro no hover */
+    background-color: rgba(255, 255, 255, 0.05) !important; /* Fundo de hover sutil */
+}
+
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:hover .bi,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:focus .bi,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:hover .bi,
+[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus .bi {
+    color: var(--bs-white, #fff) !important;
+}
+/* FIM - Menu Navbar Colapsado (Dropdown) */
+
+
+.navbar-nav .btn-sm,
+.navbar-nav .dropdown-toggle.btn-sm,
+.navbar-nav form .btn-sm {
+    font-size: 0.75rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+}
+.navbar-text.small {
+    font-size: 0.75rem;
+}
+
+/* --- Controles de Fonte (Ex: no Footer) --- */
+.font-size-controls .btn {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* --- Estilos dos Cards da Landing Page --- */
+/* ... (o restante dos estilos dos cards permanecem os mesmos que você forneceu) ... */
+.card.landing-card {
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+    height: 100%;
+    box-shadow: var(--bs-box-shadow-sm);
+    color: var(--bs-body-color);
+    border-radius: var(--bs-card-border-radius);
+    border: var(--bs-card-border-width) solid var(--bs-card-border-color);
+    text-decoration: none;
+}
+
+.card.landing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--bs-box-shadow-lg);
+}
+
+.card.landing-card .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    transition: color 0.3s ease-in-out;
+}
+
+.card.landing-card .card-text.description {
+    font-size: 0.75rem;
+    text-align: left;
+    padding-left: 1.75rem;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.4s ease-in-out, max-height 0.5s ease-in-out, margin-bottom 0.4s ease-in-out, margin-top 0.4s ease-in-out, color 0.3s ease-in-out;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.card.landing-card:hover .card-text.description {
+    opacity: 1;
+    max-height: 10rem;
+    margin-bottom: 1rem;
+    margin-top: 0.5rem;
+}
+
+.card.landing-card .icon {
+    font-size: 1.25rem;
+    margin-right: 0.375rem;
+    transition: color 0.3s ease-in-out;
+    flex-shrink: 0;
+}
+
+/* --- Estilos de Hover para Contraste nos Cards Coloridos (Landing Page) --- */
+/* Dark Theme Hover para Cards Coloridos */
+[data-bs-theme="dark"] .card.landing-card.bg-primary:hover { background-color: #338eff !important; }
+[data-bs-theme="dark"] .card.landing-card.bg-info:hover { background-color: #66d9ef !important; }
+[data-bs-theme="dark"] .card.landing-card.bg-warning:hover { background-color: #ffda6a !important; }
+[data-bs-theme="dark"] .card.landing-card.bg-success:hover { background-color: #48d6a3 !important; }
+
+[data-bs-theme="dark"] .card.landing-card.bg-primary:hover .card-title,
+[data-bs-theme="dark"] .card.landing-card.bg-primary:hover .card-text.description,
+[data-bs-theme="dark"] .card.landing-card.bg-primary:hover .icon,
+[data-bs-theme="dark"] .card.landing-card.bg-primary:hover .card-icon-main,
+[data-bs-theme="dark"] .card.landing-card.bg-primary:hover .card-icon-caption { color: #002b5c !important; }
+
+[data-bs-theme="dark"] .card.landing-card.bg-info:hover .card-title,
+[data-bs-theme="dark"] .card.landing-card.bg-info:hover .card-text.description,
+[data-bs-theme="dark"] .card.landing-card.bg-info:hover .icon,
+[data-bs-theme="dark"] .card.landing-card.bg-info:hover .card-icon-main,
+[data-bs-theme="dark"] .card.landing-card.bg-info:hover .card-icon-caption { color: #013c46 !important; }
+
+[data-bs-theme="dark"] .card.landing-card.bg-warning:hover .card-title,
+[data-bs-theme="dark"] .card.landing-card.bg-warning:hover .card-text.description,
+[data-bs-theme="dark"] .card.landing-card.bg-warning:hover .icon,
+[data-bs-theme="dark"] .card.landing-card.bg-warning:hover .card-icon-main,
+[data-bs-theme="dark"] .card.landing-card.bg-warning:hover .card-icon-caption { color: #594200 !important; }
+
+[data-bs-theme="dark"] .card.landing-card.bg-success:hover .card-title,
+[data-bs-theme="dark"] .card.landing-card.bg-success:hover .card-text.description,
+[data-bs-theme="dark"] .card.landing-card.bg-success:hover .icon,
+[data-bs-theme="dark"] .card.landing-card.bg-success:hover .card-icon-main,
+[data-bs-theme="dark"] .card.landing-card.bg-success:hover .card-icon-caption { color: #033e27 !important; }
+
+/* Light Theme Hover para Cards Coloridos */
+[data-bs-theme="light"] .card.landing-card.bg-primary:hover { background-color: #0b5ed7 !important; }
+[data-bs-theme="light"] .card.landing-card.bg-info:hover { background-color: #0aa1b8 !important; }
+[data-bs-theme="light"] .card.landing-card.bg-warning:hover { background-color: #ffac07 !important; }
+[data-bs-theme="light"] .card.landing-card.bg-success:hover { background-color: #146c43 !important; }
+
+[data-bs-theme="light"] .card.landing-card.bg-primary:hover .card-title,
+[data-bs-theme="light"] .card.landing-card.bg-primary:hover .card-text.description,
+[data-bs-theme="light"] .card.landing-card.bg-primary:hover .icon,
+[data-bs-theme="light"] .card.landing-card.bg-primary:hover .card-icon-main,
+[data-bs-theme="light"] .card.landing-card.bg-primary:hover .card-icon-caption { color: var(--bs-white) !important; }
+
+[data-bs-theme="light"] .card.landing-card.bg-info:hover .card-title,
+[data-bs-theme="light"] .card.landing-card.bg-info:hover .card-text.description,
+[data-bs-theme="light"] .card.landing-card.bg-info:hover .icon,
+[data-bs-theme="light"] .card.landing-card.bg-info:hover .card-icon-main,
+[data-bs-theme="light"] .card.landing-card.bg-info:hover .card-icon-caption { color: var(--bs-white) !important; }
+
+[data-bs-theme="light"] .card.landing-card.bg-warning:hover .card-title,
+[data-bs-theme="light"] .card.landing-card.bg-warning:hover .card-text.description,
+[data-bs-theme="light"] .card.landing-card.bg-warning:hover .icon,
+[data-bs-theme="light"] .card.landing-card.bg-warning:hover .card-icon-main,
+[data-bs-theme="light"] .card.landing-card.bg-warning:hover .card-icon-caption { color: var(--bs-dark) !important; }
+
+[data-bs-theme="light"] .card.landing-card.bg-success:hover .card-title,
+[data-bs-theme="light"] .card.landing-card.bg-success:hover .card-text.description,
+[data-bs-theme="light"] .card.landing-card.bg-success:hover .icon,
+[data-bs-theme="light"] .card.landing-card.bg-success:hover .card-icon-main,
+[data-bs-theme="light"] .card.landing-card.bg-success:hover .card-icon-caption { color: var(--bs-white) !important; }
+
+/* --- Cores base de texto/ícone para cards coloridos no modo claro (ESTADO NORMAL) --- */
+[data-bs-theme="light"] .card.landing-card.bg-primary .card-title,
+[data-bs-theme="light"] .card.landing-card.bg-primary .card-icon-caption,
+[data-bs-theme="light"] .card.landing-card.bg-primary .icon,
+[data-bs-theme="light"] .card.landing-card.bg-primary .card-icon-main {
+    color: var(--bs-white) !important;
+}
+ [data-bs-theme="light"] .card.landing-card.bg-info .card-title,
+ [data-bs-theme="light"] .card.landing-card.bg-info .card-icon-caption,
+ [data-bs-theme="light"] .card.landing-card.bg-info .icon,
+ [data-bs-theme="light"] .card.landing-card.bg-info .card-icon-main {
+    color: var(--bs-dark) !important;
+ }
+  [data-bs-theme="light"] .card.landing-card.bg-warning .card-title,
+  [data-bs-theme="light"] .card.landing-card.bg-warning .card-icon-caption,
+  [data-bs-theme="light"] .card.landing-card.bg-warning .icon,
+  [data-bs-theme="light"] .card.landing-card.bg-warning .card-icon-main {
+      color: var(--bs-dark) !important;
+  }
+   [data-bs-theme="light"] .card.landing-card.bg-success .card-title,
+   [data-bs-theme="light"] .card.landing-card.bg-success .card-icon-caption,
+   [data-bs-theme="light"] .card.landing-card.bg-success .icon,
+   [data-bs-theme="light"] .card.landing-card.bg-success .card-icon-main {
+       color: var(--bs-white) !important;
+   }
+
+/* Estilos para o Template Configurar Simulado */
+.content-container { /* Renomeado de filters-container para algo mais genérico se este é o container principal */
+    border: 1px solid var(--bs-border-color);
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    background-color: var(--bs-body-bg);
+    margin-bottom: 1.5rem; /* Adiciona espaço antes do rodapé/próximo elemento */
+}
+.form-label { font-size: 0.85rem; margin-bottom: 0.3rem; }
+.form-control, .form-select { font-size: 0.9rem; }
+.form-control-sm, .form-select-sm { font-size: 0.85rem; }
+.form-text { font-size: 0.75rem; }
+/* .btn-filter-action { font-size: 0.9rem; } */ /* Comentado se não usado */
+
+.generated-exam-markdown { /* MODIFICADO */
+    /* Frame Properties */
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    padding: 1.25rem;
+    border-radius: var(--bs-card-border-radius, 0.375rem);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+
+    /* Existing/Relevant Text & Formatting Properties */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.95em; 
+    line-height: 1.7; 
+}
+.generated-exam-markdown p { margin-bottom: 0.5rem; } /* Estilo interno do markdown, manter */
+.generated-exam-markdown strong { font-weight: 600; } /* Estilo interno do markdown, manter */
+.generated-exam-markdown ol,
+.generated-exam-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;} /* Estilo interno do markdown, manter */
+
+label { display: block; margin-bottom: 0.25rem; }
+
+#{{ form.topico.id_for_label|default:'id_topico_simulado' }} { /* Usando um ID default mais específico para evitar conflitos */
+    min-height: 80px;
+}
+.action-buttons .btn { font-size: 0.9rem; }
+
+/* Estilos para estatísticas e gráfico (do seu código original) */
+/* Estilos para o container de filtros e conteúdo do dashboard */
+.filters-container { /* Este pode ser o seu .content-container ou um específico para filtros */
+    border: 1px solid var(--bs-border-color);
+    /* border-top: none;  REMVIDO: Não há mais abas diretamente acima neste bloco para justificar remover a borda superior */
+    padding: 1.5rem;
+    border-radius: 0.375rem; /* Aplicar a todas as bordas agora */
+    background-color: var(--bs-body-bg);
+    margin-bottom: 1.5rem; /* Adiciona espaço antes do próximo elemento se houver */
+}
+/* .content-container já definido acima */
+
+/* .form-label, .form-control, .form-select, .form-text, .btn-filter-action já definidos acima */
+
+.generated-exam-markdown { /* MODIFICADO - SEGUNDA OCORRÊNCIA */
+    /* Frame Properties */
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    padding: 1.25rem;
+    border-radius: var(--bs-card-border-radius, 0.375rem);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+
+    /* Existing/Relevant Text & Formatting Properties */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.95em; 
+    line-height: 1.7; 
+}
+/* Estilos internos do .generated-exam-markdown como p, strong, ol, ul são definidos abaixo na seção MELHORADA, e podem ser consolidados ou ajustados se necessário.
+   Por ora, mantendo a estrutura original de múltiplas definições, mas aplicando a moldura. */
+
+/* label já definido */
+
+#{{ form.base_topic_or_context.id_for_label }} { /* CUIDADO: Este seletor pode não existir mais se 'form' não for passado ou não tiver esse campo */
+    min-height: 80px;
+}
+
+/* Estilos para estatísticas e gráfico (do seu código original) */
+.stat-icon { font-size: 1.8rem; margin-bottom: 0.3rem; display: block; }
+.stat-value { font-size: 1.75rem; font-weight: 600; line-height: 1.2; }
+.stat-label { font-size: 0.8rem; }
+.chart-container { position: relative; height: 280px; width: 100%; max-width: 400px; margin: auto;} /* Ajuste max-width se necessário */
+
+/* Estilos específicos para a página dashboard.html */
+/* .stat-value, .stat-label, .chart-container, .stat-icon já definidos ou com variações acima/abaixo */
+
+.stat-value { /* Repetido, consolidar se possível */
+    font-size: 1.75rem;
+    font-weight: bold;
+}
+.stat-label { /* Repetido, consolidar se possível */
+    font-size: 0.9rem;
+}
+.chart-container { /* Repetido, consolidar se possível */
+    position: relative;
+    margin: auto;
+    height: 250px; /* Altura fixa para o container do gráfico */
+    width: 100%;
+    max-width: 300px; /* Largura máxima para o gráfico de pizza/rosca */
+}
+.stat-icon { /* Repetido, consolidar se possível */
+    font-size: 2.5rem; /* Tamanho dos ícones de estatística */
+    margin-bottom: 0.5rem;
+    display: block;
+}
+/* Ajuste para tabela não colar no card */
+.card-body.p-0 .table {
+    margin-bottom: 0 !important;
+}
+/* Estilo para o formulário de filtro */
+.filter-form {
+    padding: 1rem 1.5rem;
+    background-color: var(--bs-tertiary-bg);
+    border-radius: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    /* A margem inferior mb-4 é aplicada diretamente no HTML */
+}
+[data-bs-theme="dark"] .filter-form {
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+}
+/* Estilos para paginação (opcional, pode ficar no base_styles.css se preferir) */
+.pagination .page-link {
+    color: var(--bs-primary);
+}
+.pagination .page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+.pagination .page-item.disabled .page-link {
+    color: var(--bs-secondary-color);
+}
+
+/* Estilos para o página de gerar questões discursivas */
+
+/* Estilos específicos para a página de resultado da avaliação */
+.results-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background-color: var(--bs-tertiary-bg); /* Usa variável Bootstrap */
+    border-radius: 0.5rem;
+    border: 1px solid var(--bs-border-color); /* Usa variável Bootstrap */
+}
+
+/* Estilo para blocos de texto pré-formatados (contexto e resposta) */
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: var(--bs-body-bg); /* Fundo adapta ao tema */
+    padding: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    max-height: 400px; /* Limita altura */
+    overflow-y: auto; /* Adiciona scroll se necessário */
+    font-family: var(--bs-font-monospace); /* Fonte monoespaçada */
+    font-size: 0.875em; /* Tamanho ligeiramente menor */
+}
+
+/* Estilo para o card que contém a avaliação detalhada */
+.evaluation-box {
+    background-color: var(--bs-secondary-bg); /* Fundo ligeiramente diferente */
+    border: 1px solid var(--bs-border-color-translucent);
+}
+
+/* Destaque para as notas numéricas */
+.score-highlight {
+    font-weight: bold;
+    color: var(--bs-primary); /* Cor primária do tema */
+}
+
+/* Ajustes específicos para Dark Mode */
+[data-bs-theme="dark"] .results-section {
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+}
+
+[data-bs-theme="dark"] pre {
+    background-color: #2b3035; /* Um cinza escuro comum */
+}
+
+[data-bs-theme="dark"] .evaluation-box {
+    background-color: var(--bs-tertiary-bg); /* Usa outra variável Bootstrap */
+}
+
+/* Estilos mínimos inline ou mova para evaluation_result_styles.css */
+.evaluation-section {
+    padding: 1.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    background-color: var(--bs-tertiary-bg);
+    margin-bottom: 1.5rem; /* mb-4 */
+}
+/* Estilo para texto submetido e feedback (usando markdownify) */
+.submitted-text-markdown, /* Pode ser candidato a moldura se exibir questões/contextos */
+.feedback-markdown {
+    white-space: pre-wrap; /* Mantém quebras de linha e espaços */
+    word-wrap: break-word;
+    font-size: 0.9em;
+    background-color: var(--bs-secondary-bg); /* Fundo leve */
+    padding: 1rem; /* Aumentado padding */
+    border-radius: 0.375rem;
+    border: 1px solid var(--bs-border-color-translucent); /* Borda suave */
+    line-height: 1.6; /* Melhora legibilidade */
+    margin-bottom: 1rem; /* Adicionado para espaçamento */
+}
+.submitted-text-markdown p,
+.feedback-markdown p { margin-bottom: 0.5rem; }
+.submitted-text-markdown strong,
+.feedback-markdown strong { font-weight: 600; }
+.submitted-text-markdown ol, .submitted-text-markdown ul,
+.feedback-markdown ol, .feedback-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;}
+
+/* Estilo específico para feedback bruto (quando parse falha) */
+ .raw-feedback-pre pre {
+     white-space: pre-wrap;
+     word-wrap: break-word;
+     font-size: 0.85em;
+     background-color: var(--bs-body-bg); /* Fundo diferente para destacar */
+     padding: 0.75rem;
+     border-radius: 0.25rem;
+     border: 1px dashed var(--bs-danger-border-subtle); /* Borda tracejada de aviso */
+     color: var(--bs-secondary-color); /* Cor mais suave */
+ }
+
+.score-highlight { /* Repetido */
+    font-weight: bold;
+    color: var(--bs-primary); /* Ou outra cor de destaque */
+}
+
+/* Estilos para a página de avaliação de respostas */
+
+/* Estilos específicos para a página do Gerador de Questão Discursiva */
+.form-container, /* Estes containers podem ter a moldura se apropriado */
+.results-container,
+.answer-input-section {
+    background-color: var(--bs-tertiary-bg);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 2rem;
+    border: 1px solid var(--bs-border-color); /* Adicionando borda para completar a moldura */
+}
+
+.alert { /* Repetido */
+    margin-top: 1rem;
+}
+
+small.form-text { /* Repetido */
+    color: var(--bs-secondary-color);
+}
+
+.generated-exam-card { /* Este é um bom candidato para a moldura padrão */
+    background-color: var(--bs-tertiary-bg); /* Consistente com moldura */
+    border: 1px solid var(--bs-border-color); /* Consistente com moldura */
+    padding: 1.25rem; /* Adicionando padding */
+    border-radius: var(--bs-card-border-radius, 0.375rem); /* Consistente */
+    margin-bottom: 1.5rem; /* Adicionando margin */
+    box-shadow: var(--bs-box-shadow-sm); /* Consistente */
+}
+
+/* Estilo PRE para exibir questão gerada (sem formatação extra) */
+pre#markdown-content { /* ID específico para evitar conflito com outros PREs */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit; /* Usa fonte padrão do corpo */
+    font-size: inherit;
+    padding: 0; /* Sem padding extra */
+    margin: 0;
+    background: none; /* Sem fundo extra */
+    border: none; /* Sem borda extra */
+    max-height: none; /* Remove limite de altura se houver */
+    overflow-y: visible; /* Remove scroll se houver */
+}
+/* Se pre#markdown-content precisar de moldura, adicionar aqui: */
+/*
+pre#markdown-content {
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    padding: 1.25rem;
+    border-radius: var(--bs-card-border-radius, 0.375rem);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit;
+    font-size: inherit;
+}
+*/
+
+
+/* Ajustes Dark Mode específicos */
+[data-bs-theme="dark"] .form-container,
+[data-bs-theme="dark"] .results-container,
+[data-bs-theme="dark"] .answer-input-section {
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); /* Mantém sombra específica do dark mode se desejado */
+}
+
+[data-bs-theme="dark"] .generated-exam-card {
+    background-color: var(--bs-secondary-bg); /* Ajustado para um pouco mais escuro no dark mode */
+}
+
+/* Estilos para o formulário de resposta discursiva*/
+
+/* .filters-container e .form-label, .form-control, .form-text já definidos */
+
+/* --- ESTILOS MELHORADOS PARA .generated-exam-markdown --- */
+.generated-exam-markdown { /* MODIFICADO - TERCEIRA OCORRÊNCIA (PRINCIPAL) */
+    /* Frame Properties */
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    padding: 1.25rem;
+    border-radius: var(--bs-card-border-radius, 0.375rem);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+
+    /* Existing/Relevant Text & Formatting Properties */
+    white-space: pre-wrap; /* Adicionado para consistência */
+    word-wrap: break-word;
+    font-size: 0.95em;
+    line-height: 1.7;
+}
+
+.generated-exam-markdown > *:first-child {
+    margin-top: 0;
+}
+.generated-exam-markdown > *:last-child {
+    margin-bottom: 0;
+}
+
+.generated-exam-markdown p {
+    margin-bottom: 1em;
+}
+.generated-exam-markdown strong,
+.generated-exam-markdown b {
+    font-weight: 600;
+}
+.generated-exam-markdown em,
+.generated-exam-markdown i {
+    font-style: italic;
+}
+
+.generated-exam-markdown h1,
+.generated-exam-markdown h2,
+.generated-exam-markdown h3,
+.generated-exam-markdown h4,
+.generated-exam-markdown h5,
+.generated-exam-markdown h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    font-weight: 600;
+    line-height: 1.3;
+}
+.generated-exam-markdown h1 { font-size: 1.8em; }
+.generated-exam-markdown h2 { font-size: 1.6em; }
+.generated-exam-markdown h3 { font-size: 1.4em; }
+.generated-exam-markdown h4 { font-size: 1.2em; }
+.generated-exam-markdown h5 { font-size: 1.1em; }
+.generated-exam-markdown h6 { font-size: 1em; }
+
+.generated-exam-markdown ul,
+.generated-exam-markdown ol {
+    padding-left: 2em;
+    margin-bottom: 1em;
+}
+.generated-exam-markdown li {
+    margin-bottom: 0.5em;
+}
+.generated-exam-markdown ul ul,
+.generated-exam-markdown ol ol,
+.generated-exam-markdown ul ol,
+.generated-exam-markdown ol ul {
+    margin-bottom: 0.5em;
+}
+.generated-exam-markdown blockquote {
+    margin: 0 0 1em 0;
+    padding: 0.5em 1em;
+    border-left: 0.25em solid var(--bs-border-color-translucent);
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-emphasis-color);
+}
+.generated-exam-markdown hr {
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    border: 0;
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+.generated-exam-markdown code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: var(--bs-secondary-bg);
+    border-radius: 3px;
+    font-family: var(--bs-font-monospace);
+}
+.generated-exam-markdown pre { /* Este 'pre' é DENTRO de .generated-exam-markdown */
+    padding: 1em;
+    margin: 0 0 1em;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: var(--bs-secondary-bg); /* Diferente do --bs-tertiary-bg da moldura principal */
+    border-radius: 3px;
+    border: 1px solid var(--bs-border-color);
+}
+.generated-exam-markdown pre code {
+    padding: 0;
+    margin: 0;
+    font-size: 100%;
+    background-color: transparent;
+    border-radius: 0;
+    border: none;
+}
+/* --- FIM ESTILOS MELHORADOS --- */
+
+#{{ form.base_topic_or_context.id_for_label|default:'id_base_topic_discursive' }} { /* Este seletor com tag Django não funcionará em CSS externo. Mantenha-o inline se precisar MUITO, ou use uma classe fixa. Por ora, vou remover o ID dinâmico do CSS. */
+    min-height: 80px;
+}
+/* Se você precisa estilizar aquele textarea específico, adicione uma classe a ele no forms.py ou template e use essa classe aqui.
+   Exemplo: .discursive-topic-textarea { min-height: 80px; }
+*/
+#id_base_topic_discursive { /* Assumindo que o ID padrão será este se não houver form.base_topic_or_context.id_for_label */
+    min-height: 80px;
+}
+
+
+.action-buttons .btn { font-size: 0.9rem; }
+.parameter-section h5 {
+    font-size: 0.9rem; font-weight: 600; color: var(--bs-secondary-color);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent); padding-bottom: 0.5rem;
+}
+.pdf-upload-section { margin-top: 1rem; margin-bottom: 1rem; }
+
+@media print {
+    body {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 12pt;
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+    header.fixed-top, footer, .filters-container, .alert:not(.alert-printable),
+    .action-buttons, .text-end.mb-4 .btn, #user-answer-form, #printDiscursiveQuestionBtn,
+    .container > .alert.alert-secondary, .container > h1.h4.mb-4.text-center,
+    hr.my-4, #decrease-font, #reset-font, #increase-font,
+    .bd-mode-toggle, .btn-close
+    {
+        display: none !important;
+    }
+    .generated-exam-container { margin-top: 0 !important; padding-top: 0 !important; }
+    .generated-exam-container h2.h5 {
+        font-size: 14pt !important; text-align: center;
+        margin-bottom: 15px !important; color: #000000 !important;
+    }
+    .generated-exam-markdown { /* Estilo de impressão para markdown */
+        border: 1px solid #999 !important; padding: 15px !important;
+        font-size: 1em !important; background-color: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important; /* Remover sombra na impressão */
+    }
+    .generated-exam-markdown p, .generated-exam-markdown li,
+    .generated-exam-markdown strong, .generated-exam-markdown em,
+    .generated-exam-markdown h1, .generated-exam-markdown h2,
+    .generated-exam-markdown h3, .generated-exam-markdown h4,
+    .generated-exam-markdown h5, .generated-exam-markdown h6,
+    .generated-exam-markdown blockquote, .generated-exam-markdown code,
+    .generated-exam-markdown pre {
+        color: #000000 !important;
+        background-color: transparent !important; /* Reset para elementos como code e blockquote */
+    }
+     .generated-exam-markdown blockquote {
+        border-left-color: #999 !important;
+    }
+    .generated-exam-markdown a { color: #000000 !important; text-decoration: underline; }
+    .generated-exam-markdown a[href]:after { content: " (" attr(href) ")"; font-size: 90%;}
+    body { padding-top: 0 !important; }
+    main.app-main-content { padding-top: 0 !important; padding-bottom: 0 !important; }
+    .container {
+        max-width: 100% !important; width: 100% !important;
+        padding: 20px !important; margin: 0 !important;
+    }
+}
+
+/* Estilos para o gerador de questões */
+
+/* Estilos específicos para a página do Gerador de Questão Discursiva (Repetido, verificar se precisa de consolidação) */
+/* .form-container, .results-container, .answer-input-section, .alert, small.form-text, .generated-exam-card já estilizados ou definidos acima */
+
+/* Estilos para o formulário de resolução de questões*/
+
+/* Estilos específicos para a página C/E (question_generator.html) */
+.question-item { /* MODIFICADO */
+    background-color: var(--bs-tertiary-bg); 
+    border: 1px solid var(--bs-border-color);
+    padding: 1.25rem; 
+    margin-bottom: 1.5rem; 
+    border-radius: var(--bs-card-border-radius, 0.375rem); 
+    box-shadow: var(--bs-box-shadow-sm); 
+}
+.question-item p {
+   margin-bottom: 0.75rem;
+}
+.form-check-inline {
+   margin-right: 1rem;
+}
+/* Esconder spinner por padrão - JS controla exibição */
+.spinner-border {
+   display: none;
+}
+/* Estilo do botão desabilitado já vem do Bootstrap */
+button:disabled {
+    cursor: not-allowed;
+}
+/* small.form-text, .form-container, .alert já definidos */
+
+/* Estilos para resultados da validação */
+.correct-answer {
+    color: var(--bs-success-text-emphasis); /* Usa variável Bootstrap para tema escuro/claro */
+    font-weight: bold;
+}
+.incorrect-answer {
+    color: var(--bs-danger-text-emphasis); /* Usa variável Bootstrap para tema escuro/claro */
+    font-weight: bold;
+}
+.feedback {
+    font-style: italic;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+.justification {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--bs-border-color-translucent); /* Borda mais sutil */
+}
+.results-validation {
+    margin-top: 2rem;
+}
+.performance-summary {
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-secondary-bg); /* Fundo levemente diferente */
+    border-radius: .375rem;
+}
+.performance-summary h4 {
+    color: var(--bs-emphasis-color);
+}
+.performance-summary .table {
+    margin-bottom: 0.5rem !important;
+}
+.performance-summary .alert {
+    font-size: 0.95em;
+}
+
+/* Ajustes Dark Mode específicos desta página (se necessários) */
+[data-bs-theme="dark"] .form-container, /* form-container já tem estilos gerais, esta sombra é adicional */
+[data-bs-theme="dark"] .results-container, /* Adicionado para consistência se usar essa classe */
+[data-bs-theme="dark"] .results-validation .question-item { /* .question-item já tem bg, esta sombra é adicional se .results-validation for usado */
+   /* background-color: var(--bs-gray-dark); */ /* Exemplo, mas o .question-item já usa --bs-tertiary-bg */
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); /* Adicionando sombra dark mode consistente se não tiver */
+}
+[data-bs-theme="dark"] .performance-summary {
+   border-color: var(--bs-gray-700);
+}
+
+/* static/generator/css/question_bank_ce_styles.css */
+
+.search-filters {
+    background-color: var(--bs-tertiary-bg);
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--bs-border-color-translucent);
+}
+.question-list-item { /* MODIFICADO */
+    padding: 1.25rem; 
+    border: 1px solid var(--bs-border-color); 
+    border-radius: var(--bs-card-border-radius, 0.375rem); 
+    margin-bottom: 1.5rem; 
+    background-color: var(--bs-tertiary-bg); 
+    box-shadow: var(--bs-box-shadow-sm); 
+}
+.question-meta {
+    font-size: 0.85em;
+    color: var(--bs-secondary-color);
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--bs-border-color-translucent);
+    margin-top: 0.75rem;
+}
+.pagination { margin-bottom: 1rem; } /* .pagination já estilizado acima */
+.motivador-text {
+    background-color: var(--bs-secondary-bg);
+    border-left: 5px solid var(--bs-info);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.95em;
+    border-radius: 0.375rem;
+    white-space: pre-wrap;
+}
+.ce-result-feedback {
+    min-height: 1.5em;
+    padding-top: 0.5rem;
+}
+.ce-result-feedback:empty { display: none; }
+.verify-ce-btn { font-size: 0.8rem; }
+.form-label-sm {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.2rem !important;
+}
+.comment-section .card-body { padding: 0.75rem; }
+
+.multi-select-dropdown .dropdown-menu {
+    padding: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    width: 100%;
+    background-color: var(--bs-dropdown-bg);
+    border-color: var(--bs-dropdown-border-color);
+}
+.multi-select-dropdown .dropdown-item-text {
+    padding: 0.25rem 0.5rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--bs-dropdown-link-color);
+}
+.multi-select-dropdown .dropdown-item-text:hover {
+    background-color: var(--bs-dropdown-link-hover-bg);
+    color: var(--bs-dropdown-link-hover-color);
+}
+.multi-select-dropdown .dropdown-item-text input[type="checkbox"] {
+    margin-right: 0.5rem;
+    pointer-events: none;
+}
+.multi-select-dropdown .dropdown-item-text label {
+    margin-bottom: 0;
+    font-weight: normal;
+    width: 100%;
+    pointer-events: none;
+}
+.multi-select-btn {
+    min-height: calc(1.5em + .5rem + 2px);
+    height: calc(1.5em + .5rem + 2px);
+    padding: .25rem .5rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    text-align: left;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.multi-select-btn .btn-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    max-width: calc(100% - 25px);
+}
+.form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+[data-bs-theme="dark"] .form-check-input {
+    background-color: var(--bs-gray-700);
+    border-color: var(--bs-gray-600);
+}
+ [data-bs-theme="dark"] .form-check-input:focus {
+    border-color: var(--bs-primary-text-emphasis);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+[data-bs-theme="dark"] .multi-select-dropdown .dropdown-item-text label {
+    color: var(--bs-emphasis-color);
+}
+[data-bs-theme="dark"] .multi-select-dropdown .dropdown-item-text:hover {
+     background-color: var(--bs-gray-700);
+     color: var(--bs-light);
+}
+
+/* Estilos para a seção de gabarito final (apenas para impressão) */
+.gabarito-final-impressao {
+    display: none; /* Escondido por padrão na tela */
+}
+.gabarito-final-hr {
+    display: none;
+    border: 0;
+    height: 1px; /* Linha mais sutil */
+    background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.4), rgba(0,0,0,0));
+    margin-top: 25px;
+    margin-bottom: 25px;
+}
+.gabarito-final-titulo {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+.gabarito-final-lista {
+    list-style-type: none;
+    padding-left: 0;
+    columns: 2; /* Tenta dividir em 2 colunas se houver espaço */
+    column-gap: 30px;
+}
+.gabarito-final-lista li {
+    margin-bottom: 6px;
+    page-break-inside: avoid;
+}
+
+/* --- ESTILOS PARA IMPRESSÃO DAS QUESTÕES --- */
+@media print {
+    /* ... (seção de impressão mantida como no original, com ajustes para .generated-exam-markdown já feitos) ... */
+    body {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 11pt;
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+
+    header.fixed-top, footer, .search-filters, .pagination,
+    .verify-ce-btn, .comment-section, #validate-form button[type="submit"],
+    .alert, nav[aria-label="Navegação das questões"],
+    .container > .text-muted.small.mb-3.mt-2,
+    #decrease-font, #reset-font, #increase-font,
+    .bd-mode-toggle, #printQuestionsBtn
+    {
+        display: none !important;
+    }
+
+    .actions-to-hide-on-print .form-check {
+        display: none !important;
+    }
+
+    .container > h1.mb-4.h2, .container > .d-flex > h1.h2.mb-0 {
+         font-size: 16pt !important;
+         text-align: center;
+         margin-bottom: 20px !important;
+    }
+    .motivador-text {
+        border: 1px solid #ccc !important;
+        border-left: 3px solid #555 !important;
+        background-color: #f9f9f9 !important;
+        padding: 0.8rem !important;
+        margin-bottom: 1rem !important;
+        font-size: 0.9em !important;
+        color: #000000 !important;
+    }
+    .motivador-text h3, .motivador-text .small { color: #000000 !important; }
+    .question-list-item, .question-item { /* Aplicando estilo de impressão a ambos */
+        border: 1px solid #bbb !important;
+        padding: 0.8rem 1rem !important;
+        margin-bottom: 0.8rem !important;
+        box-shadow: none !important;
+        background-color: #ffffff !important;
+        page-break-inside: avoid;
+    }
+    .question-list-item h5, .question-list-item p, .question-list-item .question-meta,
+    .question-item h5, .question-item p, .question-item .question-meta /* Supondo que .question-item possa ter .question-meta */
+    {
+         color: #000000 !important;
+    }
+    .question-list-item p.mb-2, .question-item p.mb-2 { font-size: 1em; margin-bottom: 0.5rem !important; }
+    .question-list-item h5.mb-1.h6, .question-item h5.mb-1.h6 { font-size: 1.1em; font-weight: bold; }
+    .question-list-item .badge, .question-item .badge {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background-color: #eee !important;
+    }
+    .question-meta { /* Estilo de impressão para .question-meta */
+        font-size: 0.8em !important;
+        border-top: 1px dotted #ccc !important;
+        padding-top: 0.5rem !important;
+        margin-top: 0.75rem !important;
+    }
+    .question-list-item details.mb-2.small { /* display: none !important; */ }
+    body { padding-top: 0 !important; }
+    main.app-main-content { padding-top: 0 !important; padding-bottom: 0 !important; }
+    .container {
+        max-width: 100% !important; width: 100% !important;
+        padding: 20px !important; margin: 0 !important;
+    }
+    .comment-section hr.my-2 { display: none !important; }
+    .ce-result-feedback { display: none !important; }
+
+    /* Mostrar e Estilizar a seção de gabarito final para impressão */
+    .gabarito-final-impressao {
+        display: block !important;
+        margin-top: 30px !important; /* Espaço antes do gabarito */
+        padding-top: 20px !important;
+        color: #000000 !important;
+        page-break-before: auto; /* Tenta colocar em nova página se não couber bem */
+    }
+    .gabarito-final-hr {
+        display: block !important; /* Mostra a linha na impressão */
+    }
+    .gabarito-final-titulo {
+        font-size: 14pt !important;
+        color: #000000 !important;
+    }
+    .gabarito-final-lista {
+        font-size: 11pt !important;
+        color: #000000 !important;
+        columns: 2; /* Mantém 2 colunas se possível */
+    }
+    .gabarito-final-lista li {
+        color: #000000 !important;
+    }
+}
+/* --- FIM ESTILOS PARA IMPRESSÃO --- */
+
+/* Estilos para a página de pergunta a IA */
+
+/* Font family similar ao Google Sans (você pode precisar importar essa fonte) */
+/* body { Esta regra para 'body font-family' foi comentada pois já existe uma no início do arquivo.
+    font-family: 'Roboto', sans-serif; 
+} */
+
+/* Container principal centralizado */
+.ask-ai-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 90%; /* Deixa mais fluido em telas maiores */
+    border-radius: 8px;
+    /* Fundo branco ou levemente acinzentado como o Google */
+    background-color: var(--bs-body-bg); /* Usa o fundo padrão do Bootstrap para fluidez */
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1); /* Sutil sombra como a do Google */
+}
+
+/* Título "Pergunte à IA" */
+.ask-ai-title {
+    font-size: 2.5rem;
+    font-weight: 500; /* Um pouco menos negrito que o padrão */
+    color: var(--bs-heading-color); /* Cor dos títulos do Bootstrap */
+    margin-bottom: 1.5rem;
+}
+
+/* Descrição abaixo do título */
+.ask-ai-description {
+    color: var(--bs-body-secondary); /* Cor secundária do texto do Bootstrap */
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* Formulário de Pergunta */
+.ask-ai-form {
+    width: 100%;
+    max-width: 600px; /* Largura máxima para o formulário */
+    margin-bottom: 2rem;
+}
+
+.ask-ai-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* Estilização da textarea como a barra de pesquisa do Google */
+#id_user_question {
+    flex-grow: 1;
+    padding: 0.8rem 1.2rem;
+    padding-left: 2.5rem; /* Espaço para o ícone */
+    border: 1px solid #dfe1e5; /* Borda sutil */
+    border-radius: 24px; /* Borda arredondada estilo Google */
+    font-size: 1rem;
+    line-height: 1.5;
+    outline: none;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05); /* Sutil sombra no input */
+    transition: box-shadow 0.2s ease;
+}
+
+#id_user_question:focus {
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada no foco */
+    border-color: #4285f4; /* Cor azul de foco do Google */
+}
+
+#id_user_question::placeholder {
+    color: #9aa0a6; /* Cor do placeholder do Google */
+}
+
+.ask-ai-search-icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9aa0a6;
+}
+
+/* Oculta o label padrão do Django */
+label[for='id_user_question'] {
+    display: none;
+}
+
+/* Botão de Envio */
+.ask-ai-submit-button {
+    background-color: #4285f4; /* Azul do Google */
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-left: 1rem; /* Espaçamento do input */
+}
+
+.ask-ai-submit-button:hover {
+    background-color: #357ae8; /* Azul mais escuro no hover */
+}
+
+/* Contêiner para a resposta da IA */
+.ai-response-container { /* Este container pode receber a moldura se for para exibir "respostas" como se fossem "questões" */
+    width: 100%;
+    max-width: 800px; /* Largura máxima para a resposta */
+    margin-top: 2rem;
+    padding: 1.25rem; /* Aplicando padding da moldura */
+    border-radius: var(--bs-card-border-radius, 0.375rem); /* Aplicando border-radius da moldura */
+    background-color: var(--bs-tertiary-bg); /* Aplicando background da moldura */
+    border: 1px solid var(--bs-border-color); /* Aplicando border da moldura */
+    box-shadow: var(--bs-box-shadow-sm); /* Aplicando box-shadow da moldura */
+    margin-bottom: 1.5rem; /* Adicionando margin-bottom consistente */
+}
+
+.ai-response-title {
+    font-size: 1.2rem;
+    color: var(--bs-heading-color);
+    margin-bottom: 1rem;
+}
+
+.ai-response-box {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--bs-body-color);
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Estilos para elementos Markdown dentro da resposta */
+.ai-response-box h1, .ai-response-box h2, .ai-response-box h3 {
+    color: var(--bs-heading-color);
+    margin-top: 1.5rem;
+    margin-bottom: 0.8rem;
+    font-weight: 500;
+}
+.ai-response-box h1 { font-size: 1.8rem; }
+.ai-response-box h2 { font-size: 1.6rem; }
+.ai-response-box h3 { font-size: 1.4rem; }
+.ai-response-box p { margin-bottom: 1rem; }
+.ai-response-box ul, .ai-response-box ol { margin-left: 1.5rem; margin-bottom: 1rem; padding-left: 1rem;}
+.ai-response-box li { margin-bottom: 0.5rem; }
+.ai-response-box code { font-size: 0.9rem; background-color: var(--bs-code-bg); color: var(--bs-code-color); padding: 0.2rem 0.4rem; border-radius: 4px; }
+.ai-response-box pre { background-color: var(--bs-code-bg); color: var(--bs-code-color); padding: 1rem; border-radius: 6px; overflow-x: auto; margin-bottom: 1rem; }
+.ai-response-box blockquote { border-left: 0.25rem solid var(--bs-blockquote-border-color); padding-left: 1rem; margin-left: 0; color: var(--bs-blockquote-color); font-style: italic; }
+.ai-response-box a { color: var(--bs-link-color); text-decoration: none; font-weight: 500; }
+.ai-response-box a:hover { text-decoration: underline; color: var(--bs-link-hover-color); }
+
+/* Em seu arquivo CSS externo, ex: base_layout_styles.css */
+.service-unavailable {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.question-item-minimal {
+    background-color: var(--bs-tertiary-bg); /* Cor de fundo para destacar a moldura */
+    border: 1px solid var(--bs-border-color); /* Linha da borda */
+    padding: 1.25rem;                         /* Espaçamento interno da moldura */
+    margin-bottom: 1rem;                      /* Espaço ENTRE as molduras/questões */
+    border-radius: var(--bs-card-border-radius, 0.375rem); /* Bordas arredondadas */
+    box-shadow: var(--bs-box-shadow-sm);      /* Sombra sutil para profundidade */
+    /* Adicione um clearfix ou display: flow-root se houver problemas com floats internos,
+       mas com a estrutura atual (flex para os botões), não deve ser necessário. */
+}

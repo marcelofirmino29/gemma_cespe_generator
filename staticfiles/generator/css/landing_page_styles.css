@@ -1,101 +1,156 @@
-{% extends 'generator/base.html' %}
-{% load static %}
+/* static/generator/css/landing_page_styles.css */
 
-{% block title %}Página Inicial - Gerador IA{% endblock title %}
+/* --- Estilos para o Letreiro de Concursos --- */
+.section-title-marquee { /* Estilo para o título da seção do marquee */
+    text-align: center;
+    font-weight: 600; /* Um pouco mais de destaque */
+    color: var(--bs-emphasis-color); /* Usa a cor de ênfase do Bootstrap */
+    margin-top: 2.5rem; /* Espaçamento acima */
+    margin-bottom: 1rem; /* Espaçamento abaixo, antes do marquee */
+}
+.marquee-container {
+    width: 100%;
+    background-color: var(--bs-tertiary-bg); /* Usa cor de fundo terciária do Bootstrap */
+    color: var(--bs-body-color); /* Usa cor de texto do corpo do Bootstrap */
+    padding: 12px 0; /* Aumenta um pouco o padding vertical */
+    border-top: 1px solid var(--bs-border-color-translucent);
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    box-shadow: var(--bs-box-shadow-sm); /* Sombra suave */
+    overflow: hidden;
+    margin-bottom: 2.5rem; /* Aumenta o espaçamento abaixo do marquee */
+}
+.marquee-content span.marquee-item { /* Adicionada classe para cada item */
+    display: inline-block;
+    margin-right: 40px; /* Espaçamento entre os itens do marquee */
+    font-size: 0.95em; /* Levemente maior para melhor leitura */
+    white-space: nowrap; /* Garante que cada item não quebre linha */
+}
+.marquee-content a {
+    color: var(--bs-link-color); /* Usa cor de link padrão do Bootstrap */
+    text-decoration: none;
+    font-weight: 500; /* Peso da fonte para o link */
+}
+.marquee-content a:hover {
+    text-decoration: underline;
+    color: var(--bs-link-hover-color);
+}
+.marquee-status-aberto {
+    color: var(--bs-success); /* Cor de sucesso do Bootstrap */
+    font-weight: 500;
+}
+.marquee-status-previsto {
+    color: var(--bs-warning-text-emphasis); /* Cor de aviso do Bootstrap (para texto) */
+    font-weight: 500;
+}
+.marquee-vagas {
+    font-weight: normal;
+    color: var(--bs-secondary-color); /* Cor secundária do Bootstrap */
+}
+.marquee-separator {
+    color: var(--bs-border-color); /* Cor da borda para o separador */
+    margin: 0 15px;
+}
 
-{% block extra_head %}
-    {# Link para o CSS específico desta página #}
-    <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
-    {# Adiciona estilo para o card desabilitado e stretched-link #}
-    <style>
-        .card.landing-card {
-            position: relative; /* Necessário para stretched-link */
-        }
-        .stretched-link::after { /* Remove sublinhado visual do link expandido */
-            position: absolute;
-            top: 0; right: 0; bottom: 0; left: 0;
-            z-index: 1;
-            content: "";
-        }
-        .card.landing-card .btn { /* Garante que botão fique acima do link expandido */
-             position: relative;
-             z-index: 2;
-        }
-        .disabled-card { /* Estilo visual para card desabilitado */
-             opacity: 0.65;
-             pointer-events: none;
-        }
-    </style>
-{% endblock extra_head %}
+/* --- Estilos Gerais dos Cards (Ícone e Legenda) --- */
+.card.landing-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    height: 100%;
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: 0.5rem;
+    position: relative;
+    text-decoration: none;
+}
+.card.landing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--bs-box-shadow-lg);
+}
+.card.landing-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    height: 100%;
+}
+.card-icon-main {
+    font-size: 2.75rem;
+    margin-bottom: 0.75rem;
+    line-height: 1;
+}
+.card-icon-caption {
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.3;
+    display: block;
+}
+.card.landing-card.text-white .card-icon-main,
+.card.landing-card.text-white .card-icon-caption {
+    color: white;
+}
+.card.landing-card.bg-light .card-icon-main,
+.card.landing-card.bg-light .card-icon-caption,
+.card.landing-card.bg-warning .card-icon-main,
+.card.landing-card.bg-warning .card-icon-caption,
+.card.landing-card.bg-secondary .card-icon-main, /* Adicionado para bg-secondary */
+.card.landing-card.bg-secondary .card-icon-caption { /* Adicionado para bg-secondary */
+    color: var(--bs-dark) !important; /* Força o texto a ser escuro */
+}
 
-{% block content %}
-    <section class="text-center mb-5">
-        <h1 class="display-6 fw-semibold main-title mb-2">Bem-vindo ao CESPE GENERATOR</h1>
-        <p class="lead fs-6 subtitle">Selecione uma opção abaixo.</p>
-         {% if error_message %}
-             <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
-                 {{ error_message }}
-                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-             </div>
-         {% endif %}
-    </section>
+.card.landing-card .stretched-link::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    background-color: transparent;
+}
 
-    <section class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
-
-        <div class="col">
-            <div class="card feature-card bg-primary text-white border-primary {% if not service_initialized %}disabled-card{% endif %}">
-                <div class="card-body d-flex flex-column">
-                    <h3 class="card-title d-flex align-items-center"> <i class="bi bi-check2-square icon"></i>
-                        Gerador C/E por Tópico
-                    </h3>
-                    <p class="card-text description"> Crie questões de Certo ou Errado (estilo Cebraspe) a partir de um tópico específico e nível de dificuldade.
-                    </p>
-                    <a href="{% url 'generator:generate_questions' %}" class="btn btn-outline-light btn-sm align-self-start mt-auto stretched-link {% if not service_initialized %}disabled{% endif %}">Acessar Gerador C/E</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col">
-             <div class="card feature-card bg-info text-dark border-info {% if not service_initialized %}disabled-card{% endif %}">
-                <div class="card-body d-flex flex-column">
-                    <h3 class="card-title d-flex align-items-center"> <i class="bi bi-pencil-square icon"></i>
-                        Gerador de Questão Discursiva
-                    </h3>
-                    <p class="card-text description"> Forneça um tema ou contexto e a IA criará uma questão discursiva completa, com textos, comando e aspectos.
-                    </p>
-                     <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-primary btn-sm align-self-start mt-auto stretched-link {% if not service_initialized %}disabled{% endif %}">Acessar Gerador de Questão</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col">
-             <div class="card feature-card bg-warning text-dark border-warning {% if not service_initialized %}disabled-card{% endif %}">
-                <div class="card-body d-flex flex-column">
-                    <h3 class="card-title d-flex align-items-center"> <i class="bi bi-sliders icon"></i>
-                        Configurar Simulado
-                    </h3>
-                     <p class="card-text description">
-                        Personalize seus simulados escolhendo o número de questões e os tópicos que deseja praticar.
-                    </p>
-                    <a href="{% url 'generator:configurar_simulado' %}" class="btn btn-primary btn-sm align-self-start mt-auto stretched-link {% if not service_initialized %}disabled{% endif %}">Configurar Simulado</a>
-                </div>
-            </div>
-        </div>
-
-         <div class="col">
-             <div class="card feature-card bg-success text-white border-success"> {# Dashboard sempre habilitado #}
-                <div class="card-body d-flex flex-column">
-                     <h3 class="card-title d-flex align-items-center"> <i class="bi bi-graph-up icon"></i>
-                        Dashboard de Desempenho
-                    </h3>
-                    <p class="card-text description">
-                        Acompanhe seu histórico de respostas, acertos, erros e pontuação geral nos simulados.
-                    </p>
-                    <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-light btn-sm align-self-start mt-auto stretched-link">Acessar Dashboard</a>
-                </div>
-            </div>
-        </div>
-
-    </section>
-{% endblock content %}
-
+/* --- Estilos para a Nuvem de Palavras --- */
+#wordCloudContainer {
+    width: 100%;
+    min-height: 250px;
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1.5rem;
+    margin: 3rem 0;
+    background-color: var(--bs-tertiary-bg);
+    box-shadow: var(--bs-box-shadow-sm);
+    overflow: hidden;
+    perspective: 1000px;
+}
+@keyframes float-scale {
+    0% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.9; }
+    50% { transform: translateY(-5px) rotate(2deg) scale(1.03); opacity: 1; }
+    100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.9; }
+}
+.word-cloud-item {
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out, color 0.2s ease-in-out, opacity 0.3s ease;
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    line-height: 1.2;
+    text-decoration: none;
+    animation: float-scale 7s ease-in-out infinite;
+    backface-visibility: hidden;
+}
+.word-cloud-item:hover {
+    transform: scale(1.2) rotate(0deg);
+    text-decoration: underline;
+    animation-play-state: paused;
+    opacity: 1;
+}
+.wc-size-1 { font-size: 0.8rem; }
+.wc-size-2 { font-size: 1rem; }
+.wc-size-3 { font-size: 1.25rem; }
+.wc-size-4 { font-size: 1.5rem; }
+.wc-size-5 { font-size: 1.75rem; }
+.wc-size-6 { font-size: 2rem; }
