@@ -15,14 +15,6 @@
     {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
     {% if error_message %} <div class="alert alert-danger">{{ error_message }}</div> {% endif %}
 
-    {# --- ABAS DE NAVEGAÇÃO FORAM REMOVIDAS DESTE BLOCO --- #}
-    {# Elas agora são gerenciadas pelo generator/base.html se você implementou o bloco {% block app_tabs %} lá #}
-
-    {# Container Principal do Conteúdo do Dashboard #}
-    {# Assumindo que o 'filters-container' serve como o container principal do conteúdo da aba ativa #}
-    {# Se você tinha um <div class="tab-content"> e <div class="tab-pane">, eles podem ser simplificados #}
-    {# se esta página SÓ mostra o conteúdo do dashboard. #}
-
     <div class="filters-container shadow-sm"> {# Usando filters-container como o card principal da página #}
 
         {# --- Formulário de Filtro por Data e Área --- #}
@@ -53,7 +45,6 @@
             </form>
         </div>
         {# --- FIM: Formulário de Filtro --- #}
-
 
         {# --- Seção de Estatísticas e Gráfico --- #}
         <div class="row mb-4 g-4">

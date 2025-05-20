@@ -308,8 +308,6 @@ def generate_discursive_exam_view(request):
                     discursive_exam_text = generated_text # Texto da questão GERADA
                     logger.info(f"Questão Discursiva ID {questao_id} salva com sucesso.")
                     messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso! Você pode respondê-la abaixo ou buscar por ela mais tarde.")
-                    # Não faz redirect aqui, exibe a questão gerada na mesma página.
-                    # O form será re-renderizado (com ou sem dados, dependendo se você limpar)
                     form = DiscursiveExamForm() # Limpa o formulário após sucesso na geração
 
                 else:
@@ -1007,10 +1005,7 @@ def listar_questoes_ce_view(request):
     context['is_filtered_list'] = is_filtered_list
     context['main_motivador'] = main_motivador
     context['id_filter_param'] = id_list_str # Se veio da geração, será preenchido
-    context['query_filter_param'] = query_filter_param
-    
-    # Importante: area_filter_param no contexto deve ser a lista de strings dos IDs das áreas selecionadas
-    # para que o template possa marcar corretamente as options no select multiple.
+    context['query_filter_param'] = query_filter_param    
     context['area_filter_param'] = area_filter_params_str
 
     # +++++ ADICIONA TODAS AS ÁREAS PARA O DROPDOWN DO FILTRO +++++

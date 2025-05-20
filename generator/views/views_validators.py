@@ -15,7 +15,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-# generator/views.py (ou seu arquivo de views específico)
 
 import json
 import logging
@@ -24,10 +23,6 @@ from collections import Counter
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-# Removi Paginator, PageNotAnInteger, EmptyPage se não forem usados nesta view específica
-# from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-# import requests # Não é usado diretamente aqui, scraper_logic lida com isso
-
 from generator.models import AreaConhecimento, Questao
 from .. import scraper_logic # Ajuste o caminho se necessário
 
@@ -118,11 +113,7 @@ def landing_page_view(request):
 
     # MUDANÇA AQUI: Passar a lista diretamente, não como JSON
     context['concursos_destaque_marquee'] = destaques_concursos_data
-    # context['concursos_destaque_json'] = json.dumps(destaques_concursos_data) # Linha anterior removida/comentada
-    # ---------------------------------------------------------------
 
-    # Adicione aqui qualquer outro dado de contexto que sua landing page precise
-    # context['outra_coisa'] = "Valor"
 
     return render(request, 'generator/landing_page.html', context)
 

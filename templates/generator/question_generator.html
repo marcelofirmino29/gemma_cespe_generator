@@ -110,9 +110,9 @@
             <h2 class="h5 mb-3 fw-normal">Itens Gerados Recentemente (Página {{ page_obj.number }} de {{ paginator.num_pages }}):</h2>
             <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}"> {# ID para o ce_validator.js #}
                 {% csrf_token %}
-                <div class="question-list">
+                <div class="card card-body">
                     {% for item in page_obj %}
-                    <div class="question-item-minimal" id="question-item-{{ item.id }}">
+                    <div class="card card-body" id="question-item-{{ item.id }}">
                         <p class="mb-2"><strong>Item {{ page_obj.start_index|add:forloop.counter0 }}:</strong> (ID: {{item.id}})</p>
                         <p class="ms-3">{{ item.texto_comando|linebreaksbr }}</p>
                         <div class="d-flex align-items-center flex-wrap mt-3">
