@@ -1,6 +1,9 @@
 annotated-types==0.7.0
+anyio==4.9.0
 asgiref==3.8.1
+beautifulsoup4==4.13.4
 bleach==6.2.0
+bs4==0.0.2
 cachetools==5.5.2
 certifi==2025.1.31
 charset-normalizer==3.4.1
@@ -22,9 +25,13 @@ googleapis-common-protos==1.69.2
 grpcio==1.71.0
 grpcio-status==1.71.0
 gunicorn==23.0.0
+h11==0.16.0
+httpcore==1.0.9
 httplib2==0.22.0
+httpx==0.28.1
 idna==3.10
 Markdown==3.8
+ollama==0.4.8
 packaging==25.0
 proto-plus==1.26.1
 protobuf==5.29.4
@@ -38,6 +45,8 @@ PyPDF2==3.0.1
 python-dotenv==1.1.0
 requests==2.32.3
 rsa==4.9
+sniffio==1.3.1
+soupsieve==2.7
 sqlparse==0.5.3
 tinycss2==1.4.0
 tqdm==4.67.1

@@ -128,9 +128,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn("Elementos para 'Buscar no Banco' não encontrados. Verifique os IDs: #search-db-button, id_topic, id_area");
     }
 
-    // Depuração para botões 'Verificar Item' (se esta lógica estiver neste arquivo)
-    // const validationFormResults = document.getElementById('validate-form');
-    // if(validationFormResults){
-    //     // ...
-    // }
 });
