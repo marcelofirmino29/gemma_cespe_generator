@@ -1101,3 +1101,172 @@ pre code { /* Isto é muito genérico, pode conflitar ou ser amplo demais.
     font-size: 0.95em;
     color: var(--bs-body-color);
 }
+
+/* Estilos para o Avatar Fixo Global em Miniatura */
+.fixed-ai-avatar {
+    position: fixed;
+    bottom: 25px;     /* Distância da borda inferior */
+    right: 25px;      /* Distância da borda direita */
+    z-index: 1050;    /* Alto z-index para sobrepor a maioria dos elementos */
+    cursor: pointer;
+}
+
+.fixed-ai-avatar .avatar-image {
+    width: 55px;      /* Largura da miniatura */
+    height: 55px;     /* Altura da miniatura */
+    border-radius: 50%; /* Para manter a forma circular */
+    border: 2px solid #ffffff; /* Borda branca para destacar */
+    background-color: #007bff; /* Cor de fundo caso a imagem tenha transparência ou para preencher */
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3); /* Sombra para dar profundidade */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: block;
+}
+
+.fixed-ai-avatar:hover .avatar-image {
+    transform: scale(1.12); /* Efeito de zoom ao passar o mouse */
+    box-shadow: 0 5px 12px rgba(0,0,0,0.4);
+}
+/* Estilos para o Avatar Fixo Global (você já deve ter algo similar) */
+.fixed-ai-avatar {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1050; 
+    cursor: pointer;
+}
+
+.fixed-ai-avatar .avatar-image {
+    width: 55px; 
+    height: 55px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background-color: #007bff;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: block;
+}
+
+.fixed-ai-avatar:hover .avatar-image {
+    transform: scale(1.12);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.4);
+}
+
+/* Estilos para a Janela de Chat Flutuante (Widget) */
+.chat-widget-container {
+    position: fixed;
+    bottom: 90px; /* Posição acima do avatar */
+    right: 25px;
+    width: 350px; /* Largura do widget */
+    max-height: 450px; /* Altura máxima */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 1040; /* Abaixo do avatar para o avatar poder "controlá-lo" visualmente */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Para o border-radius funcionar bem com o conteúdo interno */
+}
+
+.chat-widget-header {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 9px; /* Para cantos arredondados */
+    border-top-right-radius: 9px;
+}
+
+.chat-widget-header h5 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.close-chat-widget {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    line-height: 1;
+    opacity: 0.7;
+    cursor: pointer;
+}
+.close-chat-widget:hover {
+    opacity: 1;
+}
+
+.chat-widget-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto; /* Scroll para as mensagens */
+    background-color: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Estilos para balões dentro do widget (reutilize ou adapte de ask_ai.html) */
+.chat-widget-messages .message-bubble {
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.chat-widget-messages .ai-bubble {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-start;
+}
+
+.chat-widget-messages .user-bubble {
+    background-color: #e9e9eb;
+    color: #333;
+    align-self: flex-end;
+}
+
+.chat-widget-input-form {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background-color: #fff;
+}
+
+.chat-widget-input-form form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-widget-input-form textarea {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 18px;
+    padding: 8px 12px;
+    resize: none;
+    font-size: 0.9rem;
+    min-height: 40px; /* Altura mínima */
+    max-height: 80px; /* Altura máxima antes de scrollar dentro do textarea */
+    overflow-y: auto;
+}
+
+.chat-widget-input-form button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.chat-widget-input-form button[type="submit"]:hover {
+    background-color: #0056b3;
+}

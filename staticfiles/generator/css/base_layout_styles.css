@@ -1101,3 +1101,28 @@ pre code { /* Isto é muito genérico, pode conflitar ou ser amplo demais.
     font-size: 0.95em;
     color: var(--bs-body-color);
 }
+
+/* Estilos para o Avatar Fixo Global em Miniatura */
+.fixed-ai-avatar {
+    position: fixed;
+    bottom: 25px;     /* Distância da borda inferior */
+    right: 25px;      /* Distância da borda direita */
+    z-index: 1050;    /* Alto z-index para sobrepor a maioria dos elementos */
+    cursor: pointer;
+}
+
+.fixed-ai-avatar .avatar-image {
+    width: 55px;      /* Largura da miniatura */
+    height: 55px;     /* Altura da miniatura */
+    border-radius: 50%; /* Para manter a forma circular */
+    border: 2px solid #ffffff; /* Borda branca para destacar */
+    background-color: #007bff; /* Cor de fundo caso a imagem tenha transparência ou para preencher */
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3); /* Sombra para dar profundidade */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: block;
+}
+
+.fixed-ai-avatar:hover .avatar-image {
+    transform: scale(1.12); /* Efeito de zoom ao passar o mouse */
+    box-shadow: 0 5px 12px rgba(0,0,0,0.4);
+}

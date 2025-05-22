@@ -35,13 +35,11 @@
         html[data-bs-theme="dark"] .offcanvas-body .navbar-nav .nav-item:not(:last-child) {
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        /* Estilo para o relógio na navbar */
         #navbar-datetime-display {
-            font-size: 0.8rem; /* Um pouco menor para caber bem */
+            font-size: 0.8rem;
         }
-        /* Ajustes para itens na topbar */
         .top-bar .nav-item .btn-sm,
-        .top-bar .navbar-text, /* Aplicando ao navbar-text em geral na topbar */
+        .top-bar .navbar-text,
         .top-bar .btn-sm {
             font-size: 0.875rem; 
         }
@@ -119,8 +117,8 @@
                 <ul class="navbar-nav flex-grow-1">
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.view_name == 'generator:landing_page' %}active{% endif %}"
-                           aria-current="page" href="{% url 'generator:landing_page' %}"
-                           title="Início">
+                            aria-current="page" href="{% url 'generator:landing_page' %}"
+                            title="Início">
                             <i class="bi bi-house-door-fill me-2"></i>Início
                         </a>
                     </li>
@@ -129,8 +127,8 @@
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'generate_discursive_exam' %}active{% endif %}" href="{% url 'generator:generate_discursive_exam' %}" title="Gerador Discursiva"><i class="bi bi-pencil-square me-2"></i>Gerador Discursiva</a></li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'pdf_summary' %}active{% endif %}"
-                               href="{% url 'generator:pdf_summary' %}"
-                               title="Resumo Rápido de PDF">
+                                href="{% url 'generator:pdf_summary' %}"
+                                title="Resumo Rápido de PDF">
                                 <i class="bi bi-file-earmark-ppt-fill me-2"></i>Resumir PDF
                             </a>
                         </li>
@@ -201,16 +199,35 @@
     <script src="{% static 'generator/js/fontsize_adjuster.js' %}" defer></script>
     <script src="{% static 'generator/js/base_layout_scripts.js' %}" defer></script>
 
+    <div class="fixed-ai-avatar" id="ai-avatar-button"> <img src="{% static 'generator/images/ai_avatar.png' %}" alt="Assistente IA" class="avatar-image">
+         </div>
+
+    <div class="chat-widget-container" id="chat-widget-container" style="display: none;">
+        <div class="chat-widget-header">
+            <h5>Pergunte ao R2-D2</h5>
+            <button type="button" class="close-chat-widget" id="close-chat-widget" aria-label="Fechar Chat">&times;</button>
+        </div>
+        <div class="chat-widget-messages" id="chat-widget-messages">
+            <div class="message-bubble ai-bubble">
+                <p>Olá! Como posso te ajudar?</p>
+            </div>
+        </div>
+        <div class="chat-widget-input-form">
+            <form id="chat-widget-form">
+                {% csrf_token %}
+                <textarea id="chat-widget-user-input" name="user_input" placeholder="Digite sua pergunta..." rows="2" aria-label="Sua pergunta"></textarea>
+                <button type="submit" aria-label="Enviar pergunta"><i class="bi bi-send-fill"></i></button> </form>
+        </div>
+    </div>
     <script>
         function updateDateTimeDisplay() {
             const dateDisplayElement = document.getElementById('date-display');
             const timeDisplayElement = document.getElementById('time-display');
             
-            // Verifica se os elementos existem antes de tentar atualizá-los
             if (dateDisplayElement && timeDisplayElement) {
                 const now = new Date();
                 const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0'); // Meses são 0-indexados
+                const month = String(now.getMonth() + 1).padStart(2, '0');
                 const year = now.getFullYear();
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -231,7 +248,125 @@
             });
         });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const avatarButton = document.getElementById('ai-avatar-button');
+        const chatWidgetContainer = document.getElementById('chat-widget-container');
+        const closeChatButton = document.getElementById('close-chat-widget');
+        const chatWidgetForm = document.getElementById('chat-widget-form');
+        const userInput = document.getElementById('chat-widget-user-input');
+        const messagesContainer = document.getElementById('chat-widget-messages');
+        
+        const askAiUrl = "{% url 'generator:ask_ai' %}"; // Verifique se este nome está correto nos seus URLs
 
+        if (avatarButton && chatWidgetContainer) {
+            avatarButton.addEventListener('click', function() {
+                const isHidden = chatWidgetContainer.style.display === 'none' || chatWidgetContainer.style.display === '';
+                chatWidgetContainer.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden && userInput) {
+                    userInput.focus();
+                }
+            });
+        }
+
+        if (closeChatButton && chatWidgetContainer) {
+            closeChatButton.addEventListener('click', function() {
+                chatWidgetContainer.style.display = 'none';
+            });
+        }
+
+        if (chatWidgetForm && userInput && messagesContainer) {
+            chatWidgetForm.addEventListener('submit', function(event) {
+                event.preventDefault(); 
+
+                const userMessageText = userInput.value.trim();
+                if (userMessageText === '') {
+                    return; 
+                }
+
+                addMessageToWidget(userMessageText, 'user');
+                userInput.value = ''; 
+                
+                const typingIndicator = addMessageToWidget('R2-D2 está pensando...', 'ai', 'typing-indicator'); // Passa ID
+
+                fetch(askAiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'), 
+                        'X-Requested-With': 'XMLHttpRequest' 
+                    },
+                    body: JSON.stringify({ user_input: userMessageText })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        // Tenta ler a resposta de erro como JSON, se possível
+                        return response.json().then(errData => {
+                            throw new Error(errData.error || `Erro ${response.status}: ${response.statusText}`);
+                        }).catch(() => {
+                            // Se não conseguir ler como JSON, usa o statusText
+                            throw new Error(`Erro ${response.status}: ${response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (typingIndicator) {
+                        typingIndicator.remove();
+                    }
+
+                    if (data.answer) {
+                        addMessageToWidget(data.answer, 'ai');
+                    } else if (data.error) {
+                        addMessageToWidget('Erro: ' + data.error, 'ai');
+                    } else {
+                        addMessageToWidget('Não foi possível obter uma resposta válida do servidor.', 'ai');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro no fetch do chat widget:', error);
+                    if (typingIndicator) {
+                        typingIndicator.remove();
+                    }
+                    addMessageToWidget(`Desculpe, ocorreu um erro: ${error.message}. Tente novamente.`, 'ai');
+                });
+            });
+        }
+
+        function addMessageToWidget(text, type, elementId = null) {
+            const messageBubble = document.createElement('div');
+            messageBubble.classList.add('message-bubble', type + '-bubble'); // Usar as classes definidas no CSS
+            if (elementId) {
+                messageBubble.id = elementId;
+            }
+            
+            const p = document.createElement('p');
+            p.textContent = text;
+            messageBubble.appendChild(p);
+            
+            if (messagesContainer) {
+                messagesContainer.appendChild(messageBubble);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+            }
+            return messageBubble; // Retorna o elemento criado para poder removê-lo (ex: typing indicator)
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+    </script>
     {% block extra_js %}{% endblock extra_js %}
 </body>
 </html>
