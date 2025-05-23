@@ -22,30 +22,7 @@
         .top-bar {
             height: 56px; 
         }
-        .app-main-content {
-            flex-grow: 1;
-        }
-        .offcanvas-body .navbar-nav .nav-link {
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-        .offcanvas-body .navbar-nav .nav-item:not(:last-child) {
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-        html[data-bs-theme="dark"] .offcanvas-body .navbar-nav .nav-item:not(:last-child) {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        #navbar-datetime-display {
-            font-size: 0.8rem;
-        }
-        .top-bar .nav-item .btn-sm,
-        .top-bar .navbar-text,
-        .top-bar .btn-sm {
-            font-size: 0.875rem; 
-        }
-        .top-bar .dropdown-menu {
-            font-size: 0.875rem; 
-        }
+        /* ... (seus outros estilos in-page permanecem) ... */
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -136,7 +113,6 @@
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'configurar_simulado' %}active{% endif %}" href="{% url 'generator:configurar_simulado' %}" title="Configurar Simulado"><i class="bi bi-ui-checks-grid me-2"></i>Simulado</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'generator:dashboard' %}" title="Meu Desempenho"><i class="bi bi-graph-up me-2"></i>Desempenho</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:games_hub' %}active{% endif %}" href="{% url 'generator:games_hub' %}" title="Hub de Jogos"><i class="bi bi-joystick me-2"></i>Hub Jogos</a></li>
-                        <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:ask_ai' %}active{% endif %}" href="{% url 'generator:ask_ai' %}" title="Pergunte à IA"><i class="bi bi-chat-dots-fill me-2"></i>Pergunte IA</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:listar_concursos' %}active{% endif %}" href="{% url 'generator:listar_concursos' %}" title="Concursos Abertos"><i class="bi bi-briefcase-fill me-2"></i>Concursos</a></li>
                     {% endif %}
                 </ul>
@@ -198,29 +174,28 @@
     <script src="{% static 'generator/js/darkmode.js' %}" defer></script>
     <script src="{% static 'generator/js/fontsize_adjuster.js' %}" defer></script>
     <script src="{% static 'generator/js/base_layout_scripts.js' %}" defer></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> 
 
-    <div class="fixed-ai-avatar" id="ai-avatar-button"> <img src="{% static 'generator/images/ai_avatar.png' %}" alt="Assistente IA" class="avatar-image">
+    <div class="fixed-ai-avatar shadow" id="ai-avatar-button"> <img src="{% static 'generator/images/ai_avatar.png' %}" alt="Assistente IA Cespito" class="avatar-image img-fluid">
          </div>
 
-    <div class="chat-widget-container" id="chat-widget-container" style="display: none;">
-        <div class="chat-widget-header">
-            <h5>Pergunte ao R2-D2</h5>
-            <button type="button" class="close-chat-widget" id="close-chat-widget" aria-label="Fechar Chat">&times;</button>
-        </div>
-        <div class="chat-widget-messages" id="chat-widget-messages">
-            <div class="message-bubble ai-bubble">
-                <p>Olá! Como posso te ajudar?</p>
+    <div class="chat-widget-container card shadow-lg" id="chat-widget-container" style="display: none;"> <div class="chat-widget-header card-header bg-warning text-dark d-flex justify-content-between align-items-center"> <h5 class="mb-0 fs-6 fw-semibold">Pergunte ao Cespito!</h5>
+            <button type="button" class="btn-close btn-sm" id="close-chat-widget" aria-label="Fechar Chat"></button> </div>
+        <div class="chat-widget-messages card-body bg-light-subtle" id="chat-widget-messages">
             </div>
-        </div>
-        <div class="chat-widget-input-form">
-            <form id="chat-widget-form">
+        <div class="chat-widget-input-form card-footer bg-light p-2"> <form id="chat-widget-form" class="d-flex">
                 {% csrf_token %}
-                <textarea id="chat-widget-user-input" name="user_input" placeholder="Digite sua pergunta..." rows="2" aria-label="Sua pergunta"></textarea>
-                <button type="submit" aria-label="Enviar pergunta"><i class="bi bi-send-fill"></i></button> </form>
+                <textarea id="chat-widget-user-input" class="form-control form-control-sm me-2" name="user_input" placeholder="Digite sua pergunta..." rows="1" aria-label="Sua pergunta"></textarea>
+                <button type="submit" class="btn btn-primary btn-sm rounded-circle p-0" aria-label="Enviar pergunta" style="width: 38px; height: 38px; line-height: 38px;">
+                    <i class="bi bi-send-fill"></i>
+                </button> 
+            </form>
         </div>
     </div>
     <script>
         function updateDateTimeDisplay() {
+            // ... (seu código updateDateTimeDisplay) ...
             const dateDisplayElement = document.getElementById('date-display');
             const timeDisplayElement = document.getElementById('time-display');
             
@@ -256,100 +231,47 @@
         const chatWidgetForm = document.getElementById('chat-widget-form');
         const userInput = document.getElementById('chat-widget-user-input');
         const messagesContainer = document.getElementById('chat-widget-messages');
-        
-        const askAiUrl = "{% url 'generator:ask_ai' %}"; // Verifique se este nome está correto nos seus URLs
+        const sendButton = chatWidgetForm ? chatWidgetForm.querySelector('button[type="submit"]') : null; // Pega o botão de enviar
 
-        if (avatarButton && chatWidgetContainer) {
-            avatarButton.addEventListener('click', function() {
-                const isHidden = chatWidgetContainer.style.display === 'none' || chatWidgetContainer.style.display === '';
-                chatWidgetContainer.style.display = isHidden ? 'flex' : 'none';
-                if (isHidden && userInput) {
-                    userInput.focus();
-                }
-            });
-        }
+        const askAiUrl = "{% url 'generator:ask_ai' %}"; 
 
-        if (closeChatButton && chatWidgetContainer) {
-            closeChatButton.addEventListener('click', function() {
-                chatWidgetContainer.style.display = 'none';
-            });
-        }
+        function addMessageToWidget(text, type, isHtml = false, elementId = null) {
+            if (!messagesContainer) return null; // Garante que o container existe
 
-        if (chatWidgetForm && userInput && messagesContainer) {
-            chatWidgetForm.addEventListener('submit', function(event) {
-                event.preventDefault(); 
-
-                const userMessageText = userInput.value.trim();
-                if (userMessageText === '') {
-                    return; 
-                }
-
-                addMessageToWidget(userMessageText, 'user');
-                userInput.value = ''; 
-                
-                const typingIndicator = addMessageToWidget('R2-D2 está pensando...', 'ai', 'typing-indicator'); // Passa ID
-
-                fetch(askAiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'), 
-                        'X-Requested-With': 'XMLHttpRequest' 
-                    },
-                    body: JSON.stringify({ user_input: userMessageText })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        // Tenta ler a resposta de erro como JSON, se possível
-                        return response.json().then(errData => {
-                            throw new Error(errData.error || `Erro ${response.status}: ${response.statusText}`);
-                        }).catch(() => {
-                            // Se não conseguir ler como JSON, usa o statusText
-                            throw new Error(`Erro ${response.status}: ${response.statusText}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (typingIndicator) {
-                        typingIndicator.remove();
-                    }
-
-                    if (data.answer) {
-                        addMessageToWidget(data.answer, 'ai');
-                    } else if (data.error) {
-                        addMessageToWidget('Erro: ' + data.error, 'ai');
-                    } else {
-                        addMessageToWidget('Não foi possível obter uma resposta válida do servidor.', 'ai');
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro no fetch do chat widget:', error);
-                    if (typingIndicator) {
-                        typingIndicator.remove();
-                    }
-                    addMessageToWidget(`Desculpe, ocorreu um erro: ${error.message}. Tente novamente.`, 'ai');
-                });
-            });
-        }
-
-        function addMessageToWidget(text, type, elementId = null) {
             const messageBubble = document.createElement('div');
-            messageBubble.classList.add('message-bubble', type + '-bubble'); // Usar as classes definidas no CSS
+            // Adicionando classes Bootstrap para balões de mensagem
+            messageBubble.classList.add('p-2', 'mb-2', 'rounded-3', 'shadow-sm', 'w-auto', 'mw-75'); // mw-75 = max-width 75%
+            
             if (elementId) {
                 messageBubble.id = elementId;
             }
             
-            const p = document.createElement('p');
-            p.textContent = text;
+            if (type === 'user') {
+                messageBubble.classList.add('bg-primary-subtle', 'text-primary-emphasis', 'align-self-end', 'ms-auto'); // Alinha à direita
+                messageBubble.style.borderBottomRightRadius = '0.25rem'; // "Rabicho"
+            } else { // AI ou typing indicator
+                messageBubble.classList.add('bg-body-secondary', 'align-self-start', 'me-auto'); // Alinha à esquerda
+                messageBubble.style.borderBottomLeftRadius = '0.25rem'; // "Rabicho"
+            }
+
+            const p = document.createElement('div'); // Usar div para innerHTML
+            if (isHtml) {
+                p.innerHTML = text; // Para Markdown renderizado
+            } else {
+                p.textContent = text;
+            }
             messageBubble.appendChild(p);
             
-            if (messagesContainer) {
-                messagesContainer.appendChild(messageBubble);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight; 
-            }
-            return messageBubble; // Retorna o elemento criado para poder removê-lo (ex: typing indicator)
+            messagesContainer.appendChild(messageBubble);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+            return messageBubble; 
         }
+
+        // Adiciona mensagem inicial da IA
+        if(messagesContainer && messagesContainer.children.length === 0) { // Adiciona só se estiver vazio
+             addMessageToWidget('Olá! Como posso te ajudar hoje?', 'ai', false);
+        }
+
 
         function getCookie(name) {
             let cookieValue = null;
@@ -364,6 +286,112 @@
                 }
             }
             return cookieValue;
+        }
+
+        function submitChatMessage() {
+            if (!userInput || !messagesContainer) return;
+
+            const userMessageText = userInput.value.trim();
+            if (userMessageText === '') {
+                return; 
+            }
+
+            addMessageToWidget(userMessageText, 'user');
+            userInput.value = ''; 
+            userInput.style.height = 'auto'; // Reseta altura do textarea
+            userInput.focus(); // Mantém o foco no input
+            
+            const typingIndicator = addMessageToWidget(
+                '<div class="d-flex align-items-center"><strong class="me-2">Cespito está pensando...</strong><div class="spinner-border spinner-border-sm text-secondary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
+                'ai', 
+                true, // isHtml = true
+                'typing-indicator'
+            );
+
+            fetch(askAiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), 
+                    'X-Requested-With': 'XMLHttpRequest' 
+                },
+                body: JSON.stringify({ user_input: userMessageText })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errData => {
+                        throw new Error(errData.error || `Erro ${response.status}`);
+                    }).catch(() => {
+                        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                if (data.answer) {
+                    // Renderiza a resposta da IA como Markdown
+                    const htmlAnswer = marked.parse(data.answer); // USA O MARKED.JS
+                    addMessageToWidget(htmlAnswer, 'ai', true); // isHtml = true
+                } else if (data.error) {
+                    addMessageToWidget('Erro: ' + data.error, 'ai');
+                } else {
+                    addMessageToWidget('Não foi possível obter uma resposta válida.', 'ai');
+                }
+            })
+            .catch(error => {
+                console.error('Erro no fetch do chat widget:', error);
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                addMessageToWidget(`Desculpe, ocorreu um erro: ${error.message}.`, 'ai');
+            });
+        }
+
+        if (avatarButton && chatWidgetContainer) {
+            avatarButton.addEventListener('click', function() {
+                const isHidden = chatWidgetContainer.style.display === 'none' || chatWidgetContainer.style.display === '';
+                chatWidgetContainer.style.display = isHidden ? 'flex' : 'none'; // 'flex' para o container
+                // Adicionar/remover classe para animação de abertura/fechamento
+                if (isHidden) {
+                    chatWidgetContainer.classList.add('open');
+                    if (userInput) userInput.focus();
+                } else {
+                    chatWidgetContainer.classList.remove('open');
+                }
+            });
+        }
+
+        if (closeChatButton && chatWidgetContainer) {
+            closeChatButton.addEventListener('click', function() {
+                chatWidgetContainer.style.display = 'none';
+                chatWidgetContainer.classList.remove('open');
+            });
+        }
+
+        if (chatWidgetForm) {
+            chatWidgetForm.addEventListener('submit', function(event) {
+                event.preventDefault(); 
+                submitChatMessage();
+            });
+        }
+
+        // Enter para enviar, Shift+Enter para nova linha
+        if (userInput) {
+            userInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault(); // Impedir nova linha no textarea
+                    submitChatMessage();    // Chamar a função de submissão
+                }
+                // Auto-ajuste da altura do textarea
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            // Ajuste inicial da altura do textarea
+            userInput.style.height = 'auto';
+            userInput.style.height = (userInput.scrollHeight) + 'px';
         }
     });
     </script>

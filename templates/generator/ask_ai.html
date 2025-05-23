@@ -1,204 +1,43 @@
 {% extends 'generator/base.html' %}
 {% load static %}
+{% load markdownify %}
 
-{% block title %}Perguntar à IA{% endblock %}
+{% block title %}Pergunte à IA - Gerador IA{% endblock title %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
+{% endblock extra_head %}
 
 {% block content %}
-<div class="container mt-5" id="ask-ai-page-container">
-    <h2><i class="fas fa-robot"></i> Perguntar à Inteligência Artificial</h2>
-    <p>Faça uma pergunta e a IA tentará responder com base no seu conhecimento.</p>
+    <div class="ask-ai-container">
 
-    <div class="chat-container">
-        <div class="chat-messages" id="chat-messages">
-            {% if not summarized_text and not request.POST.user_input %}
-            <div class="message-bubble ai-bubble">
-                <p>Olá! Como posso ajudar você hoje?</p>
-            </div>
-            {% endif %}
+        {# Mensagens #}
+        {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small w-100 mb-3"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
+        {% if error_message and not form.errors %} <div class="alert alert-danger small w-100 mb-3">{{ error_message }}</div> {% endif %}
 
-            {% if request.POST.user_input %}
-            <div class="message-bubble user-bubble">
-                <p><strong>Você:</strong></p>
-                <p>{{ request.POST.user_input }}</p>
-            </div>
-            {% endif %}
-
-            {% if summarized_text and request.POST.user_input %}
-            <div class="message-bubble ai-bubble">
-                <p>{{ summarized_text }}</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <form method="post" class="mt-4 chat-input-form">
+        {# Formulário de Pergunta #}
+        <form method="post" action="{% url 'generator:ask_ai' %}" class="ask-ai-form">
             {% csrf_token %}
-            <div class="form-group">
-                <textarea class="form-control" id="user_input_ia" name="user_input" rows="2" placeholder="Digite sua pergunta aqui...">{% if not summarized_text %}{{ request.POST.user_input|default_if_none:'' }}{% endif %}</textarea>
-            </div>
-            <button type="submit" class="btn btn-primary mt-2" id="submit-ask-ai">
-                <i class="fas fa-paper-plane"></i> Enviar
-            </button>
-            {% if loading %}
-            <div class="spinner-border text-primary mt-2" role="status" id="loading-spinner-ai">
-                <span class="sr-only">Carregando...</span>
-            </div>
-            {% else %}
-            {# Adicionado um placeholder para o spinner para que o JS possa encontrá-lo e exibi-lo #}
-            <div class="spinner-border text-primary mt-2" role="status" id="loading-spinner-ai" style="display: none;">
-                <span class="sr-only">Carregando...</span>
-            </div>
-            {% endif %}
+
+            {% if form.user_question.help_text %}<div class="form-text text-muted small text-center">{{ form.user_question.help_text|safe }}</div>{% endif %}
+            {% if form.user_question.errors %}<div class="invalid-feedback d-block">{{ form.user_question.errors|striptags }}</div>{% endif %}
         </form>
+
+        {# Exibição da Resposta da IA #}
+        {% if ai_response %}
+            <div class="ai-response-container">
+                <h2 class="ai-response-title">Resposta:</h2>
+                {% if user_question %}
+                    <p class="text-muted small"><em>Para a pergunta: "{{ user_question|truncatechars:100 }}"</em></p>
+                {% endif %}
+                <div class="ai-response-box">
+                    {{ ai_response|markdownify|safe }}
+                </div>
+            </div>
+        {% endif %}
     </div>
-</div>
-
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* ... (seus estilos CSS para ask_ai.html permanecem aqui, exceto os do fixed-ai-avatar que foram para o CSS global) ... */
-    #ask-ai-page-container {
-        margin-bottom: 100px; /* Pode ajustar se necessário */
-    }
-
-    .chat-container {
-        max-width: 700px;
-        margin: auto;
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        background-color: #f9f9f9;
-        display: flex;
-        flex-direction: column;
-        height: 60vh; 
-        overflow-y: auto;
-    }
-
-    .chat-messages {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .message-bubble {
-        padding: 10px 15px;
-        border-radius: 18px;
-        max-width: 85%;
-        word-wrap: break-word;
-        position: relative;
-    }
-
-    .ai-bubble {
-        background-color: #007bff;
-        color: white;
-        align-self: flex-start;
-    }
-    .ai-bubble::before {
-        content: "";
-        position: absolute;
-        top: 10px;
-        left: -8px;
-        width: 0;
-        height: 0;
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-        border-right: 8px solid #007bff;
-    }
-
-    .user-bubble {
-        background-color: #e9e9eb;
-        color: #333;
-        align-self: flex-end;
-    }
-    .user-bubble::after {
-        content: "";
-        position: absolute;
-        top: 10px;
-        right: -8px;
-        width: 0;
-        height: 0;
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-        border-left: 8px solid #e9e9eb;
-    }
-
-    .message-bubble p {
-        margin-bottom: 0.25rem;
-    }
-    .message-bubble p:last-child {
-        margin-bottom: 0;
-    }
-
-    .chat-input-form {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        padding-top: 15px;
-        border-top: 1px solid #ddd;
-    }
-
-    .chat-input-form .form-group {
-        flex-grow: 1;
-        margin-bottom: 0;
-    }
-
-    #user_input_ia {
-        resize: none;
-        border-radius: 18px;
-        padding: 10px 15px;
-    }
-
-    .chat-input-form button {
-        border-radius: 18px;
-        padding: 10px 15px;
-    }
-</style>
-{% endblock %}
+{% endblock content %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const chatMessagesContainer = document.getElementById('chat-messages');
-    if (chatMessagesContainer) {
-        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
-    }
-
-    const form = document.querySelector('.chat-input-form');
-    const userInputTextarea = document.getElementById('user_input_ia');
-    const submitButton = document.getElementById('submit-ask-ai'); // Adicionado ID ao botão para selecioná-lo
-    const spinner = document.getElementById('loading-spinner-ai'); // Adicionado ID ao spinner
-
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            // Apenas mostra o spinner. Deixa o formulário ser enviado normalmente.
-            if (spinner) {
-                spinner.style.display = 'inline-block';
-            }
-            
-            // Para depuração, vamos deixar os campos habilitados por enquanto
-            // e o texto do botão inalterado, para ver se o envio padrão ocorre.
-            // Se o envio padrão funcionar, podemos reintroduzir estas linhas:
-            /*
-            if (userInputTextarea) {
-                userInputTextarea.disabled = true;
-            }
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
-            }
-            */
-        });
-    }
-
-    // Lógica para resetar o campo ao focar (pode ser mantida ou ajustada)
-    {% if summarized_text and request.POST.user_input %}
-    if (userInputTextarea) {
-        userInputTextarea.addEventListener('focus', function() {
-            // Comportamento de reset
-        });
-    }
-    {% endif %}
-});
-</script>
-{% endblock %}
+{# Nenhum JS extra necessário para renderizar markdown com django-markdownify #}
+{% endblock extra_js %}

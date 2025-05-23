@@ -77,9 +77,9 @@
 
         <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}">
             {% csrf_token %}
-            <div class="question-list">
+            <div class="card card-body">
                 {% for questao in page_obj %}
-                    <div class="question-list-item" id="question-item-{{ questao.id }}">
+                    <div class="card card-body"id="question-item-{{ questao.id }}">
                         <div class="d-flex w-100 justify-content-between mb-1 flex-wrap">
                             <h5 class="mb-1 h6 me-2">Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão ID {{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %}</h5>
                             <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>

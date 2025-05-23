@@ -1126,3 +1126,539 @@ pre code { /* Isto é muito genérico, pode conflitar ou ser amplo demais.
     transform: scale(1.12); /* Efeito de zoom ao passar o mouse */
     box-shadow: 0 5px 12px rgba(0,0,0,0.4);
 }
+/* Estilos para o Avatar Fixo Global (você já deve ter algo similar) */
+.fixed-ai-avatar {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1050; 
+    cursor: pointer;
+}
+
+.fixed-ai-avatar .avatar-image {
+    width: 55px; 
+    height: 55px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background-color: #007bff;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: block;
+}
+
+.fixed-ai-avatar:hover .avatar-image {
+    transform: scale(1.12);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.4);
+}
+
+/* Estilos para a Janela de Chat Flutuante (Widget) */
+.chat-widget-container {
+    position: fixed;
+    bottom: 90px; /* Posição acima do avatar */
+    right: 25px;
+    width: 350px; /* Largura do widget */
+    max-height: 450px; /* Altura máxima */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 1040; /* Abaixo do avatar para o avatar poder "controlá-lo" visualmente */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Para o border-radius funcionar bem com o conteúdo interno */
+}
+
+.chat-widget-header {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 9px; /* Para cantos arredondados */
+    border-top-right-radius: 9px;
+}
+
+.chat-widget-header h5 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.close-chat-widget {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    line-height: 1;
+    opacity: 0.7;
+    cursor: pointer;
+}
+.close-chat-widget:hover {
+    opacity: 1;
+}
+
+.chat-widget-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto; /* Scroll para as mensagens */
+    background-color: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Estilos para balões dentro do widget (reutilize ou adapte de ask_ai.html) */
+.chat-widget-messages .message-bubble {
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.chat-widget-messages .ai-bubble {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-start;
+}
+
+.chat-widget-messages .user-bubble {
+    background-color: #e9e9eb;
+    color: #333;
+    align-self: flex-end;
+}
+
+.chat-widget-input-form {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background-color: #fff;
+}
+
+.chat-widget-input-form form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-widget-input-form textarea {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 18px;
+    padding: 8px 12px;
+    resize: none;
+    font-size: 0.9rem;
+    min-height: 40px; /* Altura mínima */
+    max-height: 80px; /* Altura máxima antes de scrollar dentro do textarea */
+    overflow-y: auto;
+}
+
+.chat-widget-input-form button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.chat-widget-input-form button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+/* Estilos para o Avatar Fixo Global (mantenha os que já funcionam para você) */
+.fixed-ai-avatar {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1051; 
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.fixed-ai-avatar:hover {
+    transform: scale(1.1);
+}
+
+.fixed-ai-avatar .avatar-image {
+    width: 60px;  /* Um pouco maior para mais destaque */
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #fff; /* Borda branca mais pronunciada */
+    background-color: #007bff; /* Cor de fundo caso a imagem seja transparente */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25); /* Sombra mais suave e ampla */
+    display: block;
+}
+
+/* --- Estilos Refinados para o Chat Widget --- */
+.chat-widget-container {
+    position: fixed;
+    /* Posição relativa ao avatar - ajuste 'bottom' e 'right' conforme necessário */
+    bottom: 100px; /* Mais espaço acima do avatar */
+    right: 25px;
+    width: 360px; 
+    max-height: 75vh; /* Limita a altura para não ocupar a tela toda */
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.1)); /* Borda sutil */
+    border-radius: 12px; /* Cantos mais arredondados para um visual moderno */
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15); /* Sombra mais pronunciada para efeito "flutuante" */
+    z-index: 1050; 
+    display: none; /* Começa escondido, JS controla para 'flex' */
+    flex-direction: column;
+    overflow: hidden; /* Para border-radius funcionar bem com conteúdo interno */
+    font-family: 'Inter', sans-serif; /* Usando a fonte que você importou */
+    font-size: 0.9rem;
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Transição para abrir/fechar */
+    transform-origin: bottom right; /* Para animação de escala do canto */
+}
+
+/* Para quando o widget estiver visível (o JS mudará display para flex) */
+.chat-widget-container[style*="display: flex"] { /* Seletor um pouco mais robusto para visível */
+    opacity: 1;
+    transform: scale(1);
+}
+.chat-widget-container[style*="display: none"] {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+
+.chat-widget-header {
+    /* Usando o tema Brite (laranja) - --bs-warning é geralmente laranja */
+    background-color: var(--bs-warning); 
+    color: var(--bs-dark); /* Texto escuro para contraste com laranja */
+    /* Se --bs-warning-text-emphasis estiver definido e for melhor:
+    color: var(--bs-warning-text-emphasis); 
+    */
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.075));
+}
+
+.chat-widget-header h5 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600; /* Um pouco mais de peso */
+}
+
+.close-chat-widget {
+    background: none;
+    border: none;
+    color: inherit; 
+    font-size: 1.6rem;
+    line-height: 1;
+    opacity: 0.8;
+    cursor: pointer;
+    padding: 0.1rem 0.4rem; /* Ajuste fino no padding */
+}
+.close-chat-widget:hover {
+    opacity: 1;
+    transform: scale(1.1); /* Leve efeito no hover */
+}
+
+.chat-widget-messages {
+    flex-grow: 1;
+    padding: 1rem;
+    overflow-y: auto; 
+    background-color: var(--bs-body-tertiary); 
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* Espaçamento entre balões */
+}
+
+/* Scrollbar mais sutil para a área de mensagens */
+.chat-widget-messages::-webkit-scrollbar {
+    width: 6px;
+}
+.chat-widget-messages::-webkit-scrollbar-track {
+    background: transparent; 
+}
+.chat-widget-messages::-webkit-scrollbar-thumb {
+    background-color: var(--bs-secondary-bg); 
+    border-radius: 10px;
+    border: 1px solid var(--bs-body-tertiary);
+}
+html[data-bs-theme="dark"] .chat-widget-messages::-webkit-scrollbar-thumb {
+    background-color: var(--bs-gray-600, #6c757d); 
+}
+
+
+.chat-widget-messages .message-bubble {
+    padding: 0.6rem 0.9rem;
+    border-radius: 18px; /* Balões bem arredondados */
+    max-width: 85%;
+    word-wrap: break-word;
+    line-height: 1.45;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08); /* Sombra sutil nos balões */
+}
+
+.chat-widget-messages .ai-bubble {
+    /* Usando a cor primária do tema "Brite" (geralmente um azul ou cor de destaque) */
+    background-color: var(--bs-primary); 
+    color: var(--bs-light); /* Ou o que contrastar melhor com --bs-primary */
+    align-self: flex-start;
+    margin-right: auto; 
+    border-bottom-left-radius: 4px; /* "Rabicho" sutil */
+}
+html[data-bs-theme="dark"] .chat-widget-messages .ai-bubble {
+     /* color: var(--bs-dark); Ajuste se --bs-primary for claro no tema escuro */
+}
+
+
+.chat-widget-messages .user-bubble {
+    background-color: var(--bs-tertiary-bg); /* Fundo mais destacado para usuário */
+    color: var(--bs-body-color);
+    align-self: flex-end;
+    margin-left: auto; 
+    border-bottom-right-radius: 4px; /* "Rabicho" sutil */
+}
+html[data-bs-theme="dark"] .chat-widget-messages .user-bubble {
+    background-color: var(--bs-secondary, #6c757d); /* Cor secundária para o usuário no tema escuro */
+    color: var(--bs-light);
+}
+
+/* === ESTILOS PARA O AVATAR R2-D2 E CHAT WIDGET === */
+
+/* Estilos para o Avatar Fixo Global */
+.fixed-ai-avatar {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1051; /* Um pouco acima do widget para garantir clicabilidade */
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.fixed-ai-avatar:hover {
+    transform: scale(1.1);
+}
+
+.fixed-ai-avatar .avatar-image {
+    width: 60px;   /* Ajuste o tamanho conforme desejar */
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #fff; /* Borda branca para destacar */
+    /* background-color: #007bff;  Cor de fundo se a imagem for transparente */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    display: block;
+}
+
+/* Estilos Refinados para a Janela de Chat Flutuante (Widget) */
+.chat-widget-container {
+    position: fixed;
+    bottom: 95px; /* Posição acima do avatar + pequena margem */
+    right: 25px;
+    width: 350px; 
+    max-height: 70vh; /* Altura máxima para não cobrir a tela toda em mobile */
+    background-color: var(--bs-body-bg); /* Usa variável Bootstrap para tema claro/escuro */
+    border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.1));
+    border-radius: 12px; /* Cantos mais arredondados */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra mais pronunciada */
+    z-index: 1050; 
+    display: none; /* Começa escondido, JS controla para 'flex' */
+    flex-direction: column;
+    overflow: hidden; 
+    font-family: 'Inter', sans-serif; /* Fonte que você usa no site */
+    font-size: 0.875rem; /* Tamanho de fonte base para o widget */
+    opacity: 0; /* Para transição suave */
+    transform: translateY(10px) scale(0.95); /* Posição inicial para animação */
+    transform-origin: bottom right;
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+/* Quando o widget é tornado visível pelo JavaScript */
+.chat-widget-container[style*="display: flex"] {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+
+.chat-widget-header {
+    /* Usando --bs-warning que é laranja no tema Brite */
+    background-color: var(--bs-warning); 
+    color: var(--bs-black); /* Texto preto para bom contraste com laranja */
+    /* Se tiver uma variável específica para texto sobre o warning, use-a:
+       color: var(--bs-warning-text-emphasis); 
+    */
+    padding: 0.65rem 1rem; /* Padding ajustado */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.05));
+}
+
+.chat-widget-header h5 {
+    margin: 0;
+    font-size: 0.95rem; /* Tamanho do título ajustado */
+    font-weight: 600;
+}
+
+.close-chat-widget {
+    background: none;
+    border: none;
+    color: inherit; 
+    font-size: 1.5rem;
+    line-height: 1;
+    opacity: 0.7;
+    cursor: pointer;
+    padding: 0.1rem 0.3rem;
+}
+.close-chat-widget:hover {
+    opacity: 1;
+}
+
+.chat-widget-messages {
+    flex-grow: 1;
+    padding: 0.75rem 1rem; /* Padding ajustado */
+    overflow-y: auto; 
+    background-color: var(--bs-body-tertiary); 
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem; /* Espaçamento entre balões ajustado */
+}
+
+/* Scrollbar mais sutil para a área de mensagens */
+.chat-widget-messages::-webkit-scrollbar {
+    width: 5px;
+}
+.chat-widget-messages::-webkit-scrollbar-track {
+    background: transparent; 
+}
+.chat-widget-messages::-webkit-scrollbar-thumb {
+    background-color: var(--bs-secondary-bg); 
+    border-radius: 10px;
+}
+html[data-bs-theme="dark"] .chat-widget-messages::-webkit-scrollbar-thumb {
+    background-color: var(--bs-gray-700, #495057); 
+}
+
+
+.chat-widget-messages .message-bubble {
+    padding: 0.5rem 0.8rem; /* Padding interno dos balões */
+    border-radius: 16px; /* Balões bem arredondados */
+    max-width: 85%;
+    word-wrap: break-word;
+    line-height: 1.4;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,0.07); /* Sombra sutil nos balões */
+}
+
+.chat-widget-messages .ai-bubble {
+    /* Usando --bs-primary (que é azul escuro no tema Brite) */
+    background-color: var(--bs-primary); 
+    color: var(--bs-light); /* Texto claro para contraste */
+    align-self: flex-start;
+    margin-right: auto; 
+    border-bottom-left-radius: 5px; /* "Rabicho" sutil */
+}
+html[data-bs-theme="dark"] .chat-widget-messages .ai-bubble {
+    /* Ajuste se o primário no tema escuro tiver cor de texto diferente */
+}
+
+
+.chat-widget-messages .user-bubble {
+    background-color: var(--bs-secondary-bg); 
+    color: var(--bs-body-color);
+    align-self: flex-end;
+    margin-left: auto; 
+    border-bottom-right-radius: 5px; /* "Rabicho" sutil */
+}
+html[data-bs-theme="dark"] .chat-widget-messages .user-bubble {
+    background-color: var(--bs-gray-600, #6c757d); 
+    color: var(--bs-light);
+}
+
+
+.chat-widget-messages .message-bubble p {
+    margin-bottom: 0;
+}
+
+.chat-widget-input-form {
+    padding: 0.65rem 1rem; /* Padding ajustado */
+    border-top: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.05));
+    background-color: var(--bs-body-bg);
+    display: flex;
+}
+
+.chat-widget-input-form form {
+    display: flex;
+    align-items: center; 
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.chat-widget-input-form textarea {
+    flex-grow: 1;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 18px; /* Input arredondado */
+    padding: 0.5rem 0.9rem; 
+    resize: none;
+    min-height: 40px; 
+    max-height: 90px; 
+    overflow-y: auto;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-family: inherit;
+    font-size: 0.875rem; /* Fonte do input igual ao widget */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.chat-widget-input-form textarea::placeholder {
+    color: var(--bs-secondary-color);
+    opacity: 0.7;
+}
+.chat-widget-input-form textarea:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25); 
+    outline: none;
+}
+
+
+.chat-widget-input-form button[type="submit"] {
+    background-color: var(--bs-primary);
+    color: var(--bs-light); 
+    border: none;
+    border-radius: 50%;
+    width: 38px; /* Tamanho do botão de enviar */
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem; /* Tamanho do ícone */
+    padding: 0;
+    flex-shrink: 0; 
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.chat-widget-input-form button[type="submit"]:hover {
+    /* Para o tema "Brite", primário é azul escuro. Um tom mais claro/escuro no hover. */
+    /* Se var(--bs-primary-darken) não existir, defina manualmente ou use filter */
+    background-color: #0a58ca; /* Azul um pouco mais escuro para o tema Brite (original #0d6efd) */
+    /* Se o primário fosse laranja, como #ff8800, um hover poderia ser #e67300 */
+}
+.chat-widget-input-form button[type="submit"]:active {
+    transform: scale(0.92);
+}
+
+/* Indicador de "digitando" */
+.chat-widget-messages .ai-bubble#typing-indicator {
+    background-color: var(--bs-body-tertiary);
+    border: 1px dashed var(--bs-border-color);
+    box-shadow: none;
+}
+.chat-widget-messages .ai-bubble#typing-indicator p {
+    font-style: italic;
+    color: var(--bs-secondary-color);
+    animation: typing-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes typing-pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}

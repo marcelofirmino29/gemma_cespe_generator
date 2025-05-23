@@ -355,18 +355,23 @@ class SimuladoConfigForm(forms.Form):
         # Não há validações adicionais específicas para este formulário no momento
         return cleaned_data
     
-    # --- NOVO FORMULÁRIO: Pergunte à IA ---
+# generator/forms.py
 class AskAIForm(forms.Form):
-    user_question = forms.CharField(
-        label="Sua Pergunta",
-        widget=forms.Textarea(attrs={
-            'rows': 4,
-            'placeholder': 'Digite sua pergunta ou comando para a IA...',
-            'class': 'form-control'
-        }),
-        required=True,
-        help_text="Seja claro e específico na sua pergunta."
+    user_input = forms.CharField(  # MUDANÇA DE NOME AQUI
+        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Digite sua pergunta para a IA...'}),
+        label="Sua Pergunta à IA",
+        required=True
     )
+    # Adicione aqui outros campos se necessário, como um campo para o histórico da conversa
+
+    def clean_user_input(self):  # MUDANÇA DE NOME AQUI e no get()
+        question = self.cleaned_data.get('user_input')
+        if not question or len(question.strip()) == 0:
+            raise forms.ValidationError("Este campo não pode ser vazio.")
+        # Adicione aqui outras validações se necessário (ex: tamanho máximo)
+        return question
+
+# ... (outros formulários como PDFUploadForm, TemaQuestaoForm, etc., permanecem)
 
 # --- NOVO FORMULÁRIO: Adicionar/Editar Área de Conhecimento ---
 class AreaConhecimentoForm(forms.ModelForm):
