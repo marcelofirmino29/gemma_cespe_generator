@@ -20,7 +20,7 @@
             padding-top: 56px; /* Altura da topbar fixa */
         }
         .top-bar {
-            height: 56px; 
+            height: 56px;
         }
         /* ... (seus outros estilos in-page permanecem) ... */
     </style>
@@ -44,7 +44,7 @@
                     <i class="bi bi-robot"></i>
                     <span class="d-none d-sm-inline ms-1">Questões de IA</span>
                 </a>
-                
+
                 <div class="ms-auto d-flex align-items-center">
                     <span class="navbar-text me-3" id="navbar-datetime-display">
                         <i class="bi bi-calendar3 me-1"></i><span id="date-display"></span>
@@ -114,7 +114,15 @@
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'generator:dashboard' %}" title="Meu Desempenho"><i class="bi bi-graph-up me-2"></i>Desempenho</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:games_hub' %}active{% endif %}" href="{% url 'generator:games_hub' %}" title="Hub de Jogos"><i class="bi bi-joystick me-2"></i>Hub Jogos</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:listar_concursos' %}active{% endif %}" href="{% url 'generator:listar_concursos' %}" title="Concursos Abertos"><i class="bi bi-briefcase-fill me-2"></i>Concursos</a></li>
-                    {% endif %}
+
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'listar_provas_coletadas' and request.resolver_match.namespace == 'generator' %}active{% endif %}"
+                                href="{% url 'generator:listar_provas_coletadas' %}"
+                                title="Provas Anteriores Coletadas (PCI)">
+                                <i class="bi bi-collection-fill me-2"></i>Provas Anteriores (PCI)
+                            </a>
+                        </li>
+                        {% endif %}
                 </ul>
 
                 <div class="mt-auto pt-3 border-top">
@@ -174,8 +182,8 @@
     <script src="{% static 'generator/js/darkmode.js' %}" defer></script>
     <script src="{% static 'generator/js/fontsize_adjuster.js' %}" defer></script>
     <script src="{% static 'generator/js/base_layout_scripts.js' %}" defer></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> 
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <div class="fixed-ai-avatar shadow" id="ai-avatar-button"> <img src="{% static 'generator/images/ai_avatar.png' %}" alt="Assistente IA Cespito" class="avatar-image img-fluid">
          </div>
@@ -189,211 +197,171 @@
                 <textarea id="chat-widget-user-input" class="form-control form-control-sm me-2" name="user_input" placeholder="Digite sua pergunta..." rows="1" aria-label="Sua pergunta"></textarea>
                 <button type="submit" class="btn btn-primary btn-sm rounded-circle p-0" aria-label="Enviar pergunta" style="width: 38px; height: 38px; line-height: 38px;">
                     <i class="bi bi-send-fill"></i>
-                </button> 
+                </button>
             </form>
         </div>
     </div>
     <script>
         function updateDateTimeDisplay() {
-            // ... (seu código updateDateTimeDisplay) ...
             const dateDisplayElement = document.getElementById('date-display');
             const timeDisplayElement = document.getElementById('time-display');
-            
+
             if (dateDisplayElement && timeDisplayElement) {
                 const now = new Date();
                 const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // Meses são 0-indexados
                 const year = now.getFullYear();
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
                 const seconds = String(now.getSeconds()).padStart(2, '0');
-                
+
                 dateDisplayElement.textContent = `${day}/${month}/${year}`;
                 timeDisplayElement.textContent = `${hours}:${minutes}:${seconds}`;
             }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            updateDateTimeDisplay(); 
-            setInterval(updateDateTimeDisplay, 1000); 
+            updateDateTimeDisplay();
+            setInterval(updateDateTimeDisplay, 1000);
 
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
-        });
-    </script>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const avatarButton = document.getElementById('ai-avatar-button');
-        const chatWidgetContainer = document.getElementById('chat-widget-container');
-        const closeChatButton = document.getElementById('close-chat-widget');
-        const chatWidgetForm = document.getElementById('chat-widget-form');
-        const userInput = document.getElementById('chat-widget-user-input');
-        const messagesContainer = document.getElementById('chat-widget-messages');
-        const sendButton = chatWidgetForm ? chatWidgetForm.querySelector('button[type="submit"]') : null; // Pega o botão de enviar
 
-        const askAiUrl = "{% url 'generator:ask_ai' %}"; 
+            // Chat Widget Logic (copiado do seu HTML)
+            const avatarButton = document.getElementById('ai-avatar-button');
+            const chatWidgetContainer = document.getElementById('chat-widget-container');
+            const closeChatButton = document.getElementById('close-chat-widget');
+            const chatWidgetForm = document.getElementById('chat-widget-form');
+            const userInput = document.getElementById('chat-widget-user-input');
+            const messagesContainer = document.getElementById('chat-widget-messages');
+            // const sendButton = chatWidgetForm ? chatWidgetForm.querySelector('button[type="submit"]') : null;
 
-        function addMessageToWidget(text, type, isHtml = false, elementId = null) {
-            if (!messagesContainer) return null; // Garante que o container existe
+            const askAiUrl = "{% url 'generator:ask_ai' %}";
 
-            const messageBubble = document.createElement('div');
-            // Adicionando classes Bootstrap para balões de mensagem
-            messageBubble.classList.add('p-2', 'mb-2', 'rounded-3', 'shadow-sm', 'w-auto', 'mw-75'); // mw-75 = max-width 75%
-            
-            if (elementId) {
-                messageBubble.id = elementId;
+            function addMessageToWidget(text, type, isHtml = false, elementId = null) {
+                if (!messagesContainer) return null;
+                const messageBubble = document.createElement('div');
+                messageBubble.classList.add('p-2', 'mb-2', 'rounded-3', 'shadow-sm', 'w-auto', 'mw-75');
+                if (elementId) messageBubble.id = elementId;
+                if (type === 'user') {
+                    messageBubble.classList.add('bg-primary-subtle', 'text-primary-emphasis', 'align-self-end', 'ms-auto');
+                    messageBubble.style.borderBottomRightRadius = '0.25rem';
+                } else {
+                    messageBubble.classList.add('bg-body-secondary', 'align-self-start', 'me-auto');
+                    messageBubble.style.borderBottomLeftRadius = '0.25rem';
+                }
+                const p = document.createElement('div');
+                if (isHtml) p.innerHTML = text; else p.textContent = text;
+                messageBubble.appendChild(p);
+                messagesContainer.appendChild(messageBubble);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                return messageBubble;
             }
-            
-            if (type === 'user') {
-                messageBubble.classList.add('bg-primary-subtle', 'text-primary-emphasis', 'align-self-end', 'ms-auto'); // Alinha à direita
-                messageBubble.style.borderBottomRightRadius = '0.25rem'; // "Rabicho"
-            } else { // AI ou typing indicator
-                messageBubble.classList.add('bg-body-secondary', 'align-self-start', 'me-auto'); // Alinha à esquerda
-                messageBubble.style.borderBottomLeftRadius = '0.25rem'; // "Rabicho"
+
+            if(messagesContainer && messagesContainer.children.length === 0) {
+                 addMessageToWidget('Olá! Como posso te ajudar hoje?', 'ai', false);
             }
 
-            const p = document.createElement('div'); // Usar div para innerHTML
-            if (isHtml) {
-                p.innerHTML = text; // Para Markdown renderizado
-            } else {
-                p.textContent = text;
-            }
-            messageBubble.appendChild(p);
-            
-            messagesContainer.appendChild(messageBubble);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight; 
-            return messageBubble; 
-        }
-
-        // Adiciona mensagem inicial da IA
-        if(messagesContainer && messagesContainer.children.length === 0) { // Adiciona só se estiver vazio
-             addMessageToWidget('Olá! Como posso te ajudar hoje?', 'ai', false);
-        }
-
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
                     }
                 }
-            }
-            return cookieValue;
-        }
-
-        function submitChatMessage() {
-            if (!userInput || !messagesContainer) return;
-
-            const userMessageText = userInput.value.trim();
-            if (userMessageText === '') {
-                return; 
+                return cookieValue;
             }
 
-            addMessageToWidget(userMessageText, 'user');
-            userInput.value = ''; 
-            userInput.style.height = 'auto'; // Reseta altura do textarea
-            userInput.focus(); // Mantém o foco no input
-            
-            const typingIndicator = addMessageToWidget(
-                '<div class="d-flex align-items-center"><strong class="me-2">Cespito está pensando...</strong><div class="spinner-border spinner-border-sm text-secondary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
-                'ai', 
-                true, // isHtml = true
-                'typing-indicator'
-            );
+            function submitChatMessage() {
+                if (!userInput || !messagesContainer) return;
+                const userMessageText = userInput.value.trim();
+                if (userMessageText === '') return;
+                addMessageToWidget(userMessageText, 'user');
+                userInput.value = '';
+                userInput.style.height = 'auto';
+                userInput.focus();
+                const typingIndicator = addMessageToWidget(
+                    '<div class="d-flex align-items-center"><strong class="me-2">Cespito está pensando...</strong><div class="spinner-border spinner-border-sm text-secondary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
+                    'ai', true, 'typing-indicator'
+                );
+                fetch(askAiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ user_input: userMessageText })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errData => { throw new Error(errData.error || `Erro ${response.status}`);
+                        }).catch(() => { throw new Error(`Erro ${response.status}: ${response.statusText}`); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (typingIndicator) typingIndicator.remove();
+                    if (data.answer) {
+                        const htmlAnswer = marked.parse(data.answer);
+                        addMessageToWidget(htmlAnswer, 'ai', true);
+                    } else if (data.error) {
+                        addMessageToWidget('Erro: ' + data.error, 'ai');
+                    } else {
+                        addMessageToWidget('Não foi possível obter uma resposta válida.', 'ai');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro no fetch do chat widget:', error);
+                    if (typingIndicator) typingIndicator.remove();
+                    addMessageToWidget(`Desculpe, ocorreu um erro: ${error.message}.`, 'ai');
+                });
+            }
 
-            fetch(askAiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'), 
-                    'X-Requested-With': 'XMLHttpRequest' 
-                },
-                body: JSON.stringify({ user_input: userMessageText })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errData => {
-                        throw new Error(errData.error || `Erro ${response.status}`);
-                    }).catch(() => {
-                        throw new Error(`Erro ${response.status}: ${response.statusText}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (typingIndicator) {
-                    typingIndicator.remove();
-                }
-                if (data.answer) {
-                    // Renderiza a resposta da IA como Markdown
-                    const htmlAnswer = marked.parse(data.answer); // USA O MARKED.JS
-                    addMessageToWidget(htmlAnswer, 'ai', true); // isHtml = true
-                } else if (data.error) {
-                    addMessageToWidget('Erro: ' + data.error, 'ai');
-                } else {
-                    addMessageToWidget('Não foi possível obter uma resposta válida.', 'ai');
-                }
-            })
-            .catch(error => {
-                console.error('Erro no fetch do chat widget:', error);
-                if (typingIndicator) {
-                    typingIndicator.remove();
-                }
-                addMessageToWidget(`Desculpe, ocorreu um erro: ${error.message}.`, 'ai');
-            });
-        }
-
-        if (avatarButton && chatWidgetContainer) {
-            avatarButton.addEventListener('click', function() {
-                const isHidden = chatWidgetContainer.style.display === 'none' || chatWidgetContainer.style.display === '';
-                chatWidgetContainer.style.display = isHidden ? 'flex' : 'none'; // 'flex' para o container
-                // Adicionar/remover classe para animação de abertura/fechamento
-                if (isHidden) {
-                    chatWidgetContainer.classList.add('open');
-                    if (userInput) userInput.focus();
-                } else {
+            if (avatarButton && chatWidgetContainer) {
+                avatarButton.addEventListener('click', function() {
+                    const isHidden = chatWidgetContainer.style.display === 'none' || chatWidgetContainer.style.display === '';
+                    chatWidgetContainer.style.display = isHidden ? 'flex' : 'none';
+                    if (isHidden) {
+                        chatWidgetContainer.classList.add('open');
+                        if (userInput) userInput.focus();
+                    } else {
+                        chatWidgetContainer.classList.remove('open');
+                    }
+                });
+            }
+            if (closeChatButton && chatWidgetContainer) {
+                closeChatButton.addEventListener('click', function() {
+                    chatWidgetContainer.style.display = 'none';
                     chatWidgetContainer.classList.remove('open');
-                }
-            });
-        }
-
-        if (closeChatButton && chatWidgetContainer) {
-            closeChatButton.addEventListener('click', function() {
-                chatWidgetContainer.style.display = 'none';
-                chatWidgetContainer.classList.remove('open');
-            });
-        }
-
-        if (chatWidgetForm) {
-            chatWidgetForm.addEventListener('submit', function(event) {
-                event.preventDefault(); 
-                submitChatMessage();
-            });
-        }
-
-        // Enter para enviar, Shift+Enter para nova linha
-        if (userInput) {
-            userInput.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault(); // Impedir nova linha no textarea
-                    submitChatMessage();    // Chamar a função de submissão
-                }
-                // Auto-ajuste da altura do textarea
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-            // Ajuste inicial da altura do textarea
-            userInput.style.height = 'auto';
-            userInput.style.height = (userInput.scrollHeight) + 'px';
-        }
-    });
+                });
+            }
+            if (chatWidgetForm) {
+                chatWidgetForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    submitChatMessage();
+                });
+            }
+            if (userInput) {
+                userInput.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        submitChatMessage();
+                    }
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                });
+                userInput.style.height = 'auto';
+                userInput.style.height = (userInput.scrollHeight) + 'px';
+            }
+        });
     </script>
     {% block extra_js %}{% endblock extra_js %}
 </body>

@@ -1,0 +1,211 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+{% load generator_tags %}
+
+{% block title %}
+    {{ titulo_pagina|default:"Provas Coletadas" }} - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <header class="mb-4">
+        <h2 class="mb-4">{{ titulo_pagina|default:"Provas de Concursos Coletadas" }}</h2>
+        <p class="lead">Explore provas de concursos públicos</p>
+    </header>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Filtrar Provas</h5>
+            <form method="get" action="">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="filtroConcurso" class="form-label">Termo no Concurso/Título:</label>
+                        <input type="text" class="form-control form-control-sm" id="filtroConcurso" name="q_concurso" value="{{ request.GET.q_concurso | default:'' }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="filtroOrgao" class="form-label">Órgão:</label>
+                        <select class="form-select form-select-sm" id="filtroOrgao" name="orgao">
+                            <option value="">Todos os Órgãos</option>
+                            {% for orgao_nome in orgaos_disponiveis %}
+                                <option value="{{ orgao_nome }}" {% if request.GET.orgao == orgao_nome %}selected{% endif %}>{{ orgao_nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filtroCargo" class="form-label">Cargo:</label>
+                        {# Usando select para cargo também, ajuste se preferir input #}
+                        <select class="form-select form-select-sm" id="filtroCargo" name="cargo">
+                            <option value="">Todos os Cargos</option>
+                            {% for cargo_nome in cargos_disponiveis %}
+                                <option value="{{ cargo_nome }}" {% if request.GET.cargo == cargo_nome %}selected{% endif %}>{{ cargo_nome }}</option>
+                            {% endfor %}
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filtroBanca" class="form-label">Banca:</label>
+                        <select class="form-select form-select-sm" id="filtroBanca" name="banca">
+                            <option value="">Todas as Bancas</option>
+                            {% for banca_nome in bancas_disponiveis %}
+                                <option value="{{ banca_nome }}" {% if request.GET.banca == banca_nome %}selected{% endif %}>{{ banca_nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filtroAno" class="form-label">Ano:</label>
+                        <select class="form-select form-select-sm" id="filtroAno" name="ano">
+                            <option value="">Todos os Anos</option>
+                            {% for ano_val in anos_disponiveis %}
+                                <option value="{{ ano_val }}" {% if request.GET.ano == ano_val|stringformat:"s" %}selected{% endif %}>{{ ano_val }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="filtroNivel" class="form-label">Nível:</label>
+                        <select class="form-select form-select-sm" id="filtroNivel" name="nivel">
+                            <option value="">Todos os Níveis</option>
+                            {% for nivel_nome in niveis_disponiveis %}
+                                <option value="{{ nivel_nome }}" {% if request.GET.nivel == nivel_nome %}selected{% endif %}>{{ nivel_nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 align-self-end">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+                    </div>
+                    {% if request.GET %}
+                    <div class="col-md-2 align-self-end">
+                        {# request.path é a URL atual sem os query parameters #}
+                        <a href="{{ request.path }}" class="btn btn-secondary btn-sm w-100">Limpar</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# ... (resto do template: tabela, paginação, etc. - sem alterações necessárias aqui) ... #}
+    {% if page_obj and page_obj.object_list %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Concurso</th>
+                        <th scope="col">Órgão</th>
+                        <th scope="col">Cargo(s)</th>
+                        <th scope="col">Banca</th>
+                        <th scope="col">Ano</th>
+                        <th scope="col">Nível</th>
+                        <th scope="col">Arquivos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prova in page_obj.object_list %}
+                    <tr>
+                        <td>
+                            <a href="{{ prova.url_pagina_detalhes }}" target="_blank" title="Ver página original da prova">
+                                {{ prova.nome_concurso_detalhado|truncatewords:10|default:prova.titulo_link_origem|truncatewords:10|default:"Detalhes do Concurso" }}
+                            </a>
+                        </td>
+                        <td>{{ prova.orgao.nome|default:"Não informado" }}</td>
+                        <td>{{ prova.cargo.nome|default:prova.categoria_cargo_principal_texto|default:"Não informado" }}</td>
+                        <td>{{ prova.banca.nome|default:"Não informada" }}</td>
+                        <td>{{ prova.ano|default:"N/A" }}</td>
+                        <td>{{ prova.nivel_escolaridade.nome|default:prova.nivel_detalhado_texto|default:"Não informado" }}</td>
+                        <td>
+                            {% if prova.url_prova_pdf %}
+                                <a href="{{ prova.url_prova_pdf }}" target="_blank" class="btn btn-sm btn-primary mb-1">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i> Prova
+                                </a>
+                            {% endif %}
+                            {% if prova.url_gabarito_pdf and prova.url_gabarito_pdf != "Não encontrado" and prova.url_gabarito_pdf != "Erro ao buscar detalhes" %}
+                                <a href="{{ prova.url_gabarito_pdf }}" target="_blank" class="btn btn-sm btn-secondary mb-1">
+                                    <i class="bi bi-file-earmark-check-fill"></i> Gabarito
+                                </a>
+                            {% elif prova.url_gabarito_pdf == "Não encontrado" %}
+                                <span class="badge bg-warning text-dark">Gabarito não disponível</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginação de resultados" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                    {% elif i == 1 or i == page_obj.paginator.num_pages %}
+                        {% if i == 1 and page_obj.number > 4 %}
+                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                        {% elif i == page_obj.paginator.num_pages and page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+                             <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                        {% endif %}
+                         <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Nenhuma prova coletada encontrada com os critérios atuais.
+            {% if request.GET %}
+            <p class="mt-2">Tente <a href="{{ request.path }}" class="alert-link">remover os filtros</a> para uma busca mais ampla.</p>
+            {% endif %}
+            {% if user.is_staff or user.is_superuser %}
+            <p class="mt-2">Você pode tentar <a href="{% url 'admin:generator_provapciconcurso_changelist' %}" class="alert-link">gerenciar as provas coletadas</a> ou executar o scraper para obter novos dados.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if user.is_staff or user.is_superuser %}
+    <div class="mt-5 text-center">
+        <p>Como administrador, você pode <a href="{% url 'admin:generator_provapciconcurso_changelist' %}" class="btn btn-info">Gerenciar Provas Coletadas no Admin</a>.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+console.log("Página de listagem de provas PCI carregada com filtros aperfeiçoados (dropdowns).");
+</script>
+{% endblock %}

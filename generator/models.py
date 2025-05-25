@@ -158,3 +158,62 @@ class PalavraChave(models.Model):
         verbose_name = "Palavra-chave"
         verbose_name_plural = "Palavras-chave"
         ordering = ['texto'] # Ordena alfabeticamente por padrão
+        
+class OrgaoPCI(models.Model):
+    nome = models.CharField(max_length=255, unique=True)
+    # outros campos se necessário
+    def __str__(self):
+        return self.nome
+
+class BancaPCI(models.Model):
+    nome = models.CharField(max_length=255, unique=True)
+    # outros campos
+    def __str__(self):
+        return self.nome
+
+class NivelEscolaridadePCI(models.Model):
+    nome = models.CharField(max_length=100, unique=True) # Fundamental, Médio, Superior
+    def __str__(self):
+        return self.nome
+
+class CargoPCI(models.Model):
+    nome = models.CharField(max_length=255)
+    # idealmente, normalizar mais, mas para começar:
+    # categoria_principal = models.CharField(max_length=255, null=True, blank=True) 
+    def __str__(self):
+        return self.nome
+    # Pode ter uma ForeignKey para uma CategoriaPCI mais tarde
+
+class ProvaPCIConcurso(models.Model):
+    titulo_link_origem = models.CharField(max_length=500, blank=True, null=True)
+    nome_concurso_detalhado = models.CharField(max_length=500, blank=True, null=True)
+
+    orgao = models.ForeignKey(OrgaoPCI, on_delete=models.SET_NULL, null=True, blank=True)
+    cargo = models.ForeignKey(CargoPCI, on_delete=models.SET_NULL, null=True, blank=True) # Ou ManyToManyField se uma prova pode ter múltiplos cargos
+    # cargo_detalhado_texto = models.CharField(max_length=500, blank=True, null=True) # Para o texto bruto se necessário
+
+    banca = models.ForeignKey(BancaPCI, on_delete=models.SET_NULL, null=True, blank=True)
+    ano = models.IntegerField(null=True, blank=True)
+    nivel_escolaridade = models.ForeignKey(NivelEscolaridadePCI, on_delete=models.SET_NULL, null=True, blank=True)
+    nivel_detalhado_texto = models.CharField(max_length=100, blank=True, null=True)
+
+    url_pagina_detalhes = models.URLField(max_length=1024, unique=True)
+    url_prova_pdf = models.URLField(max_length=1024, null=True, blank=True)
+    url_gabarito_pdf = models.URLField(max_length=1024, null=True, blank=True)
+
+    fonte = models.CharField(max_length=100, default="PCI Concursos")
+    categoria_cargo_principal_texto = models.CharField(max_length=255, blank=True, null=True) # Texto da categoria original
+
+    data_coleta = models.DateTimeField(auto_now_add=True)
+    data_atualizacao_coleta = models.DateTimeField(auto_now=True)
+
+    # Opcional: link para o modelo Questao se você for extrair questões dos PDFs
+    # questoes = models.ManyToManyField('Questao', blank=True)
+
+    class Meta:
+        verbose_name = "Prova Coletada (PCI)"
+        verbose_name_plural = "Provas Coletadas (PCI)"
+        ordering = ['-ano', 'orgao__nome']
+
+    def __str__(self):
+        return f"{self.orgao} - {self.cargo} ({self.ano})"

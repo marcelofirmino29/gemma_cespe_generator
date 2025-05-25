@@ -35,6 +35,8 @@ from .views_games import (
     scratch_js_view,
 )   
 
+from .views_scraped_exams import listar_provas_coletadas
+
 from .views_ext_api import listar_concursos_view
 
 __all__ = {
@@ -63,4 +65,5 @@ __all__ = {
     'listar_questoes_discursivas_view' # Adicionado se esta é uma view pública pretendida
     'upload_pdf_and_generate_questions_view', # Adicionado se esta é uma view pública pretendida
     'listar_concursos_view', # Adicionado se esta é uma view pública pretendida
+    'listar_provas_coletadas', # Adicionado se esta é uma view pública pretendida
 }

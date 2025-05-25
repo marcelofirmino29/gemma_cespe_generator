@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     'generator',
     'markdownify.apps.MarkdownifyConfig',
     'django.contrib.humanize',
+    'django_celery_beat',
+
 ]
 
 MIDDLEWARE = [
@@ -91,34 +93,34 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
+# settings.py
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+        'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
+        'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
+        'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
+        'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
+        'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
     }
 }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
-#         'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
-#         'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
-#         'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
-#         'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
-#         'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
-#         'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
-#     }
-# }
-
-
-# # Validação em produção
-# if not DEBUG:
-#     if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
-#     if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
-#     if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
-#     if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
+# Validação em produção
+if not DEBUG:
+    if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
+    if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
+    if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
+    if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -175,3 +177,46 @@ LOGGING = {
         'whitenoise': {'handlers': ['console'], 'level': 'INFO', 'propagate': False,},
     },
 }
+
+# config/settings.py
+# ...
+SCRAPER_CONFIG_PCICONCURSOS = {
+    'MAX_CATEGORIAS_CARGO': 5,
+    'MAX_PAGINAS_POR_CATEGORIA': 2,
+    'ANO_ALVO': None, # Ou um ano específico como string "2023"
+    'MAX_PROFUNDIDADE_RECURSAO': 4,
+    'USER_AGENT': 'Mozilla/5.0 (compatible; GemmaCespeGeneratorBot/1.0', # Seja transparente
+}
+
+# --- CELERY SETTINGS ---
+# URL do Broker (Redis é uma escolha comum e recomendada para começar)
+# Certifique-se de que o Redis Server está rodando: sudo service redis-server start
+CELERY_BROKER_URL = 'redis://localhost:6379/0' # /0 é o número do banco de dados Redis
+# Se você preferir RabbitMQ (instale 'pip install librabbitmq' ou 'pip install "celery[librabbitmq]"'):
+# CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+
+# Backend de Resultados (opcional, mas útil para rastrear o status/resultado das tarefas)
+# Pode ser o mesmo Redis ou um banco de dados Django (django-db)
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1' # Usando um banco de dados Redis diferente para resultados
+# Para usar o banco de dados Django como backend de resultados (requer 'pip install django-celery-results'):
+# CELERY_RESULT_BACKEND = 'django-db'
+# E adicione 'django_celery_results' aos INSTALLED_APPS e rode migrate.
+
+CELERY_ACCEPT_CONTENT = ['json', 'application/json'] # Formatos de conteúdo aceitos
+CELERY_TASK_SERIALIZER = 'json'       # Serializador padrão para tarefas
+CELERY_RESULT_SERIALIZER = 'json'     # Serializador padrão para resultados
+CELERY_TIMEZONE = TIME_ZONE           # Use a timezone definida no seu projeto Django (ex: 'America/Sao_Paulo')
+
+# Configuração para o Celery Beat usando o DatabaseScheduler do django-celery-beat
+# Isso permite que você gerencie tarefas periódicas através do Django Admin.
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Visibilidade de tarefas (opcional, quanto tempo os resultados são mantidos)
+# CELERY_RESULT_EXPIRES = 3600  # 1 hora
+
+# Limite de taxa para tarefas (opcional)
+# CELERY_TASK_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/m'}}
+
+# --- FIM DAS CELERY SETTINGS ---
+
+# ... (resto das suas configurações) ...

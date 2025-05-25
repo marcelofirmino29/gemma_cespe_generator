@@ -106,13 +106,13 @@
                     </div>
                 </div>
             </div>
-            {# Card Pergunte à IA - Cinza Escuro (Dark) #}
+
             <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-dark text-white">
-                    <a href="{% url 'generator:ask_ai' %}" class="stretched-link" aria-label="Provas Recentes"></a>
+                <div class="card landing-card shadow-sm h-100 bg-primary-subtle text-primary-emphasis">
+                    <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
                     <div class="card-body">
-                        <i class="bi bi-check-square card-icon-main"></i>
-                        <span class="card-icon-caption">Provas Recentes</span>
+                        <i class="bi bi-search-heart card-icon-main"></i>
+                        <span class="card-icon-caption">Provas Anteriores (PCI)</span>
                     </div>
                 </div>
             </div>
@@ -154,7 +154,8 @@
             </div>
             {# --- FIM DOS NOVOS CARDS --- #}
 
-        </div> {# Fim da row dos cards #}
+
+            </div> {# Fim da row dos cards #}
 
         {# --- Nuvem de Palavras --- #}
         <div class="text-center mb-4 mt-5">

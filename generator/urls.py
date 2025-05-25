@@ -47,5 +47,8 @@ urlpatterns = [
     path('accounts/register/', views.register_view, name='register'),
 
     # --- URLs de Área ---
-    path('add-area-quick-generator/', views.add_area_quick_from_generator_view, name='add_area_quick_from_generator')
+    path('add-area-quick-generator/', views.add_area_quick_from_generator_view, name='add_area_quick_from_generator'),
+    
+    path('provas-coletadas/', views.listar_provas_coletadas, name='listar_provas_coletadas'),
+
 ]

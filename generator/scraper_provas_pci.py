@@ -1,9 +1,12 @@
 import re
+from venv import logger
 import requests
 from bs4 import BeautifulSoup
 import json
 import time
 from urllib.parse import urljoin, urlparse
+
+from generator.models import BancaPCI, CargoPCI, NivelEscolaridadePCI, OrgaoPCI, ProvaPCIConcurso
 
 # --- Constantes do PCIConcursos.com.br ---
 BASE_URL_PCI = "https://www.pciconcursos.com.br/"
@@ -391,94 +394,203 @@ def extrair_provas_de_pagina_listagem(url_pagina_listagem, nome_categoria_cargo,
     return provas_coletadas_nesta_chamada
 
 
+# ... (todo o código anterior do scraper_logic.py permanece o mesmo até a função principal) ...
+
 def scraper_pci_provas_principal(max_categorias_cargo=5, max_paginas_por_categoria=2, ano_alvo=None, max_profundidade_recursao=2):
     """
     Função principal para orquestrar o scraping de provas do PCI Concursos.
+    Modificada para salvar no banco de dados Django.
     """
-    print("Iniciando Scraper de Provas do PCI Concursos...")
+    logger.info("Iniciando Scraper de Provas do PCI Concursos...") # MODIFICADO: print para logger.info
     if ano_alvo:
-        print(f"Tentando focar em provas do ano: {ano_alvo}.")
+        logger.info(f"Tentando focar em provas do ano: {ano_alvo}.") # MODIFICADO: print para logger.info
 
-    links_categorias = extrair_links_de_categorias_de_provas(PROVAS_URL_RAIZ_PCI)
-    
+    links_categorias = extrair_links_de_categorias_de_provas(PROVAS_URL_RAIZ_PCI) # Supondo que extrair_links_de_categorias_de_provas e outras usem logger internamente
+
     if not links_categorias:
-        print("Nenhuma categoria de prova encontrada. Encerrando.")
+        logger.warning("Nenhuma categoria de prova encontrada. Encerrando.") # MODIFICADO: print para logger.warning
         return []
 
-    todas_as_provas_coletadas = []
-    links_visitados_globalmente = set() # Para evitar reprocessar a mesma URL em toda a sessão de scraping
-    
+    todas_as_provas_coletadas_nesta_execucao = [] # Renomeado para clareza
+    links_visitados_globalmente = set()
+
     categorias_processadas_count = 0
     for categoria in links_categorias:
         if categorias_processadas_count >= max_categorias_cargo:
-            print(f"Limite de {max_categorias_cargo} categorias para processar atingido.")
+            logger.info(f"Limite de {max_categorias_cargo} categorias para processar atingido.") # MODIFICADO
             break
-        
-        print(f"\nProcessando Categoria: {categoria['nome_categoria']} ({categoria['url_categoria']})")
-        
+
+        logger.info(f"\nProcessando Categoria: {categoria['nome_categoria']} ({categoria['url_categoria']})") # MODIFICADO
+
         for num_pagina in range(1, max_paginas_por_categoria + 1):
             url_listagem_atual = categoria['url_categoria']
             url_base_categoria_com_barra = categoria['url_categoria']
             if not url_base_categoria_com_barra.endswith('/'):
                 url_base_categoria_com_barra += '/'
-            
+
             if num_pagina > 1:
                 url_listagem_atual = urljoin(url_base_categoria_com_barra, f"pagina/{num_pagina}/")
-            
-            # print(f"  Analisando página {num_pagina} da categoria: {url_listagem_atual}")
-            
-            # A chamada inicial para extrair_provas_de_pagina_listagem começa com profundidade 0
+
+            # Supondo que extrair_provas_de_pagina_listagem também foi adaptada para usar logger
             provas_desta_pagina_e_recursao = extrair_provas_de_pagina_listagem(
-                url_listagem_atual, 
+                url_listagem_atual,
                 categoria['nome_categoria'],
-                links_visitados_globalmente, # Passa o conjunto global
+                links_visitados_globalmente,
                 current_depth=0,
-                max_depth=max_profundidade_recursao 
+                max_depth=max_profundidade_recursao
             )
-            
+
             if not provas_desta_pagina_e_recursao and num_pagina > 1:
-                # print(f"    Nenhuma prova encontrada em {url_listagem_atual} (página > 1) ou suas sub-listagens, possivelmente fim da paginação para esta categoria.")
-                break 
-            
+                break
+
             if provas_desta_pagina_e_recursao:
                 provas_para_adicionar = provas_desta_pagina_e_recursao
                 if ano_alvo:
                     provas_filtradas_ano = [
-                        p for p in provas_desta_pagina_e_recursao if 
-                        str(p.get("ano", "")).strip() == str(ano_alvo).strip() or 
+                        p for p in provas_desta_pagina_e_recursao if
+                        str(p.get("ano", "")).strip() == str(ano_alvo).strip() or
                         str(p.get("ano_inferido", "")).strip() == str(ano_alvo).strip() or
                         str(p.get("ano_detalhado", "")).strip() == str(ano_alvo).strip()
                     ]
                     if len(provas_filtradas_ano) < len(provas_desta_pagina_e_recursao):
-                        print(f"    Filtradas {len(provas_filtradas_ano)} provas para o ano {ano_alvo} de {len(provas_desta_pagina_e_recursao)} encontradas (incluindo recursão).")
+                        logger.info(f"    Filtradas {len(provas_filtradas_ano)} provas para o ano {ano_alvo} de {len(provas_desta_pagina_e_recursao)} encontradas.") # MODIFICADO
                     provas_para_adicionar = provas_filtradas_ano
-                
-                todas_as_provas_coletadas.extend(provas_para_adicionar)
+
+                todas_as_provas_coletadas_nesta_execucao.extend(provas_para_adicionar)
 
             if not provas_desta_pagina_e_recursao and num_pagina == 1:
-                 print(f"    Nenhuma prova encontrada na primeira página ({url_listagem_atual}) da categoria {categoria['nome_categoria']} ou em suas sub-listagens.")
-                 break 
+                 logger.info(f"    Nenhuma prova encontrada na primeira página ({url_listagem_atual}) da categoria {categoria['nome_categoria']}.") # MODIFICADO
+                 break
 
-            if num_pagina < max_paginas_por_categoria and provas_desta_pagina_e_recursao: 
-                time.sleep(2) 
-        
+            if num_pagina < max_paginas_por_categoria and provas_desta_pagina_e_recursao:
+                logger.debug(f"Pausa de 2 segundos antes da próxima página/sub-listagem...") # MODIFICADO
+                time.sleep(2)
+
         categorias_processadas_count += 1
-        if categorias_processadas_count < max_categorias_cargo and categorias_processadas_count < len(links_categorias) : 
-             time.sleep(3) 
+        if categorias_processadas_count < max_categorias_cargo and categorias_processadas_count < len(links_categorias) :
+             logger.debug(f"Pausa de 3 segundos antes da próxima categoria...") # MODIFICADO
+             time.sleep(3)
 
-    if todas_as_provas_coletadas:
-        nome_arquivo = "dados_provas_pciconcursos_completo.json"
-        if ano_alvo:
-            nome_arquivo = f"dados_provas_pciconcursos_{ano_alvo}.json"
-        
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
-            json.dump(todas_as_provas_coletadas, f, ensure_ascii=False, indent=4)
-        print(f"\nTotal de {len(todas_as_provas_coletadas)} provas coletadas e salvas em '{nome_arquivo}'")
+    # --- NOVA SEÇÃO DE SALVAMENTO NO BANCO DE DADOS ---
+    if todas_as_provas_coletadas_nesta_execucao:
+        logger.info(f"\nTotal de {len(todas_as_provas_coletadas_nesta_execucao)} provas coletadas. Tentando salvar no banco de dados...")
+        count_criadas = 0
+        count_atualizadas = 0
+        count_erros = 0
+
+        # Verifica se os modelos foram importados corretamente
+        if not all([ProvaPCIConcurso, OrgaoPCI, BancaPCI, NivelEscolaridadePCI, CargoPCI]):
+            logger.error("Modelos Django não estão disponíveis. Não é possível salvar no banco de dados.")
+            # Opcionalmente, salvar em JSON como fallback se os modelos não estiverem disponíveis
+            # (útil para testes fora do contexto Django, mas não ideal para produção Celery)
+            nome_arquivo_fallback = "dados_provas_pciconcursos_fallback.json"
+            if ano_alvo:
+                nome_arquivo_fallback = f"dados_provas_pciconcursos_{ano_alvo}_fallback.json"
+            with open(nome_arquivo_fallback, 'w', encoding='utf-8') as f:
+                json.dump(todas_as_provas_coletadas_nesta_execucao, f, ensure_ascii=False, indent=4)
+            logger.info(f"Dados salvos como fallback em '{nome_arquivo_fallback}'")
+            return todas_as_provas_coletadas_nesta_execucao # Retorna os dados coletados
+
+        for prova_data in todas_as_provas_coletadas_nesta_execucao:
+            try:
+                # --- Normalização e Get_or_Create para campos ForeignKey ---
+                orgao_nome = str(prova_data.get("orgao", "Não Informado")).strip()
+                orgao_obj, _ = OrgaoPCI.objects.get_or_create(
+                    nome=orgao_nome if orgao_nome else "Não Informado"
+                )
+
+                banca_nome = str(prova_data.get("banca", "Não Informada")).strip()
+                banca_obj, _ = BancaPCI.objects.get_or_create(
+                    nome=banca_nome if banca_nome else "Não Informada"
+                )
+
+                nivel_nome = str(prova_data.get("nivel", "Não Informado")).strip()
+                nivel_obj, _ = NivelEscolaridadePCI.objects.get_or_create(
+                    nome=nivel_nome if nivel_nome else "Não Informado"
+                )
+                
+                # Cargo pode precisar de uma lógica mais sofisticada para evitar duplicatas com pequenas variações
+                cargo_nome_bruto = str(prova_data.get("cargo", "Não Informado")).strip()
+                cargo_obj, _ = CargoPCI.objects.get_or_create(
+                    nome=cargo_nome_bruto if cargo_nome_bruto else "Não Informado"
+                )
+
+                ano_str = str(prova_data.get("ano", "")).strip()
+                ano_int = None
+                if ano_str.isdigit() and len(ano_str) == 4: # Simples validação para ano
+                    ano_int = int(ano_str)
+                elif re.match(r"20\d{2}", ano_str): # Tenta pegar ano se estiver no formato YYYY
+                     ano_int = int(ano_str)
+
+                # --- Preparar dados para ProvaPCIConcurso ---
+                defaults = {
+                    'titulo_link_origem': str(prova_data.get("titulo_link_origem", "")).strip()[:500], # Limita tamanho se necessário
+                    'nome_concurso_detalhado': str(prova_data.get("nome_concurso_detalhado", "")).strip()[:500],
+                    'orgao': orgao_obj,
+                    'cargo': cargo_obj,
+                    'banca': banca_obj,
+                    'ano': ano_int,
+                    'nivel_escolaridade': nivel_obj,
+                    'url_prova_pdf': prova_data.get("url_prova_pdf"),
+                    'url_gabarito_pdf': prova_data.get("url_gabarito_pdf"),
+                    'fonte': str(prova_data.get("fonte", "PCI Concursos")).strip(),
+                    'categoria_cargo_principal_texto': str(prova_data.get("categoria_cargo_principal", "")).strip()[:255],
+                }
+                # Remove chaves com valor None dos defaults para não sobrescrever com None se o campo já tiver valor
+                # e o modelo permitir null=True. Se não permitir, um erro pode ocorrer aqui.
+                # É melhor garantir que os defaults tenham valores válidos ou que os modelos permitam null.
+                # Por simplicidade, vamos assumir que os modelos lidam com None se o campo for Nullable.
+                # Se um campo obrigatório for None aqui, vai dar erro no update_or_create.
+
+                prova_obj, created = ProvaPCIConcurso.objects.update_or_create(
+                    url_pagina_detalhes=prova_data["url_pagina_detalhes"], # Campo único para identificar
+                    defaults=defaults
+                )
+
+                if created:
+                    count_criadas += 1
+                    logger.debug(f"Prova CRIADA: {prova_obj.url_pagina_detalhes}")
+                else:
+                    count_atualizadas += 1
+                    logger.debug(f"Prova ATUALIZADA: {prova_obj.url_pagina_detalhes}")
+
+            except Exception as e:
+                count_erros += 1
+                logger.error(f"Erro ao salvar/atualizar prova {prova_data.get('url_pagina_detalhes', 'URL DESCONHECIDA')} no BD: {e}", exc_info=True)
+                # Você pode querer coletar os dados que falharam para análise posterior
+                # failed_to_save.append(prova_data)
+
+        logger.info(f"Salvamento no BD concluído. Provas criadas: {count_criadas}, Provas atualizadas: {count_atualizadas}, Erros: {count_erros}")
+
     else:
-        print("\nNenhuma prova foi coletada com os critérios atuais.")
-        
-    return todas_as_provas_coletadas
+        logger.info("\nNenhuma prova foi coletada com os critérios atuais.") # MODIFICADO
 
+    return todas_as_provas_coletadas_nesta_execucao # Retorna os dados brutos coletados, caso precise deles na task Celery
+
+# --- REMOVER ESTA SEÇÃO SE O SCRIPT FOR USADO APENAS PELO DJANGO/CELERY ---
+# if __name__ == '__main__':
+#     # Para testes locais fora do Django, você precisaria mockar os modelos Django
+#     # ou configurar o ambiente Django antes de rodar.
+#     # Por exemplo, configurar DJANGO_SETTINGS_MODULE e chamar django.setup()
+#
+#     # Exemplo simplificado de como você poderia testar a coleta (sem salvar no BD diretamente aqui):
+#     # import django
+#     # import os
+#     # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings') # Ajuste para seu projeto
+#     # django.setup()
+#     # print("Ambiente Django configurado para teste do scraper.")
+#
+#     dados_coletados = scraper_pci_provas_principal(
+#         max_categorias_cargo=1,
+#         max_paginas_por_categoria=1,
+#         ano_alvo="2024",
+#         max_profundidade_recursao=0
+#     )
+#     if dados_coletados:
+#         logger.info("\n--- Amostra de Provas Coletadas (JSON Bruto) ---") # MODIFICADO
+#         for i, prova_info in enumerate(dados_coletados[:min(3, len(dados_coletados))]):
+#             logger.info(json.dumps(prova_info, indent=2, ensure_ascii=False)) # MODIFICADO
+#             if i < min(3, len(dados_coletados)) -1 : logger.info("---") # MODIFICADO
 # --- Para Executar o Scraper ---
 if __name__ == '__main__':
     dados = scraper_pci_provas_principal(

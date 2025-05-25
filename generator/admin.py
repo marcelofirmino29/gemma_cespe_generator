@@ -1,6 +1,7 @@
 # generator/admin.py
 from django.contrib import admin
 from .models import AreaConhecimento, Questao, TentativaResposta, Avaliacao
+from .models import OrgaoPCI, BancaPCI, NivelEscolaridadePCI, CargoPCI, ProvaPCIConcurso # e outros modelos
 
 # Registra os models para que apareçam na interface de administração
 
@@ -45,3 +46,45 @@ class AvaliacaoAdmin(admin.ModelAdmin):
     def questao_tipo(self, obj):
          return obj.tentativa.questao.get_tipo_display()
     questao_tipo.short_description = 'Tipo Questão'
+    
+# generator/admin.py
+
+@admin.register(OrgaoPCI)
+class OrgaoPCIAdmin(admin.ModelAdmin):
+    list_display = ('nome',)
+    search_fields = ('nome',)
+
+@admin.register(BancaPCI)
+class BancaPCIAdmin(admin.ModelAdmin):
+    list_display = ('nome',)
+    search_fields = ('nome',)
+
+@admin.register(NivelEscolaridadePCI)
+class NivelEscolaridadePCIAdmin(admin.ModelAdmin):
+    list_display = ('nome',)
+
+@admin.register(CargoPCI)
+class CargoPCIAdmin(admin.ModelAdmin):
+    list_display = ('nome',)
+    search_fields = ('nome',)
+
+@admin.register(ProvaPCIConcurso)
+class ProvaPCIConcursoAdmin(admin.ModelAdmin):
+    list_display = ('nome_concurso_detalhado', 'orgao', 'cargo', 'banca', 'ano', 'nivel_escolaridade', 'data_coleta')
+    list_filter = ('ano', 'orgao', 'banca', 'nivel_escolaridade', 'data_coleta')
+    search_fields = ('nome_concurso_detalhado', 'orgao__nome', 'cargo__nome', 'banca__nome', 'url_pagina_detalhes')
+    readonly_fields = ('data_coleta', 'data_atualizacao_coleta')
+    fieldsets = (
+        (None, {
+            'fields': ('titulo_link_origem', 'nome_concurso_detalhado', 'url_pagina_detalhes', 'fonte')
+        }),
+        ('Detalhes do Concurso', {
+            'fields': ('orgao', 'cargo', 'banca', 'ano', 'nivel_escolaridade', 'categoria_cargo_principal_texto')
+        }),
+        ('Arquivos', {
+            'fields': ('url_prova_pdf', 'url_gabarito_pdf')
+        }),
+        ('Datas de Controle', {
+            'fields': ('data_coleta', 'data_atualizacao_coleta')
+        }),
+    )
