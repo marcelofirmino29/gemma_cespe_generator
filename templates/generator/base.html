@@ -114,12 +114,18 @@
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'generator:dashboard' %}" title="Meu Desempenho"><i class="bi bi-graph-up me-2"></i>Desempenho</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:games_hub' %}active{% endif %}" href="{% url 'generator:games_hub' %}" title="Hub de Jogos"><i class="bi bi-joystick me-2"></i>Hub Jogos</a></li>
                         <li class="nav-item"><a class="nav-link {% if request.resolver_match.view_name == 'generator:listar_concursos' %}active{% endif %}" href="{% url 'generator:listar_concursos' %}" title="Concursos Abertos"><i class="bi bi-briefcase-fill me-2"></i>Concursos</a></li>
-
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'listar_provas_coletadas' and request.resolver_match.namespace == 'generator' %}active{% endif %}"
                                 href="{% url 'generator:listar_provas_coletadas' %}"
                                 title="Provas Anteriores Coletadas (PCI)">
                                 <i class="bi bi-collection-fill me-2"></i>Provas Anteriores (PCI)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'consulta_leis_planalto' and request.resolver_match.namespace == 'generator' %}active{% endif %}"
+                                href="{% url 'generator:consulta_leis_planalto' %}"
+                                title="Consulta de Leis (Planalto)">
+                                <i class="bi bi-bank me-2"></i>Consulta Leis (Planalto)
                             </a>
                         </li>
                         {% endif %}

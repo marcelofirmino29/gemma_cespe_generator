@@ -6,6 +6,31 @@
 {% block extra_head %}
     {# CSS específico da Landing Page agora está em um arquivo externo #}
     <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
+    <style>
+        /* Estilos adicionais para o carrossel */
+        #landingCardCarousel .carousel-item .col {
+            max-width: 28rem; /* Aumentado de 22rem para 28rem - ajuste conforme desejado */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        /* Para garantir que os controles do carrossel fiquem visíveis sobre os cards coloridos */
+        #landingCardCarousel .carousel-control-prev-icon,
+        #landingCardCarousel .carousel-control-next-icon {
+            background-color: rgba(0, 0, 0, 0.3); /* Um fundo semi-transparente para o ícone */
+            border-radius: 50%; /* Deixa o fundo do ícone redondo */
+            padding: 10px; /* Adiciona um pouco de preenchimento ao redor do ícone */
+        }
+         /* Ajuste para indicadores se estiverem muito próximos ou sobre os cards */
+        #landingCardCarousel .carousel-indicators {
+            bottom: -30px; /* Move os indicadores um pouco para baixo */
+        }
+        #landingCardCarousel .carousel-indicators [data-bs-target] {
+            background-color: #777; /* Cor para indicadores inativos */
+        }
+        #landingCardCarousel .carousel-indicators .active {
+            background-color: #333; /* Cor para indicador ativo */
+        }
+    </style>
 {% endblock extra_head %}
 
 {% block content %}
@@ -54,108 +79,162 @@
         {% endif %}
         {# --- FIM DO LETREIRO DE CONCURSOS --- #}
 
-        {# --- Grid com os Cards (Ícone + Legenda Sempre Visíveis) --- #}
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 mb-5">
-            {# Card 1: Gerador C/E - Azul (Primary) #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-primary text-white">
-                    <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
-                    <div class="card-body">
-                        <i class="bi bi-check2-square card-icon-main"></i>
-                        <span class="card-icon-caption">Gerador C/E por Tópico</span>
-                    </div>
-                </div>
-            </div>
-            {# Card 2: Gerador Discursiva - Verde (Success) #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-success text-white">
-                    <a href="{% url 'generator:generate_discursive_exam' %}" class="stretched-link" aria-label="Gerador de Questão Discursiva"></a>
-                    <div class="card-body">
-                        <i class="bi bi-pencil-square card-icon-main"></i>
-                        <span class="card-icon-caption">Gerador de Questão Discursiva</span>
-                    </div>
-                </div>
-            </div>
-            {# Card 3: Configurar Simulado - Amarelo (Warning) #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-warning text-dark"> {# text-dark para contraste no amarelo #}
-                    <a href="{% url 'generator:configurar_simulado' %}" class="stretched-link" aria-label="Configurar Simulado"></a>
-                    <div class="card-body">
-                        <i class="bi bi-sliders card-icon-main text-dark"></i>
-                        <span class="card-icon-caption">Configurar Simulado</span>
-                    </div>
-                </div>
-            </div>
-            {# Card 4: Dashboard - Vermelho (Danger) #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-danger text-white">
-                    <a href="{% url 'generator:dashboard' %}" class="stretched-link" aria-label="Dashboard de Desempenho"></a>
-                    <div class="card-body">
-                        <i class="bi bi-graph-up card-icon-main"></i>
-                        <span class="card-icon-caption">Dashboard de Desempenho</span>
-                    </div>
-                </div>
-            </div>
-            {# Card Hub de Jogos - Ciano (Info) #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-info text-white">
-                    <a href="{% url 'generator:games_hub' %}" class="stretched-link" aria-label="Hub de Jogos"></a>
-                    <div class="card-body">
-                        <i class="bi bi-joystick card-icon-main"></i>
-                        <span class="card-icon-caption">Hub de Jogos</span>
-                    </div>
-                </div>
+        {# --- Carrossel com os Cards --- #}
+        <div id="landingCardCarousel" class="carousel slide mb-5" data-bs-ride="carousel" data-bs-interval="7000"> {# data-bs-interval para auto-slide, ou "false" para desabilitar #}
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Card 1"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="1" aria-label="Card 2"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="2" aria-label="Card 3"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="3" aria-label="Card 4"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="4" aria-label="Card 5"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="5" aria-label="Card 6"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="6" aria-label="Card 7"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="7" aria-label="Card 8"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="8" aria-label="Card 9"></button>
+                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="9" aria-label="Card 10"></button>
             </div>
 
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-primary-subtle text-primary-emphasis">
-                    <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
-                    <div class="card-body">
-                        <i class="bi bi-search-heart card-icon-main"></i>
-                        <span class="card-icon-caption">Provas Anteriores (PCI)</span>
+            <div class="carousel-inner py-4"> {# Adicionado padding vertical ao carousel-inner #}
+                {# Card 1: Gerador C/E - Azul (Primary) #}
+                <div class="carousel-item active">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-primary text-white">
+                            <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
+                            <div class="card-body">
+                                <i class="bi bi-check2-square card-icon-main"></i>
+                                <span class="card-icon-caption">Gerador C/E por Tópico</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {# --- INÍCIO DOS NOVOS CARDS --- #}
-            {# Card 7: Banco de Questões - Cinza (Secondary) #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-secondary text-white">
-                    <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
-                    <div class="card-body">
-                        <i class="bi bi-collection-fill card-icon-main"></i>
-                        <span class="card-icon-caption">Banco de Questões</span>
+                {# Card 2: Gerador Discursiva - Verde (Success) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-success text-white">
+                            <a href="{% url 'generator:generate_discursive_exam' %}" class="stretched-link" aria-label="Gerador de Questão Discursiva"></a>
+                            <div class="card-body">
+                                <i class="bi bi-pencil-square card-icon-main"></i>
+                                <span class="card-icon-caption">Gerador de Questão Discursiva</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {# Card 8: Resumo Rápido de PDF - Lilás (Custom ou um Bootstrap text-dark para contraste) #}
-            {# Usando bg-light com text-dark para simplicidade e contraste #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-light text-dark">
-                    <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
-                    <div class="card-body">
-                        <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
-                        <span class="card-icon-caption">Resumo Rápido de PDF</span>
+                {# Card 3: Configurar Simulado - Amarelo (Warning) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-warning text-dark">
+                            <a href="{% url 'generator:configurar_simulado' %}" class="stretched-link" aria-label="Configurar Simulado"></a>
+                            <div class="card-body">
+                                <i class="bi bi-sliders card-icon-main text-dark"></i>
+                                <span class="card-icon-caption">Configurar Simulado</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {# Card 9: Concursos no Brasil - Azul Petróleo (Teal - Custom) ou outro Bootstrap #}
-            {# Reutilizando bg-info que já tem bom contraste com texto branco #}
-            <div class="col">
-                <div class="card landing-card shadow-sm h-100 bg-info text-white">
-                     <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
-                    <div class="card-body">
-                        <i class="bi bi-briefcase-fill card-icon-main"></i>
-                        <span class="card-icon-caption">Concursos no Brasil</span>
+                {# Card 4: Dashboard - Vermelho (Danger) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-danger text-white">
+                            <a href="{% url 'generator:dashboard' %}" class="stretched-link" aria-label="Dashboard de Desempenho"></a>
+                            <div class="card-body">
+                                <i class="bi bi-graph-up card-icon-main"></i>
+                                <span class="card-icon-caption">Dashboard de Desempenho</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {# --- FIM DOS NOVOS CARDS --- #}
 
+                {# Card Hub de Jogos - Ciano (Info) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-info text-white">
+                            <a href="{% url 'generator:games_hub' %}" class="stretched-link" aria-label="Hub de Jogos"></a>
+                            <div class="card-body">
+                                <i class="bi bi-joystick card-icon-main"></i>
+                                <span class="card-icon-caption">Hub de Jogos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            </div> {# Fim da row dos cards #}
+                {# Card 6: Banco de Questões - Cinza (Secondary) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-secondary text-white">
+                            <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
+                            <div class="card-body">
+                                <i class="bi bi-collection-fill card-icon-main"></i>
+                                <span class="card-icon-caption">Banco de Questões</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Card 7: Resumo Rápido de PDF - Lilás (Custom ou um Bootstrap text-dark para contraste) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-light text-dark">
+                            <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
+                            <div class="card-body">
+                                <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
+                                <span class="card-icon-caption">Resumo Rápido de PDF</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Card 8: Concursos no Brasil - Azul Petróleo (Teal - Custom) ou outro Bootstrap #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-info text-white">
+                             <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
+                            <div class="card-body">
+                                <i class="bi bi-briefcase-fill card-icon-main"></i>
+                                <span class="card-icon-caption">Concursos no Brasil</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Card 9: Provas Anteriores (PCI) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100 bg-primary-subtle text-primary-emphasis">
+                            <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
+                            <div class="card-body">
+                                <i class="bi bi-search-heart card-icon-main"></i>
+                                <span class="card-icon-caption">Provas Anteriores (PCI)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Card 10: Consulta de Leis (Planalto) #}
+                <div class="carousel-item">
+                    <div class="col">
+                        <div class="card landing-card shadow-sm h-100" style="background-color: #6f42c1; color: white;"> {# Cor Roxo Bootstrap (ou similar) #}
+                            <a href="{% url 'generator:consulta_leis_planalto' %}" class="stretched-link" aria-label="Consulta de Leis (Planalto)"></a>
+                            <div class="card-body">
+                                <i class="bi bi-bank card-icon-main"></i> {# Ícone de banco/governo #}
+                                <span class="card-icon-caption">Consulta Leis (Planalto)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> {# Fim da carousel-inner #}
+
+            <button class="carousel-control-prev" type="button" data-bs-target="#landingCardCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Anterior</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#landingCardCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Próximo</span>
+            </button>
+        </div> {# Fim da div do carousel #}
 
         {# --- Nuvem de Palavras --- #}
         <div class="text-center mb-4 mt-5">

@@ -1,0 +1,210 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}
+    {{ titulo_pagina|default:"Leis Coletadas" }} - {{ block.super }}
+{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
+{% endblock extra_head %}
+
+{% block content %}
+<div class="container mt-4">
+    <header class="mb-4">
+        <h1 class="mb-4">{{ titulo_pagina|default:"Leis Coletadas" }}</h1>
+        <p class="lead">Consulte a legislação coletada do Portal Planalto.</p>
+    </header>
+
+    <form method="get" class="mb-4 row g-3 align-items-center">
+        <div class="col-lg-5 col-md-12 mb-2 mb-lg-0"> {# Campo de busca textual #}
+            <input type="text" name="q" class="form-control" placeholder="Buscar por título, número, conteúdo..." value="{{ query|default:'' }}">
+        </div>
+        <div class="col-lg-3 col-md-4 mb-2 mb-md-0"> {# Dropdown Tipo de Norma #}
+            <select name="tipo_norma" class="form-select">
+                <option value="">Todos os Tipos</option>
+                {% for tipo in tipos_norma %}
+                    <option value="{{ tipo.id }}" {% if tipo.id|stringformat:"s" == tipo_norma_selecionado_id|stringformat:"s" %}selected{% endif %}>{{ tipo.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-lg-3 col-md-4 mb-2 mb-md-0"> {# NOVO: Dropdown Ano da Norma #}
+            <select name="ano_norma" class="form-select">
+                <option value="">Todos os Anos</option>
+                {% for ano in anos_norma_disponiveis %}
+                    <option value="{{ ano }}" {% if ano|stringformat:"s" == ano_norma_selecionado|stringformat:"s" %}selected{% endif %}>{{ ano }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-lg-1 col-md-4"> {# Botão de Busca #}
+            <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search"></i></button>
+        </div>
+    </form>
+
+    {% if page_obj and page_obj.object_list %}
+        <div class="list-group">
+            {% for lei in page_obj.object_list %}
+                <div class="list-group-item list-group-item-action flex-column align-items-start mb-2 shadow-sm">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <h5 class="mb-1">
+                            <a href="{{ lei.url_original }}" target="_blank" rel="noopener noreferrer" title="Ver no Planalto (nova aba)">
+                                {% if lei.tipo_norma %}{{ lei.tipo_norma.nome|capfirst }} {% endif %}
+                                {% if lei.numero_norma %}Nº {{ lei.numero_norma }}{% endif %}
+                                {% if lei.ano_norma %}/{{ lei.ano_norma }}{% endif %}
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2 view-extracted-content"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#extractedContentViewModal"
+                                    data-url="{{ lei.url_original }}">
+                                <i class="bi bi-file-text"></i> Ver Resumo
+                            </button>
+                        </h5>
+                        <small class="text-muted">
+                            {% if lei.data_publicacao %}{{ lei.data_publicacao|date:"d/m/Y" }}{% else %}Data N/D{% endif %}
+                        </small>
+                    </div>
+                    <p class="mb-1">
+                        <a href="{{ lei.url_original }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-body">
+                            {{ lei.titulo_ou_ementa|truncatewords_html:40|default:"Sem título/ementa disponível." }}
+                        </a>
+                    </p>
+                    <small class="text-muted">Coletado: {{ lei.data_coleta|date:"d/m/Y H:i" }}</small>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% comment %} Paginação - CORRIGIDA {% endcomment %}
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginação de resultados" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% comment %} Link para página anterior {% endcomment %}
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if tipo_norma_selecionado_id %}&amp;tipo_norma={{ tipo_norma_selecionado_id }}{% endif %}{% if ano_norma_selecionado %}&amp;ano_norma={{ ano_norma_selecionado }}{% endif %}">&laquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+                
+                {% comment %} Links para as páginas {% endcomment %}
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                    {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if tipo_norma_selecionado_id %}&amp;tipo_norma={{ tipo_norma_selecionado_id }}{% endif %}{% if ano_norma_selecionado %}&amp;ano_norma={{ ano_norma_selecionado }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% elif i == 1 or i == page_obj.paginator.num_pages %}
+                        {% if i == 1 and page_obj.number > 4 %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if tipo_norma_selecionado_id %}&amp;tipo_norma={{ tipo_norma_selecionado_id }}{% endif %}{% if ano_norma_selecionado %}&amp;ano_norma={{ ano_norma_selecionado }}{% endif %}">{{ i }}</a>
+                        </li>
+                        {% if i == page_obj.paginator.num_pages and page_obj.number < page_obj.paginator.num_pages|add:'-3' %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% comment %} Link para próxima página {% endcomment %}
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if tipo_norma_selecionado_id %}&amp;tipo_norma={{ tipo_norma_selecionado_id }}{% endif %}{% if ano_norma_selecionado %}&amp;ano_norma={{ ano_norma_selecionado }}{% endif %}">&raquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% elif query or tipo_norma_selecionado_id or ano_norma_selecionado %} {# Atualizado para incluir novos filtros #}
+        <div class="alert alert-warning mt-3" role="alert">
+            Nenhuma lei encontrada para os filtros aplicados.
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Nenhuma lei ou norma foi coletada ainda. O scraper pode precisar ser executado ou não encontrou dados.
+        </div>
+    {% endif %}
+
+    <div class="modal fade" id="extractedContentViewModal" tabindex="-1" aria-labelledby="extractedContentViewModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="extractedContentViewModalLabel">Conteúdo da Norma</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="extractedModalBody">
+            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# Seu JavaScript para o modal extract_and_markdownify_view permanece o mesmo #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var extractedContentModal = document.getElementById('extractedContentViewModal');
+    if (extractedContentModal) {
+        var modalBody = document.getElementById('extractedModalBody');
+        var modalTitleElement = extractedContentModal.querySelector('.modal-title');
+
+        extractedContentModal.addEventListener('show.bs.modal', async function (event) {
+            var button = event.relatedTarget;
+            var lawUrl = button.getAttribute('data-url');
+            
+            modalTitleElement.textContent = 'Carregando conteúdo...';
+            modalBody.innerHTML = `
+                <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>`;
+
+            try {
+                const fetchUrl = `{% url 'generator:visualizar_lei_markdown' %}?url=${encodeURIComponent(lawUrl)}`;
+                const response = await fetch(fetchUrl);
+                
+                if (!response.ok) {
+                    let errorMsg = `Erro ao buscar conteúdo: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) { /* Ignora */ }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+                if (data.error) { throw new Error(data.error); }
+
+                if (data.html_content) {
+                    modalTitleElement.textContent = data.title || 'Conteúdo da Norma';
+                    modalBody.innerHTML = data.html_content;
+                } else {
+                    throw new Error('Formato de resposta inesperado.');
+                }
+
+            } catch (error) {
+                console.error('Erro ao processar visualização de lei:', error);
+                modalTitleElement.textContent = 'Erro';
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Ocorreu um erro:</strong> ${error.message || 'Não foi possível carregar.'}
+                        <hr>
+                        <p class="mb-0">Tente <a href="${lawUrl}" target="_blank" rel="noopener noreferrer" class="alert-link">abrir a página original</a>.</p>
+                    </div>`;
+            }
+        });
+
+        extractedContentModal.addEventListener('hidden.bs.modal', function () {
+            modalBody.innerHTML = '';
+            modalTitleElement.textContent = 'Conteúdo da Norma';
+        });
+    }
+});
+</script>
+{% endblock %}

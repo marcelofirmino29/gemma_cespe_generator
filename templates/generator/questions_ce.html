@@ -205,6 +205,13 @@
             {% endif %}
         </div>
     {% endif %}
+
+    {% if user.is_staff or user.is_superuser %}
+    <div class="mt-5 text-center">
+        <p>Como administrador, você pode <a href="{% url 'admin:generator_questao_changelist' %}" class="btn btn-info">Gerenciar Questões no Admin</a>.</p>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock content %}
 

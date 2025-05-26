@@ -51,4 +51,8 @@ urlpatterns = [
     
     path('provas-coletadas/', views.listar_provas_coletadas, name='listar_provas_coletadas'),
 
+    path('consulta-leis/', views.listar_leis_coletadas_planalto, name='consulta_leis_planalto'),
+
+    path('extrair-markdown/', views.extract_and_markdownify_view, name='visualizar_lei_markdown'),
+
 ]

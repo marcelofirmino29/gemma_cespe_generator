@@ -1662,3 +1662,98 @@ html[data-bs-theme="dark"] .chat-widget-messages .user-bubble {
     50% { opacity: 1; }
     100% { opacity: 0.6; }
 }
+
+/* Em seu arquivo CSS customizado, ex: static/css/custom_markdown_styles.css */
+
+#extractedModalBody {
+    font-size: 1rem; /* Tamanho de fonte base */
+    line-height: 1.6; /* Espaçamento entre linhas */
+    color: #333; /* Cor de texto principal */
+}
+
+#extractedModalBody h1,
+#extractedModalBody h2,
+#extractedModalBody h3,
+#extractedModalBody h4,
+#extractedModalBody h5,
+#extractedModalBody h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    color: #111; /* Cor mais escura para cabeçalhos */
+    font-weight: 600;
+}
+
+#extractedModalBody h1 { font-size: 2em; }
+#extractedModalBody h2 { font-size: 1.75em; }
+#extractedModalBody h3 { font-size: 1.5em; }
+/* ... e assim por diante para h4, h5, h6 */
+
+#extractedModalBody p {
+    margin-bottom: 1em;
+}
+
+#extractedModalBody ul,
+#extractedModalBody ol {
+    margin-bottom: 1em;
+    padding-left: 2em; /* Adiciona indentação padrão para listas */
+}
+
+#extractedModalBody li {
+    margin-bottom: 0.25em;
+}
+
+#extractedModalBody blockquote {
+    border-left: 4px solid #ccc;
+    padding-left: 1em;
+    margin-left: 0;
+    margin-bottom: 1em;
+    font-style: italic;
+    color: #555;
+}
+
+#extractedModalBody pre {
+    background-color: #f8f9fa; /* Um cinza claro, padrão do Bootstrap */
+    border: 1px solid #dee2e6; /* Borda padrão do Bootstrap */
+    padding: 1em;
+    border-radius: 0.25rem; /* Bordas arredondadas */
+    overflow-x: auto; /* Rolagem horizontal para blocos de código grandes */
+    font-size: 0.9em;
+}
+
+#extractedModalBody code {
+    font-family: 'Courier New', Courier, monospace; /* Fonte monoespaçada para código */
+    background-color: #e9ecef; /* Fundo sutil para código inline */
+    padding: 0.2em 0.4em;
+    border-radius: 0.2rem;
+    font-size: 0.9em;
+}
+
+#extractedModalBody pre code {
+    background-color: transparent; /* Remove fundo duplo para código dentro de pre */
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit; /* Herda o tamanho da fonte do <pre> */
+}
+
+#extractedModalBody table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse; /* Remove espaços duplos entre bordas */
+}
+
+#extractedModalBody th,
+#extractedModalBody td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border: 1px solid #dee2e6; /* Borda para células */
+}
+
+#extractedModalBody th {
+    background-color: #f8f9fa; /* Fundo para cabeçalhos de tabela */
+    font-weight: bold;
+}
+
+#extractedModalBody hr {
+    margin-top: 2em;
+    margin-bottom: 2em;
+}

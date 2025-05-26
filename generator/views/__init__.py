@@ -9,7 +9,7 @@ from .views_validators import (landing_page_view,
 from .views_functions import (extrair_texto_completo_pdf,
                               dashboard_view,
                               upload_pdf_and_generate_questions_view,
-                              pdf_summary_view
+                              pdf_summary_view                          
 )
 
 from .views_generate_questions import (
@@ -39,6 +39,8 @@ from .views_scraped_exams import listar_provas_coletadas
 
 from .views_ext_api import listar_concursos_view
 
+from .views_leis import listar_leis_coletadas_planalto, extract_and_markdownify_view
+
 __all__ = {
     'register_view',
     'landing_page_view',
@@ -66,4 +68,5 @@ __all__ = {
     'upload_pdf_and_generate_questions_view', # Adicionado se esta é uma view pública pretendida
     'listar_concursos_view', # Adicionado se esta é uma view pública pretendida
     'listar_provas_coletadas', # Adicionado se esta é uma view pública pretendida
+    'listar_leis_coletadas_planalto', # Adicionado se esta é uma view pública pretendida
 }
