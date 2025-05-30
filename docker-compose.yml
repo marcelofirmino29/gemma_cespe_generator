@@ -1,7 +1,15 @@
-version: '3.8'
+# Lembre-se de remover a linha 'version: ...' se o Docker Compose avisar que é obsoleta.
+# Se remover, a primeira linha do arquivo será 'services:'.
 
 services:
-  flower:
+  redis:
+    image: redis:alpine
+    container_name: generator_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  flower: # <--- Deve estar no mesmo nível de indentação que 'redis:'
     image: mher/flower
     container_name: generator_flower
     command: >
@@ -9,9 +17,13 @@ services:
       --port=5555
       --basic_auth=${CELERY_FLOWER_USER}:${CELERY_FLOWER_PASSWORD}
     ports:
-      - "5555:5555" # Host:Container
+      - "5555:5555"
     depends_on:
       - redis
     environment:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      # As variáveis CELERY_FLOWER_USER e CELERY_FLOWER_PASSWORD
+      # também precisam estar no .env para serem usadas no comando.
+      - CELERY_FLOWER_USER=${CELERY_FLOWER_USER}
+      - CELERY_FLOWER_PASSWORD=${CELERY_FLOWER_PASSWORD}
     restart: always
