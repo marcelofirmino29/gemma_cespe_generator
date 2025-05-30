@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  flower:
+    image: mher/flower
+    container_name: generator_flower
+    command: >
+      celery --broker=${CELERY_BROKER_URL} flower
+      --port=5555
+      --basic_auth=${CELERY_FLOWER_USER}:${CELERY_FLOWER_PASSWORD}
+    ports:
+      - "5555:5555" # Host:Container
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+    restart: always

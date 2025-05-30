@@ -9,32 +9,41 @@
     <style>
         /* Estilos adicionais para o carrossel */
         #landingCardCarousel .carousel-item .col {
-            max-width: 28rem; /* Aumentado de 22rem para 28rem - ajuste conforme desejado */
+            max-width: 38rem;
             margin-left: auto;
             margin-right: auto;
         }
         /* Para garantir que os controles do carrossel fiquem visíveis sobre os cards coloridos */
         #landingCardCarousel .carousel-control-prev-icon,
         #landingCardCarousel .carousel-control-next-icon {
-            background-color: rgba(0, 0, 0, 0.3); /* Um fundo semi-transparente para o ícone */
-            border-radius: 50%; /* Deixa o fundo do ícone redondo */
-            padding: 10px; /* Adiciona um pouco de preenchimento ao redor do ícone */
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            padding: 10px;
         }
          /* Ajuste para indicadores se estiverem muito próximos ou sobre os cards */
         #landingCardCarousel .carousel-indicators {
-            bottom: -30px; /* Move os indicadores um pouco para baixo */
+            bottom: -30px;
         }
         #landingCardCarousel .carousel-indicators [data-bs-target] {
-            background-color: #777; /* Cor para indicadores inativos */
+            background-color: #777;
         }
         #landingCardCarousel .carousel-indicators .active {
-            background-color: #333; /* Cor para indicador ativo */
+            background-color: #333;
         }
+
+        /* Opcional: Para garantir que o conteúdo dentro do card-body não quebre em múltiplas linhas facilmente se o texto for longo */
+        #landingCardCarousel .card-body .card-icon-caption {
+            white-space: nowrap; /* Previne quebra de linha do texto da legenda do card */
+        }
+        #landingCardCarousel .card-body {
+            padding: 1rem; /* Ajuste o padding do card-body se necessário para o novo layout */
+        }
+
     </style>
 {% endblock extra_head %}
 
 {% block content %}
-    <div class="container mt-4"> {# Adicionado um container geral para melhor espaçamento #}
+    <div class="container mt-4">
         <div class="text-center mb-5">
 
             {% if messages %}
@@ -45,7 +54,7 @@
                 </div>
                 {% endfor %}
             {% endif %}
-            {% if error_message %} {# Erro geral da view (pode ser da nuvem de palavras, por exemplo) #}
+            {% if error_message %}
                 <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
                     {{ error_message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -60,7 +69,7 @@
                 <marquee behavior="scroll" direction="left" scrollamount="6" scrolldelay="85" onmouseover="this.stop();" onmouseout="this.start();">
                     <div class="marquee-content">
                         {% for concurso in concursos_destaque_marquee %}
-                            <span class="marquee-item"> {# Adicionada classe para cada item #}
+                            <span class="marquee-item">
                                 <a href="{{ concurso.link }}" target="_blank" rel="noopener noreferrer">{{ concurso.organizacao }}</a>
                                 <span class="marquee-vagas"> (Vagas: {{ concurso.vagas }})</span> -
                                 <span class="{% if concurso.status|lower == 'aberto' %}marquee-status-aberto{% elif concurso.status|lower == 'previsto' %}marquee-status-previsto{% endif %}">
@@ -72,7 +81,7 @@
                     </div>
                 </marquee>
             </div>
-        {% elif erro_destaques %} {# Erro específico ao buscar destaques #}
+        {% elif erro_destaques %}
             <div class="text-center my-4">
                 <p class="text-muted small">{{ erro_destaques }}</p>
             </div>
@@ -80,7 +89,7 @@
         {# --- FIM DO LETREIRO DE CONCURSOS --- #}
 
         {# --- Carrossel com os Cards --- #}
-        <div id="landingCardCarousel" class="carousel slide mb-5" data-bs-ride="carousel" data-bs-interval="7000"> {# data-bs-interval para auto-slide, ou "false" para desabilitar #}
+        <div id="landingCardCarousel" class="carousel slide mb-5" data-bs-ride="carousel" data-bs-interval="7000">
             <div class="carousel-indicators">
                 <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Card 1"></button>
                 <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="1" aria-label="Card 2"></button>
@@ -94,13 +103,13 @@
                 <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="9" aria-label="Card 10"></button>
             </div>
 
-            <div class="carousel-inner py-4"> {# Adicionado padding vertical ao carousel-inner #}
+            <div class="carousel-inner py-4">
                 {# Card 1: Gerador C/E - Azul (Primary) #}
                 <div class="carousel-item active">
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-primary text-white">
                             <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-check2-square card-icon-main"></i>
                                 <span class="card-icon-caption">Gerador C/E por Tópico</span>
                             </div>
@@ -113,7 +122,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-success text-white">
                             <a href="{% url 'generator:generate_discursive_exam' %}" class="stretched-link" aria-label="Gerador de Questão Discursiva"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-pencil-square card-icon-main"></i>
                                 <span class="card-icon-caption">Gerador de Questão Discursiva</span>
                             </div>
@@ -126,7 +135,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-warning text-dark">
                             <a href="{% url 'generator:configurar_simulado' %}" class="stretched-link" aria-label="Configurar Simulado"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-sliders card-icon-main text-dark"></i>
                                 <span class="card-icon-caption">Configurar Simulado</span>
                             </div>
@@ -139,7 +148,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-danger text-white">
                             <a href="{% url 'generator:dashboard' %}" class="stretched-link" aria-label="Dashboard de Desempenho"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-graph-up card-icon-main"></i>
                                 <span class="card-icon-caption">Dashboard de Desempenho</span>
                             </div>
@@ -152,7 +161,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-info text-white">
                             <a href="{% url 'generator:games_hub' %}" class="stretched-link" aria-label="Hub de Jogos"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-joystick card-icon-main"></i>
                                 <span class="card-icon-caption">Hub de Jogos</span>
                             </div>
@@ -165,7 +174,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-secondary text-white">
                             <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-collection-fill card-icon-main"></i>
                                 <span class="card-icon-caption">Banco de Questões</span>
                             </div>
@@ -178,7 +187,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-light text-dark">
                             <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
                                 <span class="card-icon-caption">Resumo Rápido de PDF</span>
                             </div>
@@ -191,7 +200,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-info text-white">
                              <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-briefcase-fill card-icon-main"></i>
                                 <span class="card-icon-caption">Concursos no Brasil</span>
                             </div>
@@ -204,7 +213,7 @@
                     <div class="col">
                         <div class="card landing-card shadow-sm h-100 bg-primary-subtle text-primary-emphasis">
                             <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
-                            <div class="card-body">
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-search-heart card-icon-main"></i>
                                 <span class="card-icon-caption">Provas Anteriores (PCI)</span>
                             </div>
@@ -215,16 +224,16 @@
                 {# Card 10: Consulta de Leis (Planalto) #}
                 <div class="carousel-item">
                     <div class="col">
-                        <div class="card landing-card shadow-sm h-100" style="background-color: #6f42c1; color: white;"> {# Cor Roxo Bootstrap (ou similar) #}
+                        <div class="card landing-card shadow-sm h-100" style="background-color: #6f42c1; color: white;">
                             <a href="{% url 'generator:consulta_leis_planalto' %}" class="stretched-link" aria-label="Consulta de Leis (Planalto)"></a>
-                            <div class="card-body">
-                                <i class="bi bi-bank card-icon-main"></i> {# Ícone de banco/governo #}
+                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-bank card-icon-main"></i>
                                 <span class="card-icon-caption">Consulta Leis (Planalto)</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div> {# Fim da carousel-inner #}
+            </div>
 
             <button class="carousel-control-prev" type="button" data-bs-target="#landingCardCarousel" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -234,29 +243,16 @@
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Próximo</span>
             </button>
-        </div> {# Fim da div do carousel #}
-
-        {# --- Nuvem de Palavras --- #}
-        <div class="text-center mb-4 mt-5">
-            <h2 class="fw-semibold text-body-emphasis">Tópicos em Destaque nas Questões</h2>
         </div>
-        <div id="wordCloudContainer">
-            <span class="text-muted">Carregando palavras...</span>
-        </div>
-        {# --- FIM DA SEÇÃO DA Nuvem de Palavras --- #}
-    </div> {# Fim do container geral #}
+    </div>
 {% endblock content %}
 
 {% block extra_js %}
-    {{ block.super }} {# Mantém scripts do base, se houver #}
-    {{ word_cloud_data|json_script:"word-cloud-data" }}
+    {{ block.super }}
 
-    {# Define a variável global askAiBaseUrl para ser usada pelo script externo #}
-    {# Esta tag SCRIPT permanece inline para que o Django possa processar a tag {% url %} #}
     <script>
         const askAiBaseUrl = "{% url 'generator:ask_ai' %}";
     </script>
 
-    {# Link para o script externo da landing page #}
     <script src="{% static 'generator/js/landing_page_scripts.js' %}" defer></script>
 {% endblock extra_js %}

@@ -189,34 +189,17 @@ SCRAPER_CONFIG_PCICONCURSOS = {
 }
 
 # --- CELERY SETTINGS ---
-# URL do Broker (Redis é uma escolha comum e recomendada para começar)
-# Certifique-se de que o Redis Server está rodando: sudo service redis-server start
-CELERY_BROKER_URL = 'redis://localhost:6379/0' # /0 é o número do banco de dados Redis
-# Se você preferir RabbitMQ (instale 'pip install librabbitmq' ou 'pip install "celery[librabbitmq]"'):
-# CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_BROKER_HOST = os.getenv('CELERY_BROKER_HOST', 'localhost')
+CELERY_BROKER_PORT = os.getenv('CELERY_BROKER_PORT', '6379')
+CELERY_RESULT_BACKEND_HOST = os.getenv('CELERY_RESULT_BACKEND_HOST', CELERY_BROKER_HOST)
+CELERY_RESULT_BACKEND_PORT = os.getenv('CELERY_RESULT_BACKEND_PORT', CELERY_BROKER_PORT)
 
-# Backend de Resultados (opcional, mas útil para rastrear o status/resultado das tarefas)
-# Pode ser o mesmo Redis ou um banco de dados Django (django-db)
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/1' # Usando um banco de dados Redis diferente para resultados
-# Para usar o banco de dados Django como backend de resultados (requer 'pip install django-celery-results'):
-# CELERY_RESULT_BACKEND = 'django-db'
-# E adicione 'django_celery_results' aos INSTALLED_APPS e rode migrate.
+CELERY_BROKER_URL = f'redis://{CELERY_BROKER_HOST}:{CELERY_BROKER_PORT}/0'
+CELERY_RESULT_BACKEND = f'redis://{CELERY_RESULT_BACKEND_HOST}:{CELERY_RESULT_BACKEND_PORT}/1'
 
-CELERY_ACCEPT_CONTENT = ['json', 'application/json'] # Formatos de conteúdo aceitos
-CELERY_TASK_SERIALIZER = 'json'       # Serializador padrão para tarefas
-CELERY_RESULT_SERIALIZER = 'json'     # Serializador padrão para resultados
-CELERY_TIMEZONE = TIME_ZONE           # Use a timezone definida no seu projeto Django (ex: 'America/Sao_Paulo')
-
-# Configuração para o Celery Beat usando o DatabaseScheduler do django-celery-beat
-# Isso permite que você gerencie tarefas periódicas através do Django Admin.
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-# Visibilidade de tarefas (opcional, quanto tempo os resultados são mantidos)
-# CELERY_RESULT_EXPIRES = 3600  # 1 hora
-
-# Limite de taxa para tarefas (opcional)
-# CELERY_TASK_ANNOTATIONS = {'tasks.add': {'rate_limit': '10/m'}}
-
 # --- FIM DAS CELERY SETTINGS ---
-
-# ... (resto das suas configurações) ...

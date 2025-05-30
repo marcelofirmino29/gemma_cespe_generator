@@ -7,6 +7,149 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
+    <style>
+        #extractedModalBody {
+            background-color: var(--bs-light-bg-subtle);
+        }
+
+        .summary-text-markdown {
+            font-family: Arial, Helvetica, sans-serif; /* <<< FONTE ALTERADA PARA ARIAL >>> */
+            font-size: 1rem;
+            line-height: 1.7;
+            background-color: var(--bs-body-bg); 
+            padding: 2rem; 
+            border: 1px solid var(--bs-border-color-translucent); 
+            border-radius: .3rem; 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.07), inset 0 1px 3px rgba(0,0,0,0.04); 
+            color: var(--bs-body-color);
+            /* Removido max-width e margins para ocupar todo o espaço */
+        }
+        .summary-text-markdown h1,
+        .summary-text-markdown h2,
+        .summary-text-markdown h3,
+        .summary-text-markdown h4,
+        .summary-text-markdown h5,
+        .summary-text-markdown h6 {
+            /* Mantém a fonte padrão sans-serif do Bootstrap para títulos, para contraste */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            margin-top: 1.8em;
+            margin-bottom: 0.8em;
+            font-weight: 600;
+            color: var(--bs-emphasis-color);
+            line-height: 1.3;
+        }
+        .summary-text-markdown h1 { font-size: 2em; }
+        .summary-text-markdown h2 { font-size: 1.75em; }
+        .summary-text-markdown h3 { font-size: 1.5em; }
+
+        .summary-text-markdown p {
+            margin-bottom: 1em;
+            text-align: justify; /* TEXTO DO PARÁGRAFO JUSTIFICADO (MANTIDO) */
+        }
+        .summary-text-markdown ul,
+        .summary-text-markdown ol {
+            padding-left: 1.8em;
+            margin-bottom: 1em;
+            text-align: left; /* <<< ALTERADO: Listas geralmente ficam melhor alinhadas à esquerda >>> */
+        }
+        .summary-text-markdown li {
+            margin-bottom: 0.4em;
+        }
+        .summary-text-markdown strong {
+            font-weight: 600;
+        }
+        .summary-text-markdown a {
+            color: var(--bs-link-color);
+            text-decoration: underline;
+        }
+        .summary-text-markdown a:hover {
+            color: var(--bs-link-hover-color);
+        }
+        .summary-text-markdown pre {
+            background-color: var(--bs-tertiary-bg);
+            border: 1px solid var(--bs-border-color);
+            padding: 1em;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+            font-size: 0.9em;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);
+        }
+        .summary-text-markdown code {
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            background-color: var(--bs-secondary-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 0.2rem;
+            font-size: 0.9em;
+        }
+        .summary-text-markdown pre code {
+            background-color: transparent; padding: 0; border-radius: 0; font-size: inherit; font-family: inherit;
+        }
+        .summary-text-markdown table {
+            width: 100%; margin-bottom: 1rem; border-collapse: collapse;
+        }
+        .summary-text-markdown th,
+        .summary-text-markdown td {
+            padding: 0.75rem; vertical-align: top; border: 1px solid var(--bs-border-color);
+        }
+        .summary-text-markdown th {
+            background-color: var(--bs-secondary-bg); font-weight: bold;
+        }
+        .summary-text-markdown hr {
+            margin-top: 2em; margin-bottom: 2em; border-top: 1px solid var(--bs-border-color);
+        }
+
+        /* --- ESTILOS PARA IMPRESSÃO --- */
+        @media print {
+            body {
+                font-family: 'Times New Roman', Times, serif !important; font-size: 12pt !important;
+                color: #000000 !important; background-color: #ffffff !important;
+            }
+            #extractedModalBody {
+                background-color: #ffffff !important;
+            }
+            body > header.fixed-top, body > footer, .container > header, .container > form,
+            .container > .list-group, .container > nav[aria-label="Paginação de resultados"],
+            .container > .alert, .modal-footer, .modal-header .btn-close, #printModalContentBtn {
+                display: none !important;
+            }
+            .modal {
+                position: static !important; display: block !important; box-shadow: none !important;
+                border: none !important; overflow: visible !important; background-color: #ffffff !important;
+            }
+            .modal-dialog { margin: 0 !important; max-width: 100% !important; width: 100% !important; }
+            .modal-content { border: none !important; box-shadow: none !important; background-color: #ffffff !important; }
+            .modal-header {
+                border-bottom: 1px solid #dee2e6 !important; padding-top: 0 !important; padding-bottom: 0.5rem !important;
+            }
+            #extractedContentViewModalLabel {
+                display: block !important; font-size: 16pt !important; text-align: center;
+                width: 100%; margin-bottom: 1rem; color: #000000 !important;
+            }
+            .modal-body { padding: 0 !important; background-color: #ffffff !important; }
+            .summary-text-markdown {
+                border: none !important; padding: 0 !important; background-color: #ffffff !important;
+                color: #000000 !important; max-height: none !important; overflow-y: visible !important;
+                /* Para impressão, Times New Roman é mantido, mas agora ocupará todo o espaço */
+                font-family: 'Times New Roman', Times, serif !important; 
+                max-width: 100% !important; /* Garante que ocupe todo o espaço na impressão */
+                box-shadow: none !important;
+            }
+            .summary-text-markdown h1, .summary-text-markdown h2, .summary-text-markdown h3,
+            .summary-text-markdown h4, .summary-text-markdown h5, .summary-text-markdown h6,
+            .summary-text-markdown li { color: #000000 !important; }
+            .summary-text-markdown p { text-align: justify !important; color: #000000 !important; }
+            /* Listas na impressão também justificadas, pode remover se não gostar */
+            .summary-text-markdown ul, .summary-text-markdown ol { text-align: justify !important; } 
+            .summary-text-markdown a { text-decoration: underline !important; color: #000000 !important; }
+            .summary-text-markdown a[href]:after {
+                content: " (" attr(href) ")"; font-size: 90%; color: #333333 !important;
+            }
+            body { padding-top: 0 !important; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+        }
+        /* --- FIM ESTILOS PARA IMPRESSÃO --- */
+    </style>
+    {# <link rel="stylesheet" href="{% static 'caminho/para/seu/pygments.css' %}"> #}
 {% endblock extra_head %}
 
 {% block content %}
@@ -17,10 +160,10 @@
     </header>
 
     <form method="get" class="mb-4 row g-3 align-items-center">
-        <div class="col-lg-5 col-md-12 mb-2 mb-lg-0"> {# Campo de busca textual #}
+        <div class="col-lg-5 col-md-12 mb-2 mb-lg-0">
             <input type="text" name="q" class="form-control" placeholder="Buscar por título, número, conteúdo..." value="{{ query|default:'' }}">
         </div>
-        <div class="col-lg-3 col-md-4 mb-2 mb-md-0"> {# Dropdown Tipo de Norma #}
+        <div class="col-lg-3 col-md-4 mb-2 mb-md-0">
             <select name="tipo_norma" class="form-select">
                 <option value="">Todos os Tipos</option>
                 {% for tipo in tipos_norma %}
@@ -28,7 +171,7 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-lg-3 col-md-4 mb-2 mb-md-0"> {# NOVO: Dropdown Ano da Norma #}
+        <div class="col-lg-3 col-md-4 mb-2 mb-md-0">
             <select name="ano_norma" class="form-select">
                 <option value="">Todos os Anos</option>
                 {% for ano in anos_norma_disponiveis %}
@@ -36,7 +179,7 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-lg-1 col-md-4"> {# Botão de Busca #}
+        <div class="col-lg-1 col-md-4">
             <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search"></i></button>
         </div>
     </form>
@@ -47,24 +190,29 @@
                 <div class="list-group-item list-group-item-action flex-column align-items-start mb-2 shadow-sm">
                     <div class="d-flex w-100 justify-content-between align-items-center">
                         <h5 class="mb-1">
-                            <a href="{{ lei.url_original }}" target="_blank" rel="noopener noreferrer" title="Ver no Planalto (nova aba)">
+                            <a href="#" class="text-decoration-none view-extracted-content"
+                               data-bs-toggle="modal"
+                               data-bs-target="#extractedContentViewModal"
+                               data-url="{{ lei.url_original }}"
+                               title="Ver resumo da norma">
                                 {% if lei.tipo_norma %}{{ lei.tipo_norma.nome|capfirst }} {% endif %}
                                 {% if lei.numero_norma %}Nº {{ lei.numero_norma }}{% endif %}
                                 {% if lei.ano_norma %}/{{ lei.ano_norma }}{% endif %}
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2 view-extracted-content"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#extractedContentViewModal"
-                                    data-url="{{ lei.url_original }}">
-                                <i class="bi bi-file-text"></i> Ver Resumo
-                            </button>
+                            <a href="{{ lei.url_original }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info ms-2" title="Ver texto completo no Planalto">
+                                <i class="bi bi-box-arrow-up-right"></i> Planalto
+                            </a>
                         </h5>
                         <small class="text-muted">
                             {% if lei.data_publicacao %}{{ lei.data_publicacao|date:"d/m/Y" }}{% else %}Data N/D{% endif %}
                         </small>
                     </div>
                     <p class="mb-1">
-                        <a href="{{ lei.url_original }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-body">
+                        <a href="#" class="text-decoration-none text-body view-extracted-content"
+                           data-bs-toggle="modal"
+                           data-bs-target="#extractedContentViewModal"
+                           data-url="{{ lei.url_original }}"
+                           title="Ver resumo da norma">
                             {{ lei.titulo_ou_ementa|truncatewords_html:40|default:"Sem título/ementa disponível." }}
                         </a>
                     </p>
@@ -73,11 +221,10 @@
             {% endfor %}
         </div>
 
-        {% comment %} Paginação - CORRIGIDA {% endcomment %}
+        {% comment %} Paginação {% endcomment %}
         {% if page_obj.has_other_pages %}
         <nav aria-label="Paginação de resultados" class="mt-4">
             <ul class="pagination justify-content-center">
-                {% comment %} Link para página anterior {% endcomment %}
                 {% if page_obj.has_previous %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if tipo_norma_selecionado_id %}&amp;tipo_norma={{ tipo_norma_selecionado_id }}{% endif %}{% if ano_norma_selecionado %}&amp;ano_norma={{ ano_norma_selecionado }}{% endif %}">&laquo;</a>
@@ -85,8 +232,6 @@
                 {% else %}
                     <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
                 {% endif %}
-                
-                {% comment %} Links para as páginas {% endcomment %}
                 {% for i in page_obj.paginator.page_range %}
                     {% if page_obj.number == i %}
                         <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
@@ -102,8 +247,6 @@
                         {% if i == page_obj.paginator.num_pages and page_obj.number < page_obj.paginator.num_pages|add:'-3' %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
                     {% endif %}
                 {% endfor %}
-
-                {% comment %} Link para próxima página {% endcomment %}
                 {% if page_obj.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if tipo_norma_selecionado_id %}&amp;tipo_norma={{ tipo_norma_selecionado_id }}{% endif %}{% if ano_norma_selecionado %}&amp;ano_norma={{ ano_norma_selecionado }}{% endif %}">&raquo;</a>
@@ -115,7 +258,7 @@
         </nav>
         {% endif %}
 
-    {% elif query or tipo_norma_selecionado_id or ano_norma_selecionado %} {# Atualizado para incluir novos filtros #}
+    {% elif query or tipo_norma_selecionado_id or ano_norma_selecionado %}
         <div class="alert alert-warning mt-3" role="alert">
             Nenhuma lei encontrada para os filtros aplicados.
         </div>
@@ -130,10 +273,14 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="extractedContentViewModalLabel">Conteúdo da Norma</h5>
+            <button id="printModalContentBtn" type="button" class="btn btn-sm btn-outline-secondary ms-auto me-2">
+                <i class="bi bi-printer"></i> Imprimir
+            </button>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body" id="extractedModalBody">
-            </div>
+            {# Conteúdo será preenchido pelo JavaScript #}
+          </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
           </div>
@@ -145,21 +292,21 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Seu JavaScript para o modal extract_and_markdownify_view permanece o mesmo #}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var extractedContentModal = document.getElementById('extractedContentViewModal');
     if (extractedContentModal) {
         var modalBody = document.getElementById('extractedModalBody');
         var modalTitleElement = extractedContentModal.querySelector('.modal-title');
+        var printButton = document.getElementById('printModalContentBtn');
 
         extractedContentModal.addEventListener('show.bs.modal', async function (event) {
-            var button = event.relatedTarget;
-            var lawUrl = button.getAttribute('data-url');
+            var buttonOrLink = event.relatedTarget;
+            var lawUrl = buttonOrLink.getAttribute('data-url');
             
             modalTitleElement.textContent = 'Carregando conteúdo...';
             modalBody.innerHTML = `
-                <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                <div class="summary-text-markdown" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Carregando...</span>
                     </div>
@@ -183,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (data.html_content) {
                     modalTitleElement.textContent = data.title || 'Conteúdo da Norma';
-                    modalBody.innerHTML = data.html_content;
+                    modalBody.innerHTML = `<div class="summary-text-markdown">${data.html_content}</div>`;
                 } else {
                     throw new Error('Formato de resposta inesperado.');
                 }
@@ -192,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('Erro ao processar visualização de lei:', error);
                 modalTitleElement.textContent = 'Erro';
                 modalBody.innerHTML = `
-                    <div class="alert alert-danger" role="alert">
+                    <div class="alert alert-danger m-3">
                         <strong>Ocorreu um erro:</strong> ${error.message || 'Não foi possível carregar.'}
                         <hr>
                         <p class="mb-0">Tente <a href="${lawUrl}" target="_blank" rel="noopener noreferrer" class="alert-link">abrir a página original</a>.</p>
@@ -204,7 +351,13 @@ document.addEventListener('DOMContentLoaded', function () {
             modalBody.innerHTML = '';
             modalTitleElement.textContent = 'Conteúdo da Norma';
         });
+
+        if (printButton) {
+            printButton.addEventListener('click', function() {
+                window.print();
+            });
+        }
     }
 });
 </script>
-{% endblock %}
+{% endblock extra_js %}
