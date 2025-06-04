@@ -7,38 +7,70 @@
     {# CSS específico da Landing Page agora está em um arquivo externo #}
     <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
     <style>
-        /* Estilos adicionais para o carrossel */
+        /* Estilos para o carrossel - Cards Quadrados e Centrados */
         #landingCardCarousel .carousel-item .col {
-            max-width: 38rem;
-            margin-left: auto;
+            width: 300px;   /* Largura fixa para o card */
+            height: 300px;  /* Altura fixa para o card (igual à largura para ser quadrado) */
+            margin-left: auto; /* Centraliza a coluna (e o card) horizontalmente no slide */
             margin-right: auto;
+            display: flex; /* Usado para alinhar o card filho, caso ele não ocupe 100% */
+            align-items: center;
+            justify-content: center;
         }
-        /* Para garantir que os controles do carrossel fiquem visíveis sobre os cards coloridos */
+
+        /* Garante que o card preencha a coluna .col e que seu conteúdo seja flexível */
+        #landingCardCarousel .landing-card {
+            width: 100%;
+            height: 100%; /* Graças ao h-100 no HTML e height no .col pai */
+            display: flex;
+            flex-direction: column; /* Permite que o card-body cresça para preencher */
+        }
+
+        #landingCardCarousel .card-body {
+            /* As classes d-flex, align-items-center, justify-content-center, gap-2 estão no HTML */
+            /* Elas centralizarão o conteúdo (ícone e legenda em linha por padrão) dentro do card-body. */
+            /* Para que essa centralização seja no meio do card, o card-body deve ocupar o espaço disponível. */
+            flex-grow: 1; /* Faz o card-body expandir para preencher o card verticalmente */
+            padding: 1.5rem; /* Padding interno do card-body, ajuste conforme necessário */
+            /* Se quiser que o ícone fique ACIMA do texto (melhor para quadrados): */
+            /* 1. Adicione a classe .flex-column ao <div class="card-body..."> no HTML */
+            /* OU descomente a linha abaixo no CSS: */
+            /* flex-direction: column; */
+        }
+
+        #landingCardCarousel .card-icon-main {
+            font-size: 3.5rem; /* Tamanho do ícone, ajuste conforme necessário */
+            /* Se usar flex-direction: column no card-body, pode querer um espaçamento: */
+            /* margin-bottom: 0.75rem; */
+        }
+
+        #landingCardCarousel .card-icon-caption {
+            font-size: 1rem;    /* Tamanho da legenda */
+            white-space: normal; /* IMPORTANTE: Permite que o texto quebre em várias linhas */
+            text-align: center;   /* Centraliza o texto caso ele quebre */
+            line-height: 1.3;     /* Melhora a legibilidade para texto multilinhas */
+            max-width: 95%;       /* Evita que o texto encoste nas bordas laterais */
+        }
+
+        /* Controles e indicadores do carrossel */
         #landingCardCarousel .carousel-control-prev-icon,
         #landingCardCarousel .carousel-control-next-icon {
             background-color: rgba(0, 0, 0, 0.3);
             border-radius: 50%;
             padding: 10px;
         }
-         /* Ajuste para indicadores se estiverem muito próximos ou sobre os cards */
+
         #landingCardCarousel .carousel-indicators {
-            bottom: -30px;
+            bottom: -40px; /* Ajustado para dar mais espaço abaixo dos cards quadrados mais altos */
         }
+
         #landingCardCarousel .carousel-indicators [data-bs-target] {
             background-color: #777;
         }
+
         #landingCardCarousel .carousel-indicators .active {
             background-color: #333;
         }
-
-        /* Opcional: Para garantir que o conteúdo dentro do card-body não quebre em múltiplas linhas facilmente se o texto for longo */
-        #landingCardCarousel .card-body .card-icon-caption {
-            white-space: nowrap; /* Previne quebra de linha do texto da legenda do card */
-        }
-        #landingCardCarousel .card-body {
-            padding: 1rem; /* Ajuste o padding do card-body se necessário para o novo layout */
-        }
-
     </style>
 {% endblock extra_head %}
 
