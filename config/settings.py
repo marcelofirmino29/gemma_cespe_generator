@@ -21,7 +21,7 @@ DEBUG = False
 
 #ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
-ALLOWED_HOSTS = ['http://35.209.77.3/','https://generator-v1-2-754311810435.us-central1.run.app','.vercel.app','*'] # Mantenha como estava ou ajuste conforme necessário para produção
+ALLOWED_HOSTS = ['192.168.55.94','http://35.209.77.3/','https://generator-v1-2-754311810435.us-central1.run.app','.vercel.app','*'] # Mantenha como estava ou ajuste conforme necessário para produção
 CSRF_TRUSTED_ORIGINS = ['https://generator-v1-2-754311810435.us-central1.run.app'] 
 
 
@@ -94,33 +94,33 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # settings.py
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#         'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
-        'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
-        'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
-        'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
-        'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
-        'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+        'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+#         'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
+#         'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
+#         'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
+#         'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
+#         'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
+#         'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
+#     }
+# }
 
-# Validação em produção
-if not DEBUG:
-    if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
-    if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
-    if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
-    if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
+
+# # Validação em produção
+# if not DEBUG:
+#     if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
+#     if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
+#     if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
+#     if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
