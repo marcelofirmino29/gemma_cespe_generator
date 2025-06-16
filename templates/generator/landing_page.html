@@ -4,80 +4,98 @@
 {% block title %}Página Inicial - Gerador IA{% endblock title %}
 
 {% block extra_head %}
-    {# CSS específico da Landing Page agora está em um arquivo externo #}
     <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
     <style>
-        /* Estilos para o carrossel - Cards Quadrados e Centrados */
-        #landingCardCarousel .carousel-item .col {
-            width: 300px;   /* Largura fixa para o card */
-            height: 300px;  /* Altura fixa para o card (igual à largura para ser quadrado) */
-            margin-left: auto; /* Centraliza a coluna (e o card) horizontalmente no slide */
-            margin-right: auto;
-            display: flex; /* Usado para alinhar o card filho, caso ele não ocupe 100% */
-            align-items: center;
-            justify-content: center;
+        /* ============================================== */
+        /* == ESTILOS CONDICIONAIS PARA LIGHT/DARK MODE == */
+        /* ============================================== */
+
+        /* --- Estilos Padrão (Light Mode) --- */
+        body {
+            background-color: #f8f9fa; /* Fundo padrão claro */
+            color: #212529; /* Texto padrão escuro */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* Garante que o card preencha a coluna .col e que seu conteúdo seja flexível */
-        #landingCardCarousel .landing-card {
-            width: 100%;
-            height: 100%; /* Graças ao h-100 no HTML e height no .col pai */
-            display: flex;
-            flex-direction: column; /* Permite que o card-body cresça para preencher */
+        .section-title-marquee, .marquee-item a {
+            color: #212529; /* Texto do letreiro escuro */
         }
 
-        #landingCardCarousel .card-body {
-            /* As classes d-flex, align-items-center, justify-content-center, gap-2 estão no HTML */
-            /* Elas centralizarão o conteúdo (ícone e legenda em linha por padrão) dentro do card-body. */
-            /* Para que essa centralização seja no meio do card, o card-body deve ocupar o espaço disponível. */
-            flex-grow: 1; /* Faz o card-body expandir para preencher o card verticalmente */
-            padding: 1.5rem; /* Padding interno do card-body, ajuste conforme necessário */
-            /* Se quiser que o ícone fique ACIMA do texto (melhor para quadrados): */
-            /* 1. Adicione a classe .flex-column ao <div class="card-body..."> no HTML */
-            /* OU descomente a linha abaixo no CSS: */
-            /* flex-direction: column; */
+        .marquee-container {
+            background-color: rgba(0, 0, 0, 0.03); /* Fundo do letreiro sutil */
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 0.5rem;
         }
 
-        #landingCardCarousel .card-icon-main {
-            font-size: 3.5rem; /* Tamanho do ícone, ajuste conforme necessário */
-            /* Se usar flex-direction: column no card-body, pode querer um espaçamento: */
-            /* margin-bottom: 0.75rem; */
+        .landing-card {
+            display: flex; flex-direction: column;
+            
+            /* Efeito de vidro claro */
+            background: rgba(255, 255, 255, 0.6);
+            color: #2c3e50 !important;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            border-radius: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
-        #landingCardCarousel .card-icon-caption {
-            font-size: 1rem;    /* Tamanho da legenda */
-            white-space: normal; /* IMPORTANTE: Permite que o texto quebre em várias linhas */
-            text-align: center;   /* Centraliza o texto caso ele quebre */
-            line-height: 1.3;     /* Melhora a legibilidade para texto multilinhas */
-            max-width: 95%;       /* Evita que o texto encoste nas bordas laterais */
+        .landing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
         }
 
-        /* Controles e indicadores do carrossel */
-        #landingCardCarousel .carousel-control-prev-icon,
-        #landingCardCarousel .carousel-control-next-icon {
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 50%;
-            padding: 10px;
+        /* --- Sobrescrita para Dark Mode --- */
+        html[data-bs-theme="dark"] body {
+            background-color: #0f172a; /* Fundo azul escuro/ardósia */
+            background-image: 
+                radial-gradient(at 15% 20%, hsla(340, 80%, 60%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 30%, hsla(212, 80%, 55%, 0.2) 0px, transparent 50%),
+                radial-gradient(at 20% 85%, hsla(280, 70%, 50%, 0.25) 0px, transparent 50%),
+                radial-gradient(at 75% 90%, hsla(30, 90%, 60%, 0.2) 0px, transparent 50%);
+            color: #f8f9fa; /* Texto padrão claro */
         }
 
-        #landingCardCarousel .carousel-indicators {
-            bottom: -40px; /* Ajustado para dar mais espaço abaixo dos cards quadrados mais altos */
+        html[data-bs-theme="dark"] .section-title-marquee, 
+        html[data-bs-theme="dark"] .marquee-item a {
+            color: #fff; /* Texto do letreiro claro */
         }
 
-        #landingCardCarousel .carousel-indicators [data-bs-target] {
-            background-color: #777;
+        html[data-bs-theme="dark"] .marquee-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        html[data-bs-theme="dark"] .landing-card {
+            /* Efeito de vidro escuro ("fumê") */
+            background: rgba(10, 10, 20, 0.25);
+            color: #f8f9fa !important;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: none !important;
         }
 
-        #landingCardCarousel .carousel-indicators .active {
-            background-color: #333;
+        html[data-bs-theme="dark"] .landing-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* --- Estilos comuns para o conteúdo dos cards --- */
+        .landing-card .card-body {
+            flex-grow: 1; padding: 1.5rem;
+        }
+        .landing-card .card-icon-main { font-size: 3.5rem; }
+        .landing-card .card-icon-caption {
+            font-size: 1rem; white-space: normal; text-align: center; line-height: 1.3; max-width: 95%;
         }
     </style>
 {% endblock extra_head %}
 
 {% block content %}
-    <div class="container mt-4">
+    <div class="container my-4">
         <div class="text-center mb-5">
-
             {% if messages %}
                 {% for message in messages %}
                 <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
@@ -94,10 +112,9 @@
             {% endif %}
         </div>
 
-        {# --- SEÇÃO CONCURSOS EM DESTAQUE (MARQUEE) --- #}
         {% if concursos_destaque_marquee %}
             <h2 class="section-title-marquee">Concursos em Destaque</h2>
-            <div class="marquee-container">
+            <div class="marquee-container mb-5">
                 <marquee behavior="scroll" direction="left" scrollamount="6" scrolldelay="85" onmouseover="this.stop();" onmouseout="this.start();">
                     <div class="marquee-content">
                         {% for concurso in concursos_destaque_marquee %}
@@ -118,163 +135,110 @@
                 <p class="text-muted small">{{ erro_destaques }}</p>
             </div>
         {% endif %}
-        {# --- FIM DO LETREIRO DE CONCURSOS --- #}
 
-        {# --- Carrossel com os Cards --- #}
-        <div id="landingCardCarousel" class="carousel slide mb-5" data-bs-ride="carousel" data-bs-interval="7000">
-            <div class="carousel-indicators">
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Card 1"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="1" aria-label="Card 2"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="2" aria-label="Card 3"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="3" aria-label="Card 4"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="4" aria-label="Card 5"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="5" aria-label="Card 6"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="6" aria-label="Card 7"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="7" aria-label="Card 8"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="8" aria-label="Card 9"></button>
-                <button type="button" data-bs-target="#landingCardCarousel" data-bs-slide-to="9" aria-label="Card 10"></button>
-            </div>
-
-            <div class="carousel-inner py-4">
-                {# Card 1: Gerador C/E - Azul (Primary) #}
-                <div class="carousel-item active">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-primary text-white">
-                            <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-check2-square card-icon-main"></i>
-                                <span class="card-icon-caption">Gerador C/E por Tópico</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 2: Gerador Discursiva - Verde (Success) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-success text-white">
-                            <a href="{% url 'generator:generate_discursive_exam' %}" class="stretched-link" aria-label="Gerador de Questão Discursiva"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-pencil-square card-icon-main"></i>
-                                <span class="card-icon-caption">Gerador de Questão Discursiva</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 3: Configurar Simulado - Amarelo (Warning) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-warning text-dark">
-                            <a href="{% url 'generator:configurar_simulado' %}" class="stretched-link" aria-label="Configurar Simulado"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-sliders card-icon-main text-dark"></i>
-                                <span class="card-icon-caption">Configurar Simulado</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 4: Dashboard - Vermelho (Danger) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-danger text-white">
-                            <a href="{% url 'generator:dashboard' %}" class="stretched-link" aria-label="Dashboard de Desempenho"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-graph-up card-icon-main"></i>
-                                <span class="card-icon-caption">Dashboard de Desempenho</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card Hub de Jogos - Ciano (Info) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-info text-white">
-                            <a href="{% url 'generator:games_hub' %}" class="stretched-link" aria-label="Hub de Jogos"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-joystick card-icon-main"></i>
-                                <span class="card-icon-caption">Hub de Jogos</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 6: Banco de Questões - Cinza (Secondary) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-secondary text-white">
-                            <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-collection-fill card-icon-main"></i>
-                                <span class="card-icon-caption">Banco de Questões</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 7: Resumo Rápido de PDF - Lilás (Custom ou um Bootstrap text-dark para contraste) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-light text-dark">
-                            <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
-                                <span class="card-icon-caption">Resumo Rápido de PDF</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 8: Concursos no Brasil - Azul Petróleo (Teal - Custom) ou outro Bootstrap #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-info text-white">
-                             <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-briefcase-fill card-icon-main"></i>
-                                <span class="card-icon-caption">Concursos no Brasil</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 9: Provas Anteriores (PCI) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100 bg-primary-subtle text-primary-emphasis">
-                            <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-search-heart card-icon-main"></i>
-                                <span class="card-icon-caption">Provas Anteriores (PCI)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Card 10: Consulta de Leis (Planalto) #}
-                <div class="carousel-item">
-                    <div class="col">
-                        <div class="card landing-card shadow-sm h-100" style="background-color: #6f42c1; color: white;">
-                            <a href="{% url 'generator:consulta_leis_planalto' %}" class="stretched-link" aria-label="Consulta de Leis (Planalto)"></a>
-                            <div class="card-body d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-bank card-icon-main"></i>
-                                <span class="card-icon-caption">Consulta Leis (Planalto)</span>
-                            </div>
-                        </div>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            
+            {% comment %} O conteúdo de cada card permanece o mesmo {% endcomment %}
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-check2-square card-icon-main"></i>
+                        <span class="card-icon-caption">Gerador C/E por Tópico</span>
                     </div>
                 </div>
             </div>
 
-            <button class="carousel-control-prev" type="button" data-bs-target="#landingCardCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Anterior</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#landingCardCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Próximo</span>
-            </button>
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:generate_discursive_exam' %}" class="stretched-link" aria-label="Gerador de Questão Discursiva"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-pencil-square card-icon-main"></i>
+                        <span class="card-icon-caption">Gerador de Questão Discursiva</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:configurar_simulado' %}" class="stretched-link" aria-label="Configurar Simulado"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-sliders card-icon-main"></i>
+                        <span class="card-icon-caption">Configurar Simulado</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:dashboard' %}" class="stretched-link" aria-label="Dashboard de Desempenho"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-graph-up card-icon-main"></i>
+                        <span class="card-icon-caption">Dashboard de Desempenho</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:games_hub' %}" class="stretched-link" aria-label="Hub de Jogos"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-joystick card-icon-main"></i>
+                        <span class="card-icon-caption">Hub de Jogos</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-collection-fill card-icon-main"></i>
+                        <span class="card-icon-caption">Banco de Questões</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
+                        <span class="card-icon-caption">Resumo Rápido de PDF</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                 <div class="card landing-card h-100">
+                     <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
+                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                         <i class="bi bi-briefcase-fill card-icon-main"></i>
+                         <span class="card-icon-caption">Concursos no Brasil</span>
+                     </div>
+                 </div>
+            </div>
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-search-heart card-icon-main"></i>
+                        <span class="card-icon-caption">Provas Anteriores (PCI)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:consulta_leis_planalto' %}" class="stretched-link" aria-label="Consulta de Leis (Planalto)"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-bank card-icon-main"></i>
+                        <span class="card-icon-caption">Consulta Leis (Planalto)</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 {% endblock content %}

@@ -33,6 +33,9 @@ from .views_games import (
     word_search_lgpd_view,
     aventura_dados_view,
     scratch_js_view,
+    criar_kahoot_view,
+    entrar_kahoot_view,
+    kahoot_lobby_view
 )   
 
 from .views_scraped_exams import listar_provas_coletadas

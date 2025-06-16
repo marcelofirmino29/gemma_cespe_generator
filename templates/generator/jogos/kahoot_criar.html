@@ -1,0 +1,91 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Criar Novo Jogo Kahoot{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h2 class="h4 mb-0">Criar Novo Jogo - Estilo Kahoot</h2>
+        </div>
+        <div class="card-body">
+            <p>Escolha como você quer gerar as questões para o seu novo jogo.</p>
+            
+            <ul class="nav nav-tabs nav-fill mb-4" id="creationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="topic-tab" data-bs-toggle="tab" data-bs-target="#topic-pane" type="button" role="tab" aria-controls="topic-pane" aria-selected="true">Por Tópico</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="area-tab" data-bs-toggle="tab" data-bs-target="#area-pane" type="button" role="tab" aria-controls="area-pane" aria-selected="false">Por Área</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-pane" type="button" role="tab" aria-controls="ai-pane" aria-selected="false">✨ Com IA</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="creationTabsContent">
+                
+                <div class="tab-pane fade show active" id="topic-pane" role="tabpanel" aria-labelledby="topic-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <p class="text-muted small">Crie um jogo usando questões de um tópico específico já existente no banco de dados.</p>
+                        <div class="mb-3">
+                            <label for="topico-select" class="form-label">Tópico:</label>
+                            <select name="topico" id="topico-select" class="form-select" required>
+                                {% for topico in topicos %}
+                                    <option value="{{ topico.id }}">{{ topico.nome }} ({{ topico.area.disciplina.nome }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="num-questoes-topico" class="form-label">Número de Questões:</label>
+                            <input type="number" name="num_questoes" id="num-questoes-topico" class="form-control" value="10" min="1" max="20">
+                        </div>
+                        <button type="submit" name="criar_por_topico" class="btn btn-primary w-100">Criar Jogo por Tópico</button>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="area-pane" role="tabpanel" aria-labelledby="area-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <p class="text-muted small">Crie um jogo com questões aleatórias de todos os tópicos dentro de uma área de estudo.</p>
+                        <div class="mb-3">
+                            <label for="area-select" class="form-label">Área de Estudo:</label>
+                            <select name="area" id="area-select" class="form-select" required>
+                                {% for area in areas %}
+                                    <option value="{{ area.id }}">{{ area.nome }} ({{ area.disciplina.nome }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="num-questoes-area" class="form-label">Número de Questões:</label>
+                            <input type="number" name="num_questoes" id="num-questoes-area" class="form-control" value="10" min="1" max="20">
+                        </div>
+                        <button type="submit" name="criar_por_area" class="btn btn-primary w-100">Criar Jogo por Área</button>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="ai-pane" role="tabpanel" aria-labelledby="ai-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <p class="text-muted small">Descreva um tema e deixe a IA gerar novas questões de Certo/Errado na hora para o seu jogo!</p>
+                        <div class="mb-3">
+                            <label for="tema-ia" class="form-label">Tema para a IA:</label>
+                            <textarea name="tema_ia" id="tema-ia" class="form-control" rows="3" placeholder="Ex: Artigos 1 a 5 da Constituição Federal de 1988" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="num-questoes-ia" class="form-label">Número de Questões a Gerar:</label>
+                            <input type="number" name="num_questoes" id="num-questoes-ia" class="form-control" value="5" min="1" max="10">
+                        </div>
+                        <button type="submit" name="criar_por_ia" class="btn btn-success w-100">
+                            <i class="bi bi-stars me-2"></i>Gerar Jogo com IA
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 {% extends 'generator/base.html' %}
 {% load static %}
-{# {% load humanize %} - Se necessário para outras partes #}
+{% load generator_tags %}
 
 {% block title %}Gerador de Questões C/E (Contexto ou PDF){% endblock title %}
 
@@ -28,7 +28,7 @@
                         <label for="{{ form.topic.id_for_label|default:'id_topic' }}"
                                class="form-label fw-medium"
                                id="label_for_topic_ce_page">{{ form.topic.label|default:"1. Forneça um Tópico ou Contexto Textual" }}</label>
-                        {{ form.topic }} {# Assume que form.topic renderiza com id="id_topic" ou o que for definido em form.topic.id_for_label #}
+                        {{ form.topic }}
                         <div class="form-text text-muted mt-1" id="help_text_for_topic_ce_page"
                              data-help-optional="{{ form.topic.help_text|default:"Contexto textual opcional quando um PDF é enviado."|escapejs }}"
                              data-help-editing="{{ form.topic.help_text|default:"Continue editando seu contexto textual."|escapejs }}"
@@ -63,17 +63,17 @@
                     <div class="row g-3">
                         <div class="col-md-12 mb-2">
                             <label for="{{ form.num_questions.id_for_label|default:'id_num_questions' }}" class="form-label fw-medium">{{ form.num_questions.label|default:"Nº Questões C/E" }}</label>
-                            {{ form.num_questions }} {# Assume id="id_num_questions" #}
+                            {{ form.num_questions }}
                             {% if form.num_questions.errors %}<div class="invalid-feedback d-block">{{ form.num_questions.errors|striptags }}</div>{% endif %}
                         </div>
                         <div class="col-md-12 mb-2">
                             <label for="{{ form.difficulty_level.id_for_label|default:'id_difficulty_level' }}" class="form-label fw-medium">{{ form.difficulty_level.label|default:"Dificuldade" }}</label>
-                            {{ form.difficulty_level }} {# Assume id="id_difficulty_level" #}
+                            {{ form.difficulty_level }}
                             {% if form.difficulty_level.errors %}<div class="invalid-feedback d-block">{{ form.difficulty_level.errors|striptags }}</div>{% endif %}
                         </div>
                         <div class="col-md-12 mb-3">
                             <label for="{{ form.area.id_for_label|default:'id_area' }}" class="form-label fw-medium">{{ form.area.label|default:"Área de Conhecimento" }}</label>
-                            {{ form.area }} {# Assume id="id_area" #}
+                            {{ form.area }}
                             {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors|striptags }}</div>{% endif %}
                         </div>
                     </div>
@@ -96,8 +96,7 @@
                 </div>
             </form>
         </div>
-    </div> {# Fim .filters-container #}
-
+    </div>
 
     <div class="alert alert-secondary mt-4 small text-center"> Forneça um contexto textual ou envie um PDF, defina os parâmetros e clique em "Gerar C/E". </div>
 
@@ -108,13 +107,14 @@
         {% if not main_motivador %}<hr class="my-4">{% endif %}
         <div class="mt-4">
             <h2 class="h5 mb-3 fw-normal">Itens Gerados Recentemente (Página {{ page_obj.number }} de {{ paginator.num_pages }}):</h2>
-            <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}"> {# ID para o ce_validator.js #}
+            <form id="validate-form" data-validate-single-url="{% url 'generator:validate_single_ce' %}">
                 {% csrf_token %}
                 <div class="card card-body">
                     {% for item in page_obj %}
-                    <div class="card card-body" id="question-item-{{ item.id }}">
+                    <div class="card card-body mb-3" id="question-item-{{ item.id }}">
                         <p class="mb-2"><strong>Item {{ page_obj.start_index|add:forloop.counter0 }}:</strong> (ID: {{item.id}})</p>
-                        <p class="ms-3">{{ item.texto_comando|linebreaksbr }}</p>
+                        {# CORRIGIDO: 'item.texto_comando' -> 'item.enunciado' #}
+                        <p class="ms-3">{{ item.enunciado|linebreaksbr }}</p>
                         <div class="d-flex align-items-center flex-wrap mt-3">
                             <div class="form-check form-check-inline me-3">
                                 <input class="form-check-input question-radio" type="radio" name="resposta_q{{ item.id }}" id="certo_{{ item.id }}" value="C" required>
@@ -132,19 +132,16 @@
                     {% endfor %}
                 </div>
 
-                {# Controles de Paginação inseridos aqui #}
+                {# Controles de Paginação #}
                 {% if paginator.num_pages > 1 %}
                 <nav aria-label="Navegação dos itens gerados" class="mt-4 d-flex justify-content-center">
                     <ul class="pagination flex-wrap">
-                        {% if page_obj.number > 1 %}
-                            <li class="page-item"><a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeira">&laquo;&laquo;</a></li>
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
-                        {% endif %}
                         {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">&laquo;</a></li>
+                            <li class="page-item"><a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">‹</a></li>
                         {% else %}
                             <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">‹</span></li>
                         {% endif %}
 
                         {% for num in paginator.page_range %}
@@ -152,28 +149,15 @@
                                 <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
                             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                                 <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
-                            {% elif num == 1 %}
-                                <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
-                                {% if page_obj.number > 4 %} {# Ajustado para mostrar reticências mais cedo se necessário #}
-                                    <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>
-                                {% endif %}
-                            {% elif num == paginator.num_pages %}
-                                {% if page_obj.number < paginator.num_pages|add:'-3' %} {# Ajustado para mostrar reticências mais cedo se necessário #}
-                                    <li class="page-item disabled d-none d-sm-block"><span class="page-link">...</span></li>
-                                {% endif %}
-                                <li class="page-item d-none d-sm-block"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
                             {% endif %}
                         {% endfor %}
 
                         {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">&raquo;</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">›</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a></li>
                         {% else %}
+                            <li class="page-item disabled"><span class="page-link">›</span></li>
                             <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-                        {% endif %}
-                        {% if page_obj.number < paginator.num_pages %}
-                            <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Última">&raquo;&raquo;</a></li>
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -181,7 +165,7 @@
             </form>
         </div>
     {% elif request.method == 'POST' and not form.errors %}
-        <div class="alert alert-info mt-4" role="alert">Geração de questões C/E solicitada. Os resultados aparecerão aqui ou no <a href="{% url 'generator:questions_ce' %}" class="alert-link">Banco de Questões</a> após o processamento (geralmente após um redirecionamento).</div>
+        <div class="alert alert-info mt-4" role="alert">Geração de questões C/E solicitada. Os resultados aparecerão aqui ou no <a href="{% url 'generator:questions_ce' %}" class="alert-link">Banco de Questões</a> após o processamento.</div>
     {% endif %}
 
     {% if results %} <hr class="my-4"> <div class="results-validation mt-4"> <h2 class="h5 mb-3 fw-normal">Resultado da Verificação Geral:</h2> {# ... (código results/performance se houver) ... #} </div> {% endif %}

@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'markdownify.apps.MarkdownifyConfig',
     'django.contrib.humanize',
     'django_celery_beat',
+    'channels',
 
 ]
 
@@ -94,33 +95,33 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # settings.py
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#         'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
-        'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
-        'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
-        'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
-        'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
-        'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+        'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql'),
+#         'HOST': os.getenv('DATABASE_HOST'), # Será lido do ambiente
+#         'NAME': os.getenv('DATABASE_NAME'),       # Será lido do ambiente
+#         'USER': os.getenv('DATABASE_USER'),       # Será lido do ambiente
+#         'PASSWORD': os.getenv('DATABASE_PASSWORD'), # Será lido do ambiente
+#         'HOST': os.getenv('DATABASE_HOST'),       # Será lido do ambiente (IP ou socket)
+#         'PORT': os.getenv('DATABASE_PORT', '5432'), # Será lido do ambiente ou usa 5432
+#     }
+# }
 
-# Validação em produção
-if not DEBUG:
-    if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
-    if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
-    if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
-    if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
+
+# # Validação em produção
+# if not DEBUG:
+#     if not DATABASES['default'].get('NAME'): raise ImproperlyConfigured("DATABASE_NAME não definida.")
+#     if not DATABASES['default'].get('USER'): raise ImproperlyConfigured("DATABASE_USER não definido.")
+#     if not DATABASES['default'].get('PASSWORD'): raise ImproperlyConfigured("DATABASE_PASSWORD não definida.")
+#     if not DATABASES['default'].get('HOST'): raise ImproperlyConfigured("DATABASE_HOST não definido.")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -203,3 +204,16 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 # --- FIM DAS CELERY SETTINGS ---
+
+# Adicionar ao final do arquivo
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Configuração do Channel Layer (usando Redis, conforme docker-compose.yml)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}

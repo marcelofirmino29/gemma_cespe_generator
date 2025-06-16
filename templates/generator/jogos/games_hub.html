@@ -5,137 +5,184 @@
 
 {% block extra_head %}
     <style>
-        /* Estilos mínimos para os itens de jogo */
+        /* ================================================================= */
+        /* == ESTILOS VISUAIS CONSISTENTES COM A LANDING PAGE (DARK/LIGHT) == */
+        /* ================================================================= */
+
+        /* --- Estilos Padrão (Light Mode) --- */
+        body {
+            background-color: #f8f9fa; /* Fundo padrão claro */
+            transition: background-color 0.3s ease;
+        }
+
         .game-item {
-            padding: 1rem 1.5rem; /* Mais padding lateral */
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.5rem; /* rounded-lg */
-            background-color: var(--bs-tertiary-bg);
-            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            height: 100%; /* Garante altura consistente se em grid */
-            display: flex; /* Para alinhar botão no final */
-            flex-direction: column;
+            display: flex; 
+            flex-direction: column; 
+            height: 100%;
+            padding: 1.5rem;
+            text-align: center;
+            
+            /* Efeito de vidro claro, mantendo a estrutura original */
+            background: rgba(255, 255, 255, 0.6);
+            color: #2c3e50;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            border-radius: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease, border-color 0.2s ease;
         }
+
         .game-item:hover {
-            background-color: var(--bs-secondary-bg);
-            box-shadow: var(--bs-box-shadow);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
         }
-         .game-item .game-icon {
-            font-size: 1.8rem;
+
+        .game-item .game-icon {
+            font-size: 2rem; /* Tamanho do ícone */
             margin-bottom: 0.75rem;
-            display: block;
-            color: var(--bs-success); /* Cor verde para ícones de jogo */
+            color: var(--bs-primary); /* Cor primária no modo claro */
         }
-         .game-item .game-description {
-            font-size: 0.85rem;
-            flex-grow: 1; /* Ocupa espaço */
-            margin-bottom: 1rem; /* Espaço antes do botão */
-            color: var(--bs-secondary-color); /* Texto secundário */
-         }
-         .game-item .btn {
-            font-size: 0.8rem; /* Botão pequeno */
-            margin-top: auto; /* Empurra para baixo */
-            align-self: center; /* Centraliza botão */
-         }
+        
+        .game-item h2 {
+            font-size: 1.1rem; /* Tamanho do título */
+            font-weight: 600;
+        }
+
+        .game-item .game-description {
+            flex-grow: 1; /* ESSENCIAL: Empurra o botão para baixo */
+            font-size: 0.9rem;
+            color: var(--bs-secondary-color); /* Usa a cor secundária do tema, que se adapta */
+            margin-bottom: 1.5rem;
+        }
+
+        .game-item .btn {
+            margin-top: auto; /* Garante que o botão fique no final */
+        }
+
+        /* --- Sobrescrita para Dark Mode --- */
+        html[data-bs-theme="dark"] body {
+            background-color: #0f172a; /* Fundo azul escuro/ardósia */
+            background-image: 
+                radial-gradient(at 15% 20%, hsla(340, 80%, 60%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 30%, hsla(212, 80%, 55%, 0.2) 0px, transparent 50%);
+            color: #f8f9fa;
+        }
+        
+        html[data-bs-theme="dark"] .game-item {
+            /* Efeito de vidro escuro ("fumê") */
+            background: rgba(10, 10, 20, 0.25);
+            color: #f8f9fa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        html[data-bs-theme="dark"] .game-item:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(20, 30, 50, 0.3);
+            box-shadow: none;
+        }
+
+        html[data-bs-theme="dark"] .game-item .game-icon {
+            color: var(--bs-success); /* Verde vibrante no escuro para destaque */
+        }
     </style>
 {% endblock extra_head %}
 
 {% block content %}
-    {# Removido header principal #}
-    {# {% if local_time %}...{% endif %} #}
-
-    {# Título Simplificado #}
-    <div class="text-center mb-4">
-        <h1 class="h4 fw-normal mb-2">Jogos Educacionais</h1>
-        <p class="lead fs-6 text-body-secondary col-lg-8 mx-auto">
-            Escolha um jogo abaixo para praticar.
+<div class="container py-5">
+    
+    <div class="text-center mb-5">
+        <h1 class="display-6 fw-bold">Hub de Jogos</h1>
+        <p class="lead text-body-secondary col-lg-8 mx-auto">
+            Aprenda e pratique de forma interativa. Escolha um dos jogos abaixo para começar a diversão!
         </p>
     </div>
 
-    {# Mensagens #}
     {% if messages %}
         {% for message in messages %}
-            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small" role="alert"> {# small #}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small col-md-8 mx-auto" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
     {% endif %}
 
-    {# Lista de Jogos Disponíveis #}
-    {# Ajustado para até 3 colunas em LG para acomodar mais jogos #}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 justify-content-center">
 
-        {# Jogo 1: Arrastar e Soltar ML #}
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
-                 <div class="text-center">
-                     <i class="bi bi-arrows-move game-icon"></i> {# Ícone ajustado #}
-                     <h2 class="h6 mb-2 fw-medium">Arrastar e Soltar: Algoritmos ML</h2>
-                 </div>
-                 <p class="game-description text-center">
-                     Associe algoritmos como SVM, KNN e K-Means às suas categorias (Supervisionado, Não Supervisionado, Por Reforço).
-                 </p>
-                 {# Link para o jogo específico #}
-                 <a href="{% url 'generator:game_drag_drop_ml' %}" class="btn btn-success btn-sm">Jogar</a>
+                <i class="bi bi-person-video3 game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Kahoot: Criar Jogo</h2>
+                <p class="game-description">
+                    Seja o anfitrião! Crie um quiz a partir dos tópicos do sistema e desafie outros jogadores em tempo real.
+                </p>
+                <a href="{% url 'generator:criar_kahoot' %}" class="btn btn-primary btn-sm">Criar como Host</a>
             </div>
         </div>
 
-        {# Jogo 2: Aprendendo JS com Blocos #}
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
-                 <div class="text-center">
-                     <i class="bi bi-puzzle-fill game-icon"></i> {# Ícone diferente #}
-                     <h2 class="h6 mb-2 fw-medium">Aprendendo JS com Blocos</h2>
-                 </div>
-                 <p class="game-description text-center">
-                     Explore conceitos básicos de JavaScript arrastando e soltando blocos de código (estilo Scratch).
-                 </p>
-                 {# Link para o jogo específico #}
-                 <a href="{% url 'generator:scratch_js_game' %}" class="btn btn-success btn-sm">Jogar</a>
+                <i class="bi bi-joystick game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Kahoot: Entrar no Jogo</h2>
+                <p class="game-description">
+                    Tem um PIN de jogo? Insira-o aqui para se juntar à diversão e testar seus conhecimentos.
+                </p>
+                <a href="{% url 'generator:entrar_kahoot' %}" class="btn btn-success btn-sm">Entrar como Jogador</a>
+            </div>
+        </div>
+        
+        <div class="col d-flex align-items-stretch">
+            <div class="game-item w-100">
+                <i class="bi bi-arrows-move game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Arrastar e Soltar: ML</h2>
+                <p class="game-description">
+                    Associe algoritmos de Machine Learning (SVM, KNN) às suas categorias corretas.
+                </p>
+                <a href="{% url 'generator:game_drag_drop_ml' %}" class="btn btn-outline-secondary btn-sm">Jogar</a>
             </div>
         </div>
 
-        {# Jogo 3: Caça-Palavras: Termos da LGPD #}
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
-                 <div class="text-center">
-                     <i class="bi bi-search game-icon"></i> {# Ícone mudado para busca #}
-                     <h2 class="h6 mb-2 fw-medium">Caça-Palavras: Termos da LGPD</h2>
-                 </div>
-                 <p class="game-description text-center">
-                     Encontre termos importantes relacionados à Lei Geral de Proteção de Dados em um caça-palavras interativo.
-                 </p>
-                 {# Link para o jogo específico #}
-                 <a href="{% url 'generator:word_search_lgpd_game' %}" class="btn btn-success btn-sm">Jogar</a>
+                <i class="bi bi-puzzle-fill game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Aprendendo JS com Blocos</h2>
+                <p class="game-description">
+                    Explore conceitos de JavaScript de forma visual, arrastando e montando blocos de código.
+                </p>
+                <a href="{% url 'generator:scratch_js_game' %}" class="btn btn-outline-secondary btn-sm">Jogar</a>
             </div>
         </div>
 
-        {# Jogo 4: Aventura de Dados #}
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
-                 <div class="text-center">
-                     <i class="bi bi-controller game-icon"></i> {# Ícone de controle #}
-                     <h2 class="h6 mb-2 fw-medium">Aventura de Dados</h2>
-                 </div>
-                 <p class="game-description text-center">
-                     Um jogo de plataforma onde você coleta dados bons, evita dados ruins e responde a quizzes sobre ciência de dados.
-                 </p>
-                 {# Link para o jogo Aventura de Dados #}
-                 <a href="{% url 'generator:aventura_dados' %}" class="btn btn-success btn-sm">Jogar</a>
+                <i class="bi bi-search game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Caça-Palavras: LGPD</h2>
+                <p class="game-description">
+                    Encontre termos da Lei Geral de Proteção de Dados em um caça-palavras interativo.
+                </p>
+                <a href="{% url 'generator:word_search_lgpd_game' %}" class="btn btn-outline-secondary btn-sm">Jogar</a>
             </div>
         </div>
-        {# --- FIM DO NOVO JOGO --- #}
 
-        {# Adicione outros jogos aqui no futuro, seguindo o mesmo padrão #}
-
+        <div class="col d-flex align-items-stretch">
+            <div class="game-item w-100">
+                <i class="bi bi-controller game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Aventura de Dados</h2>
+                <p class="game-description">
+                    Um jogo de plataforma onde você coleta dados, evita anomalias e responde a quizzes.
+                </p>
+                <a href="{% url 'generator:aventura_dados' %}" class="btn btn-outline-secondary btn-sm">Jogar</a>
+            </div>
+        </div>
     </div>
 
-    {# Botão para voltar #}
     <div class="text-center mt-5">
-        <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">Voltar ao Início</a>
+        <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Voltar ao Início
+        </a>
     </div>
-
+</div>
 {% endblock content %}
 
 {% block extra_js %}

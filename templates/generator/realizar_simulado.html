@@ -1,5 +1,6 @@
 {% extends 'generator/base.html' %}
 {% load static %}
+{% load generator_tags %}
 
 {% block title %}Simulado - Questão {{ indice_atual }} de {{ total_questoes }}{% endblock title %}
 
@@ -8,106 +9,107 @@
 {% endblock extra_head %}
 
 {% block content %}
-    {# Título e Progresso #}
-    <div class="text-center mb-4">
-        <h1 class="h4 fw-normal mb-2">Simulado em Andamento</h1>
-        <p class="lead fs-6 text-body-secondary">
-            Questão {{ indice_atual }} de {{ total_questoes }}
-        </p>
-        {# <<< Barra de Progresso com Lógica SIMPLIFICADA e CORRIGIDA >>> #}
-        <div class="progress mt-2" role="progressbar" aria-label="Progresso do Simulado" aria-valuenow="{{ indice_atual }}" aria-valuemin="1" aria-valuemax="{{ total_questoes }}" style="height: 8px;">
-             {# Calcula a porcentagem usando widthratio #}
-             {% widthratio indice_atual total_questoes 100 as progress_percent %}
-             {# Usa o filtro default_if_none para tratar caso total_questoes seja 0 #}
-             <div class="progress-bar" style="width: {{ progress_percent|default_if_none:0 }}%"></div>
-        </div>
-         {# <<< FIM: Barra de Progresso Corrigida >>> #}
-    </div>
-
-    {# Mensagens #}
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    {% if questao %}
-        {# Container para a questão e formulário #}
-        <div class="border rounded p-3 p-md-4 bg-body-tertiary mb-4"> {# Fundo sutil e borda #}
-
-            {# Informações da Questão (Opcional) #}
-            <div class="text-end mb-2">
-                 <small class="text-muted">
-                    ID: {{ questao.id }}
-                    {% if questao.area %} | Área: {{ questao.area.nome }}{% endif %}
-                    | Dif: {{ questao.get_dificuldade_display|default:"N/D" }}
-                 </small>
-            </div>
-
-            {# Texto Motivador (se houver) #}
-            {% if questao.texto_motivador %}
-                <div class="motivador-text small bg-body mb-3"> {# Fundo do body normal #}
-                     <h2 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto Motivador</h2>
-                     {{ questao.texto_motivador|linebreaksbr }}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            {# Título e Progresso #}
+            <div class="text-center mb-4">
+                <h1 class="h4 fw-normal mb-2">Simulado em Andamento</h1>
+                <p class="lead fs-6 text-body-secondary">
+                    Questão {{ indice_atual }} de {{ total_questoes }}
+                </p>
+                <div class="progress mt-2" role="progressbar" aria-label="Progresso do Simulado" aria-valuenow="{{ indice_atual }}" aria-valuemin="1" aria-valuemax="{{ total_questoes }}" style="height: 8px;">
+                    {% widthratio indice_atual total_questoes 100 as progress_percent %}
+                    <div class="progress-bar" style="width: {{ progress_percent|default_if_none:0 }}%"></div>
                 </div>
+            </div>
+
+            {# Mensagens #}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
 
-             {# Formulário de Resposta #}
-            <form method="post" action="{% url 'generator:realizar_simulado' %}" id="simulado-answer-form">
-                {% csrf_token %}
-                <input type="hidden" name="questao_id" value="{{ questao.id }}">
+            {% if questao %}
+                {# Container para a questão e formulário #}
+                <div class="border rounded p-3 p-md-4 bg-body-tertiary mb-4">
 
-                {# --- Layout de Coluna Única --- #}
-                <div class="item-column-display"> {# Div que contém a questão e opções #}
-                    <p class="item-text mb-2">
-                        <span class="item-number">{{ indice_atual }}.</span> {# Usa indice_atual #}
-                        {{ questao.texto_comando|linebreaksbr }}
-                    </p>
-                    <div class="answer-options">
-                        {# <p class="mb-2 small text-muted">Selecione sua resposta:</p> #} {# Label opcional #}
-                        {% if questao.tipo == 'CE' %}
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_c" value="C" required>
-                                <label class="form-check-label" for="resp_c"> Certo</label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_e" value="E" required>
-                                <label class="form-check-label" for="resp_e"> Errado</label>
-                            </div>
-                        {% else %}
-                            <p class="text-danger small">Erro: Tipo de questão inválido.</p>
-                        {% endif %}
+                    {# Informações da Questão (Corrigido) #}
+                    <div class="text-end mb-2">
+                        <small class="text-muted">
+                            ID: {{ questao.id }}
+                            {# CORRIGIDO: Acessa a área através do tópico #}
+                            {% if questao.topico and questao.topico.area_conhecimento %}
+                                | Área: {{ questao.topico.area_conhecimento.nome }}
+                            {% endif %}
+                            | Dif: {{ questao.get_dificuldade_display|default:"N/D" }}
+                        </small>
                     </div>
+
+                    {# Texto Motivador (se houver) #}
+                    {% if questao.texto_motivador %}
+                        <div class="motivador-text small bg-body mb-3 p-3 border rounded">
+                            <h2 class="h6 text-muted mb-2 fw-normal"><i class="bi bi-info-circle me-1"></i>Texto de Apoio</h2>
+                            {{ questao.texto_motivador|linebreaksbr }}
+                        </div>
+                    {% endif %}
+
+                    {# Formulário de Resposta #}
+                    <form method="post" action="{% url 'generator:realizar_simulado' %}" id="simulado-answer-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="questao_id" value="{{ questao.id }}">
+
+                        <div class="item-column-display">
+                            <p class="item-text mb-2 fs-5"> {# Aumentando a fonte da questão #}
+                                <span class="item-number fw-bold">{{ indice_atual }}.</span>
+                                {# CORRIGIDO: Usa 'enunciado' no lugar de 'texto_comando' #}
+                                {{ questao.enunciado|linebreaksbr }}
+                            </p>
+                            <div class="answer-options mt-4">
+                                {% if questao.tipo == 'CE' %}
+                                    <div class="form-check mb-2 fs-5">
+                                        <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_c" value="C" required>
+                                        <label class="form-check-label" for="resp_c"> Certo</label>
+                                    </div>
+                                    <div class="form-check fs-5">
+                                        <input class="form-check-input" type="radio" name="resposta_simulado" id="resp_e" value="E" required>
+                                        <label class="form-check-label" for="resp_e"> Errado</label>
+                                    </div>
+                                {% else %}
+                                    <p class="text-danger small">Erro: Tipo de questão inválido.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Botões de Ação #}
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-danger btn-sm">Abandonar Simulado</a>
+                            {% if indice_atual == total_questoes %}
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Finalizar e Ver Resultado
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-primary">
+                                    Salvar e Próxima <i class="bi bi-arrow-right-circle-fill ms-1"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
                 </div>
-                 {# --- Fim Layout de Coluna Única --- #}
-
-                {# Botões de Ação #}
-                <hr class="my-4">
-                <div class="d-flex justify-content-between">
-                     <a href="{% url 'generator:dashboard' %}" class="btn btn-outline-danger btn-sm">Abandonar Simulado</a>
-                     {% if indice_atual == total_questoes %}
-                        <button type="submit" class="btn btn-success btn-sm">
-                            <i class="bi bi-check-circle-fill me-1"></i>Finalizar Simulado
-                        </button>
-                     {% else %}
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            Salvar e Próxima <i class="bi bi-arrow-right-circle-fill ms-1"></i>
-                        </button>
-                     {% endif %}
+            {% else %}
+                <div class="alert alert-warning">
+                    Não foi possível carregar a questão atual do simulado.
                 </div>
-            </form>
-             {# --- Fim Formulário de Resposta --- #}
-        </div> {# Fim .border #}
-
-    {% else %}
-        {# Mensagem se não conseguiu carregar questao na view GET #}
-        <div class="alert alert-warning">Não foi possível carregar a questão atual do simulado.</div>
-        <a href="{% url 'generator:configurar_simulado' %}" class="btn btn-primary btn-sm">Configurar Novo Simulado</a>
-    {% endif %}
-
+                <a href="{% url 'generator:configurar_simulado' %}" class="btn btn-primary">Configurar Novo Simulado</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block extra_js %}

@@ -55,4 +55,9 @@ urlpatterns = [
 
     path('extrair-markdown/', views.extract_and_markdownify_view, name='visualizar_lei_markdown'),
 
+    path('games/kahoot/criar/', views.criar_kahoot_view, name='criar_kahoot'),
+ 
+    path('games/kahoot/entrar/', views.entrar_kahoot_view, name='entrar_kahoot'),
+ 
+    path('games/kahoot/lobby/<str:game_pin>/', views.kahoot_lobby_view, name='kahoot_lobby'),
 ]

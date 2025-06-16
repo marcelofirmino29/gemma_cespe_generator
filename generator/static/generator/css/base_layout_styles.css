@@ -1757,3 +1757,66 @@ html[data-bs-theme="dark"] .chat-widget-messages .user-bubble {
     margin-top: 2em;
     margin-bottom: 2em;
 }
+
+/* Customizações para o tema Dark Mode */
+[data-bs-theme="dark"] {
+    --bs-body-color: #dee2e6; /* Cor do texto principal */
+    --bs-body-bg: #212529; /* Cor de fundo principal */
+
+    /* Cores das bordas - Tornando as linhas mais visíveis */
+    --bs-border-color: #495057; /* Uma cor de borda mais escura mas visível */
+    --bs-border-color-translucent: rgba(73, 80, 87, 0.5); /* Bordas semitransparentes */
+
+    /* Cores de fundo para componentes com bordas */
+    --bs-secondary-bg: #343a40; /* Fundo secundário mais distinto */
+    --bs-tertiary-bg: #2b3035; /* Fundo terciário */
+
+    /* Exemplo para tabelas, cards ou divisores */
+    .table {
+        --bs-table-bg: #2b3035; /* Fundo da tabela */
+        --bs-table-border-color: #495057; /* Bordas da tabela mais visíveis */
+        color: var(--bs-body-color); /* Cor do texto da tabela */
+    }
+
+    .card {
+        background-color: var(--bs-secondary-bg);
+        border-color: var(--bs-border-color); /* Borda do card */
+    }
+
+    hr { /* Linhas divisórias (horizontal rule) */
+        border-color: var(--bs-border-color);
+        opacity: 0.7; /* Garante que a linha não seja muito fraca */
+    }
+
+    /* Adicione mais estilos conforme necessário para outros componentes */
+    .list-group-item {
+        background-color: var(--bs-secondary-bg);
+        border-color: var(--bs-border-color);
+        color: var(--bs-body-color);
+    }
+
+    .modal-content {
+        background-color: var(--bs-secondary-bg);
+        border-color: var(--bs-border-color);
+    }
+}
+
+/* Garanta que as bordas dos inputs e outros elementos de formulário sejam visíveis */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: #343a40;
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color); /* Torna a borda do input mais visível */
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    border-color: #66afe9; /* Uma cor de foco que contraste bem */
+    box-shadow: 0 0 0 0.25rem rgba(102, 175, 233, 0.25);
+}
+
+/* Se você tiver divisores ou elementos específicos que são linhas */
+.divisor {
+    border-bottom: 1px solid var(--bs-border-color);
+    /* ou border-right para divisores verticais */
+}

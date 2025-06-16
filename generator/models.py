@@ -1,127 +1,61 @@
 # generator/models.py
+import random
 from django.db import models
-from django.conf import settings # Para referenciar o User padrão do Django
-from django.utils import timezone # Para timestamps
+from django.conf import settings
+from django.utils import timezone
 
-# Modelo para Categorização (Opcional, mas útil)
+# ==============================================================================
+# 1. MODELOS DE CONTEÚDO E ESTRUTURA PRINCIPAL (NORMALIZADOS)
+# ==============================================================================
+
 class AreaConhecimento(models.Model):
     nome = models.CharField(max_length=150, unique=True, verbose_name="Nome da Área")
-    # Você pode adicionar mais campos, como uma descrição ou área pai
-
     class Meta:
-        verbose_name = "Área de Conhecimento"
-        verbose_name_plural = "Áreas de Conhecimento"
-        ordering = ['nome'] # Ordena alfabeticamente por padrão
-
+        verbose_name = "Área de Conhecimento"; verbose_name_plural = "Áreas de Conhecimento"; ordering = ['nome']
     def __str__(self):
         return self.nome
 
-# Modelo para armazenar os Tópicos
 class Topico(models.Model):
-    nome = models.CharField(max_length=150, unique=True, verbose_name="Nome do Tópico")
-    area_conhecimento = models.ForeignKey(
-        AreaConhecimento,
-        on_delete=models.CASCADE,
-        verbose_name="Área de Conhecimento"
-    )
-
+    nome = models.CharField(max_length=150, verbose_name="Nome do Tópico")
+    area_conhecimento = models.ForeignKey(AreaConhecimento, on_delete=models.CASCADE, related_name='topicos', verbose_name="Área de Conhecimento")
     class Meta:
-        verbose_name = "Tópico"
-        verbose_name_plural = "Tópicos"
-        ordering = ['nome']
-        # Removido unique_together se não for estritamente necessário e puder causar conflitos
-        # unique_together = ('nome', 'area_conhecimento') # Garante que a combinação de nome e área seja única
-
+        verbose_name = "Tópico"; verbose_name_plural = "Tópicos"; ordering = ['nome']; unique_together = ('nome', 'area_conhecimento')
     def __str__(self):
         return f"{self.nome} ({self.area_conhecimento.nome})"
 
-# Modelo para armazenar as Questões Geradas
 class Questao(models.Model):
-    TIPO_QUESTAO_CHOICES = [
-        ('CE', 'Certo/Errado'),
-        ('DISC', 'Discursiva'),
-    ]
-    DIFICULDADE_CHOICES = [
-        ('facil', 'Fácil'),
-        ('medio', 'Médio'),
-        ('dificil', 'Difícil'),
-    ]
+    TIPO_QUESTAO_CHOICES = [('CE', 'Certo/Errado'), ('DISC', 'Discursiva')]
+    DIFICULDADE_CHOICES = [('facil', 'Fácil'), ('medio', 'Médio'), ('dificil', 'Difícil')]
 
-    area = models.ForeignKey(
-        AreaConhecimento,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name="Área de Conhecimento"
-    )
-    topico = models.ForeignKey(
-        Topico,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name="Tópico"
-    )
-    tipo = models.CharField(
-        max_length=4,
-        choices=TIPO_QUESTAO_CHOICES,
-        verbose_name="Tipo de Questão"
-    )
-    dificuldade = models.CharField(
-        max_length=15,
-        choices=DIFICULDADE_CHOICES,
-        default='medio',
-        blank=True,
-        verbose_name="Nível de Dificuldade"
-    )
-    texto_motivador = models.TextField(
-        null=True, blank=True,
-        verbose_name="Texto Motivador (Discursiva)"
-    )
-    texto_comando = models.TextField( # Este campo foi removido em uma migração anterior, mas está no seu admin.py. Decida se ele deve existir.
-        verbose_name="Texto da Afirmação (C/E) ou Comando (Discursiva)"
-    )
-    aspectos_discursiva = models.TextField(
-        null=True, blank=True,
-        verbose_name="Aspectos a Avaliar (Discursiva)",
-        help_text="Liste os pontos que a resposta discursiva deve cobrir."
-    )
-    gabarito_ce = models.CharField(
-        max_length=1,
-        choices=[('C','Certo'), ('E','Errado')],
-        null=True, blank=True,
-        verbose_name="Gabarito Certo/Errado"
-    )
-    justificativa_gabarito = models.TextField(
-        null=True, blank=True,
-        verbose_name="Justificativa do Gabarito (C/E)",
-        help_text="Explicação do porquê a afirmação C/E é certa ou errada."
-    )
+    # --- CAMPO 'area' REMOVIDO PARA NORMALIZAÇÃO (3NF) ---
+    # A área da questão é obtida através de 'topico.area_conhecimento'
+    topico = models.ForeignKey(Topico, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Tópico")
+    
+    tipo = models.CharField(max_length=4, choices=TIPO_QUESTAO_CHOICES, verbose_name="Tipo de Questão")
+    dificuldade = models.CharField(max_length=15, choices=DIFICULDADE_CHOICES, default='medio', blank=True, verbose_name="Nível de Dificuldade")
+    enunciado = models.TextField(verbose_name="Enunciado / Comando da Questão", default='')
+    texto_motivador = models.TextField(null=True, blank=True, verbose_name="Texto Motivador (Opcional)")
+    aspectos_discursiva = models.TextField(null=True, blank=True, verbose_name="Aspectos a Avaliar (Discursiva)")
+    gabarito_ce = models.CharField(max_length=1, choices=[('C','Certo'), ('E','Errado')], null=True, blank=True, verbose_name="Gabarito Certo/Errado")
+    justificativa_gabarito = models.TextField(null=True, blank=True, verbose_name="Justificativa do Gabarito (C/E)")
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
-    criado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Criado por"
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Criado por")
+    gerada_por_ia_para_jogo = models.BooleanField(default=False, help_text="Indica se a questão foi gerada pela IA especificamente para um jogo.")
+    tempo_limite = models.PositiveIntegerField(
+        default=20, 
+        verbose_name="Tempo Limite (segundos)",
+        help_text="Tempo em segundos que o jogador tem para responder."
     )
-
-    # Campos que parecem ter sido adicionados pela migração 0006 e 0007
-    # Certifique-se de que eles correspondem ao seu estado atual do banco de dados
-    # Se 'texto_comando' foi realmente removido, remova-o daqui também.
-    # Se 'enunciado_principal' e 'item_julgamento' foram adicionados, adicione-os.
-    # Exemplo (baseado na migração 0006):
-    # enunciado_principal = models.TextField(verbose_name="Enunciado Principal (Contexto)", blank=True, null=True)
-    # item_julgamento = models.TextField(verbose_name="Item para Julgamento (Afirmação C/E)", blank=True, null=True)
-
 
     class Meta:
-        verbose_name = "Questão"
-        verbose_name_plural = "Questões"
-        ordering = ['-criado_em']
-
+        verbose_name = "Questão"; verbose_name_plural = "Questões"; ordering = ['-criado_em']
     def __str__(self):
         tipo_str = self.get_tipo_display()
-        # Ajuste para usar item_julgamento ou texto_comando dependendo do seu modelo final
-        texto_base = self.texto_comando # ou self.item_julgamento
-        return f"[{tipo_str}] {texto_base[:80]}..." if texto_base else f"[{tipo_str}] Questão ID {self.id}"
+        return f"[{tipo_str}] {self.enunciado[:80]}..." if self.enunciado else f"[{tipo_str}] Questão ID {self.id}"
+
+# ==============================================================================
+# 2. MODELOS DE INTERAÇÃO DO USUÁRIO
+# ==============================================================================
 
 class TentativaResposta(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuário")
@@ -130,9 +64,7 @@ class TentativaResposta(models.Model):
     resposta_discursiva = models.TextField(null=True, blank=True, verbose_name="Resposta Discursiva")
     data_resposta = models.DateTimeField(default=timezone.now, verbose_name="Data da Resposta")
     class Meta:
-        verbose_name = "Tentativa de Resposta"
-        verbose_name_plural = "Tentativas de Respostas"
-        ordering = ['-data_resposta']
+        verbose_name = "Tentativa de Resposta"; verbose_name_plural = "Tentativas de Respostas"; ordering = ['-data_resposta']
     def __str__(self): return f"Tentativa de {self.usuario.username} para Questão #{self.questao.id}"
 
 class Avaliacao(models.Model):
@@ -147,42 +79,110 @@ class Avaliacao(models.Model):
     comentarios_ai = models.TextField(null=True, blank=True, verbose_name="Comentários AI (Parseado)")
     data_avaliacao = models.DateTimeField(auto_now_add=True, verbose_name="Data da Avaliação")
     class Meta:
-        verbose_name = "Avaliação"
-        verbose_name_plural = "Avaliações"
+        verbose_name = "Avaliação"; verbose_name_plural = "Avaliações"
     def __str__(self): return f"Avaliação da Tentativa #{self.tentativa.id} por {self.tentativa.usuario.username}"
+# ==============================================================================
+# 3. MODELOS DE JOGOS (KAHOOT)
+# ==============================================================================
+
+class KahootGame(models.Model):
+    STATUS_CHOICES = [ ('waiting', 'Aguardando Jogadores'), ('in_progress', 'Em Andamento'), ('finished', 'Finalizado'), ]
+    pin = models.CharField(max_length=6, unique=True, blank=True)
+    topico_descritivo = models.ForeignKey(Topico, on_delete=models.SET_NULL, null=True, blank=True, help_text="Tópico que descreve o jogo (pode ser temporário)")
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting')
+    questoes = models.ManyToManyField(Questao, related_name='kahoot_games')
+    current_question_index = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pin:
+            while True:
+                pin = str(random.randint(100000, 999999))
+                if not KahootGame.objects.filter(pin=pin).exists():
+                    self.pin = pin; break
+        super().save(*args, **kwargs)
+    def __str__(self):
+        return f"Jogo {self.pin} - {self.topico_descritivo.nome if self.topico_descritivo else 'Sem Tópico'}"
+
+class KahootPlayer(models.Model):
+    game = models.ForeignKey(KahootGame, related_name='players', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, help_text="Usuário logado, se aplicável")
+    nickname = models.CharField(max_length=50)
+    score = models.IntegerField(default=0)
+    channel_name = models.CharField(max_length=255, blank=True, null=True, help_text="ID do canal do WebSocket para comunicação direta")
+    class Meta:
+        unique_together = ('game', 'nickname'); verbose_name = "Jogador de Kahoot"; verbose_name_plural = "Jogadores de Kahoot"
+    def __str__(self):
+        return f"{self.nickname} (Score: {self.score})"
+
+# ==============================================================================
+# 4. MODELOS DE COLETA DE DADOS EXTERNOS
+# ==============================================================================
+
+# --- Modelos Auxiliares Normalizados ---
+class Organizacao(models.Model):
+    nome = models.CharField(max_length=300, unique=True)
+    def __str__(self): return self.nome
+    class Meta: verbose_name = "Organização"; verbose_name_plural = "Organizações"
+
+class StatusConcurso(models.Model):
+    nome = models.CharField(max_length=50, unique=True) # Ex: 'Aberto', 'Previsto', 'Em Andamento'
+    def __str__(self): return self.nome
+    class Meta: verbose_name = "Status de Concurso"; verbose_name_plural = "Status de Concursos"
+
+# --- Modelos Principais de Coleta ---
+class ConcursoNoBrasil(models.Model):
+    organizacao = models.ForeignKey(Organizacao, on_delete=models.CASCADE) # <-- Normalizado
+    vagas_disponiveis = models.CharField(max_length=100, blank=True, null=True)
+    link = models.URLField(max_length=1000, unique=True)
+    status = models.ForeignKey(StatusConcurso, on_delete=models.SET_NULL, null=True, blank=True) # <-- Normalizado
+    categoria_coleta = models.CharField(max_length=10, blank=True, null=True, help_text="UF ou 'br' da coleta")
+    data_coleta = models.DateTimeField(auto_now_add=True)
+    ultima_atualizacao_coleta = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "Concurso (ConcursosNoBrasil)"; verbose_name_plural = "Concursos (ConcursosNoBrasil)"; ordering = ['-data_coleta', 'organizacao__nome']
+        indexes = [ models.Index(fields=['link']), models.Index(fields=['status', 'categoria_coleta']), ]
+    def __str__(self): return f"{self.organizacao.nome} ({self.status.nome if self.status else 'N/A'})"
+    
+# ... Seus outros modelos de scraper (PCI, Planalto, etc.) podem permanecer como estão ...
+# Eles já parecem bem normalizados com ForeignKeys para Banca, Órgão, etc.
 
 class PalavraChave(models.Model):
+    # ... (código mantido) ...
     texto = models.CharField(max_length=100, unique=True, verbose_name="Palavra/Tópico")
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     def __str__(self): return self.texto
     class Meta:
-        verbose_name = "Palavra-chave"
-        verbose_name_plural = "Palavras-chave"
-        ordering = ['texto']
+        verbose_name = "Palavra-chave"; verbose_name_plural = "Palavras-chave"; ordering = ['texto']
 
-# --- Modelos para Scraper PCI Concursos (PROVAS) ---
 class OrgaoPCI(models.Model):
+    # ... (código mantido) ...
     nome = models.CharField(max_length=255, unique=True)
     def __str__(self): return self.nome
     class Meta: verbose_name = "Órgão (PCI)"
 
 class BancaPCI(models.Model):
+    # ... (código mantido) ...
     nome = models.CharField(max_length=255, unique=True)
     def __str__(self): return self.nome
     class Meta: verbose_name = "Banca (PCI)"
 
 class NivelEscolaridadePCI(models.Model):
+    # ... (código mantido) ...
     nome = models.CharField(max_length=100, unique=True)
     def __str__(self): return self.nome
     class Meta: verbose_name = "Nível Escolaridade (PCI)"
 
 class CargoPCI(models.Model):
-    nome = models.CharField(max_length=255, unique=True) # Adicionado unique=True
+    # ... (código mantido) ...
+    nome = models.CharField(max_length=255, unique=True)
     def __str__(self): return self.nome
     class Meta: verbose_name = "Cargo (PCI)"
 
 class ProvaPCIConcurso(models.Model):
+    # ... (código mantido) ...
     titulo_link_origem = models.CharField(max_length=500, blank=True, null=True)
     nome_concurso_detalhado = models.CharField(max_length=500, blank=True, null=True)
     orgao = models.ForeignKey(OrgaoPCI, on_delete=models.SET_NULL, null=True, blank=True)
@@ -199,22 +199,17 @@ class ProvaPCIConcurso(models.Model):
     data_coleta = models.DateTimeField(auto_now_add=True)
     data_atualizacao_coleta = models.DateTimeField(auto_now=True)
     class Meta:
-        verbose_name = "Prova Coletada (PCI)"
-        verbose_name_plural = "Provas Coletadas (PCI)"
-        ordering = ['-ano', 'orgao__nome']
-    def __str__(self):
-        return f"{self.nome_concurso_detalhado or self.titulo_link_origem or 'Prova ID ' + str(self.id)}"
+        verbose_name = "Prova Coletada (PCI)"; verbose_name_plural = "Provas Coletadas (PCI)"; ordering = ['-ano', 'orgao__nome']
+    def __str__(self): return f"{self.nome_concurso_detalhado or self.titulo_link_origem or 'Prova ID ' + str(self.id)}"
 
-# --- NOVOS MODELOS PARA LEIS DO PLANALTO ---
 class TipoNormaPlanalto(models.Model):
+    # ... (código mantido) ...
     nome = models.CharField(max_length=100, unique=True, help_text="Ex: Lei, Decreto, Lei Complementar, Medida Provisória")
     def __str__(self): return self.nome
-    class Meta:
-        verbose_name = "Tipo de Norma (Planalto)"
-        verbose_name_plural = "Tipos de Normas (Planalto)"
-        ordering = ['nome']
+    class Meta: verbose_name = "Tipo de Norma (Planalto)"; verbose_name_plural = "Tipos de Normas (Planalto)"; ordering = ['nome']
 
 class LeiPlanalto(models.Model):
+    # ... (código mantido) ...
     titulo_ou_ementa = models.TextField(blank=True, null=True, help_text="Título completo ou ementa da norma.")
     numero_norma = models.CharField(max_length=100, blank=True, null=True, help_text="Número da lei, decreto, etc. Ex: 14.133")
     ano_norma = models.IntegerField(blank=True, null=True, help_text="Ano de publicação da norma. Ex: 2021")
@@ -225,15 +220,9 @@ class LeiPlanalto(models.Model):
     data_coleta = models.DateTimeField(auto_now_add=True)
     ultima_verificacao_coleta = models.DateTimeField(default=timezone.now)
     class Meta:
-        verbose_name = "Lei do Planalto Coletada"
-        verbose_name_plural = "Leis do Planalto Coletadas"
-        ordering = ['-ano_norma', '-data_publicacao', 'numero_norma']
-        indexes = [
-            models.Index(fields=['tipo_norma', 'ano_norma', 'numero_norma']),
-            models.Index(fields=['url_original']),
-        ]
+        verbose_name = "Lei do Planalto Coletada"; verbose_name_plural = "Leis do Planalto Coletadas"; ordering = ['-ano_norma', '-data_publicacao', 'numero_norma']; indexes = [ models.Index(fields=['tipo_norma', 'ano_norma', 'numero_norma']), models.Index(fields=['url_original']), ]
     def __str__(self):
-        parts = []
+        parts = [];
         if self.tipo_norma: parts.append(str(self.tipo_norma))
         if self.numero_norma: parts.append(f"nº {self.numero_norma}")
         if self.ano_norma: parts.append(f"/{self.ano_norma}")
@@ -241,45 +230,9 @@ class LeiPlanalto(models.Model):
         if not parts: return self.url_original
         return " ".join(parts)
 
-# --- MODELOS PARA O SCRAPER CONCURSOSNOBRASIL.COM ---
-class ConcursoNoBrasil(models.Model):
-    organizacao = models.CharField(max_length=300)
-    vagas_disponiveis = models.CharField(max_length=100, blank=True, null=True)
-    link = models.URLField(max_length=1000, unique=True)
-    status = models.CharField(max_length=50, blank=True, null=True)
-    categoria_coleta = models.CharField(max_length=10, blank=True, null=True, help_text="UF ou 'br' da coleta")
-    data_coleta = models.DateTimeField(auto_now_add=True)
-    ultima_atualizacao_coleta = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Concurso (ConcursosNoBrasil)"
-        verbose_name_plural = "Concursos (ConcursosNoBrasil)"
-        ordering = ['-data_coleta', 'organizacao']
-        indexes = [
-            models.Index(fields=['link']),
-            models.Index(fields=['status', 'categoria_coleta']),
-        ]
-    def __str__(self):
-        return f"{self.organizacao} ({self.status or 'N/A'}) - Vagas: {self.vagas_disponiveis or 'N/A'}"
-
-# --- MODELOS PARA O SCRAPER DE NOTÍCIAS DA CAPA DO PCI CONCURSOS ---
 class NoticiaPCICapa(models.Model):
-    titulo = models.CharField(max_length=500)
-    link_detalhes = models.URLField(max_length=1000, unique=True)
-    vagas_disponiveis = models.CharField(max_length=100, blank=True, null=True)
-    resumo = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=50, blank=True, null=True)
-    # Não temos estado/região na capa de forma confiável
-    data_coleta = models.DateTimeField(auto_now_add=True)
-    ultima_atualizacao_coleta = models.DateTimeField(auto_now=True)
-
+    # ... (código mantido) ...
+    titulo = models.CharField(max_length=500); link_detalhes = models.URLField(max_length=1000, unique=True); vagas_disponiveis = models.CharField(max_length=100, blank=True, null=True); resumo = models.TextField(blank=True, null=True); status = models.CharField(max_length=50, blank=True, null=True); data_coleta = models.DateTimeField(auto_now_add=True); ultima_atualizacao_coleta = models.DateTimeField(auto_now=True)
     class Meta:
-        verbose_name = "Notícia da Capa (PCI)"
-        verbose_name_plural = "Notícias da Capa (PCI)"
-        ordering = ['-data_coleta']
-        indexes = [
-            models.Index(fields=['link_detalhes']),
-        ]
-    def __str__(self):
-        return f"{self.titulo} ({self.status or 'N/A'})"
-
+        verbose_name = "Notícia da Capa (PCI)"; verbose_name_plural = "Notícias da Capa (PCI)"; ordering = ['-data_coleta']; indexes = [ models.Index(fields=['link_detalhes']), ]
+    def __str__(self): return f"{self.titulo} ({self.status or 'N/A'})"

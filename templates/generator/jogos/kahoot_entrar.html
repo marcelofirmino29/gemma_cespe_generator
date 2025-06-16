@@ -1,0 +1,45 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+
+{% block title %}Entrar em um Jogo{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card text-center shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h2 class="h4 mb-0">Entrar no Jogo</h2>
+                </div>
+                <div class="card-body">
+                    <form id="enter-game-form">
+                        <div class="form-group mb-3">
+                            <label for="game-pin-input" class="form-label">PIN do Jogo:</label>
+                            <input type="text" id="game-pin-input" class="form-control form-control-lg text-center" placeholder="_ _ _ _ _ _" maxlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Entrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('enter-game-form');
+    const pinInput = document.getElementById('game-pin-input');
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const gamePin = pinInput.value.trim();
+        if (gamePin && gamePin.length === 6 && !isNaN(gamePin)) {
+            // Redireciona para a URL do lobby
+            window.location.href = `/games/kahoot/lobby/${gamePin}/`;
+        } else {
+            alert('Por favor, insira um PIN válido de 6 dígitos.');
+        }
+    });
+});
+</script>
+{% endblock %}

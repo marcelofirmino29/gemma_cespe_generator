@@ -1,143 +1,81 @@
-# generator/admin.py
 from django.contrib import admin
 from .models import (
-    AreaConhecimento, Questao, TentativaResposta, Avaliacao, PalavraChave, # Adicionado PalavraChave que estava faltando no import original
-    OrgaoPCI, BancaPCI, NivelEscolaridadePCI, CargoPCI, ProvaPCIConcurso,
-    # --- Importar os novos modelos para Leis do Planalto ---
-    TipoNormaPlanalto, LeiPlanalto, Topico
+    AreaConhecimento, Topico, Questao, TentativaResposta, Avaliacao,
+    KahootGame, KahootPlayer, PalavraChave, OrgaoPCI, BancaPCI,
+    NivelEscolaridadePCI, CargoPCI, ProvaPCIConcurso, TipoNormaPlanalto,
+    LeiPlanalto, ConcursoNoBrasil, NoticiaPCICapa, Organizacao, StatusConcurso
 )
 
-# Registra os models para que apareçam na interface de administração
-
+# Registrando os modelos principais
 @admin.register(AreaConhecimento)
 class AreaConhecimentoAdmin(admin.ModelAdmin):
-    list_display = ('nome',) # Colunas a exibir na lista
-    search_fields = ('nome',) # Campo para busca
+    list_display = ('nome',)
+    search_fields = ('nome',)
 
-@admin.register(Topico) # Importar Topico se ele for registrado aqui. Parece que Topico não estava sendo registrado.
+@admin.register(Topico)
 class TopicoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'area_conhecimento')
-    search_fields = ('nome',)
     list_filter = ('area_conhecimento',)
+    search_fields = ('nome', 'area_conhecimento__nome')
+    raw_id_fields = ('area_conhecimento',)
 
 @admin.register(Questao)
 class QuestaoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tipo', 'area', 'topico', 'dificuldade', 'criado_por', 'criado_em') # Adicionado topico
-    list_filter = ('tipo', 'dificuldade', 'area', 'criado_por', 'topico') # Adicionado topico
-    search_fields = ('texto_comando', 'texto_motivador', 'aspectos_discursiva')
-    raw_id_fields = ('area', 'topico', 'criado_por') # Adicionado topico
+    # --- CONFIGURAÇÃO CORRIGIDA ---
+    # 'area' foi removido de list_display e substituído por um método.
+    list_display = ('id', 'tipo', 'get_area', 'topico', 'dificuldade', 'criado_em', 'gerada_por_ia_para_jogo')
+    # 'area' foi removido de list_filter e substituído pelo relacionamento correto.
+    list_filter = ('tipo', 'dificuldade', 'topico__area_conhecimento', 'gerada_por_ia_para_jogo')
+    search_fields = ('enunciado', 'topico__nome', 'topico__area_conhecimento__nome')
+    # 'area' foi removido de raw_id_fields.
+    raw_id_fields = ('topico', 'criado_por')
+    list_per_page = 20
+
+    @admin.display(description='Área de Conhecimento', ordering='topico__area_conhecimento__nome')
+    def get_area(self, obj):
+        """Método para exibir a Área de Conhecimento através do Tópico."""
+        if obj.topico and obj.topico.area_conhecimento:
+            return obj.topico.area_conhecimento.nome
+        return "N/A"
 
 @admin.register(TentativaResposta)
 class TentativaRespostaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'usuario', 'questao_link', 'data_resposta', 'resposta_ce')
-    list_filter = ('usuario', 'questao__tipo', 'data_resposta')
-    search_fields = ('resposta_discursiva',)
+    list_display = ('usuario', 'questao', 'data_resposta')
+    list_filter = ('usuario',)
+    search_fields = ('usuario__username', 'questao__enunciado')
     raw_id_fields = ('usuario', 'questao')
-
-    def questao_link(self, obj):
-        from django.urls import reverse
-        from django.utils.html import format_html
-        link = reverse("admin:generator_questao_change", args=[obj.questao.id])
-        return format_html('<a href="{}">Questão #{}</a>', link, obj.questao.id)
-    questao_link.short_description = 'Questão'
 
 @admin.register(Avaliacao)
 class AvaliacaoAdmin(admin.ModelAdmin):
-    list_display = ('tentativa_id', 'usuario', 'questao_tipo', 'correto_ce', 'score_ce', 'npd', 'data_avaliacao')
-    list_filter = ('tentativa__questao__tipo', 'correto_ce')
+    list_display = ('tentativa', 'correto_ce', 'npd', 'data_avaliacao')
+    list_filter = ('correto_ce',)
     raw_id_fields = ('tentativa',)
 
-    def usuario(self, obj):
-        return obj.tentativa.usuario
-    usuario.short_description = 'Usuário'
+# Registrando os modelos de Jogos
+@admin.register(KahootGame)
+class KahootGameAdmin(admin.ModelAdmin):
+    list_display = ('pin', 'topico_descritivo', 'host', 'status', 'created_at')
+    list_filter = ('status', 'host')
+    search_fields = ('pin', 'host__username', 'topico_descritivo__nome')
+    raw_id_fields = ('topico_descritivo', 'host', 'questoes')
 
-    def questao_tipo(self, obj):
-         return obj.tentativa.questao.get_tipo_display()
-    questao_tipo.short_description = 'Tipo Questão'
-
-@admin.register(PalavraChave)
-class PalavraChaveAdmin(admin.ModelAdmin):
-    list_display = ('texto', 'criado_em', 'atualizado_em')
-    search_fields = ('texto',)
-
-# --- Modelos do PCI Concursos ---
-@admin.register(OrgaoPCI)
-class OrgaoPCIAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-    search_fields = ('nome',)
-
-@admin.register(BancaPCI)
-class BancaPCIAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-    search_fields = ('nome',)
-
-@admin.register(NivelEscolaridadePCI)
-class NivelEscolaridadePCIAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-
-@admin.register(CargoPCI)
-class CargoPCIAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-    search_fields = ('nome',)
-    # Se você adicionar um campo de categoria ao CargoPCI, adicione-o ao list_filter também.
-
-@admin.register(ProvaPCIConcurso)
-class ProvaPCIConcursoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nome_concurso_detalhado', 'orgao', 'cargo', 'banca', 'ano', 'nivel_escolaridade', 'data_coleta')
-    list_filter = ('ano', 'orgao', 'banca', 'nivel_escolaridade', 'data_coleta')
-    search_fields = ('nome_concurso_detalhado', 'orgao__nome', 'cargo__nome', 'banca__nome', 'url_pagina_detalhes')
-    readonly_fields = ('data_coleta', 'data_atualizacao_coleta')
-    fieldsets = (
-        (None, {
-            'fields': ('titulo_link_origem', 'nome_concurso_detalhado', 'url_pagina_detalhes', 'fonte')
-        }),
-        ('Detalhes do Concurso', {
-            'fields': ('orgao', 'cargo', 'banca', 'ano', 'nivel_escolaridade', 'categoria_cargo_principal_texto')
-        }),
-        ('Arquivos', {
-            'fields': ('url_prova_pdf', 'url_gabarito_pdf')
-        }),
-        ('Datas de Controle', {
-            'fields': ('data_coleta', 'data_atualizacao_coleta')
-        }),
-    )
-
-# --- NOVOS MODELOS PARA LEIS DO PLANALTO ---
-@admin.register(TipoNormaPlanalto)
-class TipoNormaPlanaltoAdmin(admin.ModelAdmin):
-    list_display = ('nome',)
-    search_fields = ('nome',)
-    ordering = ['nome']
-
-@admin.register(LeiPlanalto)
-class LeiPlanaltoAdmin(admin.ModelAdmin):
-    list_display = ('id','get_tipo_norma_nome', 'numero_norma', 'ano_norma', 'data_publicacao', 'get_titulo_curto', 'url_original', 'data_coleta')
-    list_filter = ('tipo_norma', 'ano_norma', 'data_publicacao')
-    search_fields = ('titulo_ou_ementa', 'numero_norma', 'texto_integral_html', 'url_original')
-    readonly_fields = ('data_coleta', 'ultima_verificacao_coleta')
-    list_per_page = 25
-
-    fieldsets = (
-        ('Identificação da Norma', {
-            'fields': ('url_original', 'tipo_norma', 'numero_norma', 'ano_norma', 'data_publicacao')
-        }),
-        ('Conteúdo', {
-            'fields': ('titulo_ou_ementa', 'texto_integral_html')
-        }),
-        ('Metadados da Coleta', {
-            'fields': ('data_coleta', 'ultima_verificacao_coleta')
-        }),
-    )
-
-    def get_titulo_curto(self, obj):
-        if obj.titulo_ou_ementa:
-            return (obj.titulo_ou_ementa[:75] + '...') if len(obj.titulo_ou_ementa) > 75 else obj.titulo_ou_ementa
-        return "N/A"
-    get_titulo_curto.short_description = 'Título/Ementa'
-
-    def get_tipo_norma_nome(self, obj):
-        if obj.tipo_norma:
-            return obj.tipo_norma.nome
-        return "N/A"
-    get_tipo_norma_nome.short_description = 'Tipo'
-    get_tipo_norma_nome.admin_order_field = 'tipo_norma__nome' # Permite ordenar por este campo
+@admin.register(KahootPlayer)
+class KahootPlayerAdmin(admin.ModelAdmin):
+    list_display = ('nickname', 'game', 'score')
+    list_filter = ('game',)
+    search_fields = ('nickname', 'game__pin')
+    raw_id_fields = ('game', 'user')
+    
+# Registrando outros modelos (Exemplos, mantenha os seus)
+admin.site.register(PalavraChave)
+admin.site.register(OrgaoPCI)
+admin.site.register(BancaPCI)
+admin.site.register(NivelEscolaridadePCI)
+admin.site.register(CargoPCI)
+admin.site.register(ProvaPCIConcurso)
+admin.site.register(TipoNormaPlanalto)
+admin.site.register(LeiPlanalto)
+admin.site.register(ConcursoNoBrasil)
+admin.site.register(NoticiaPCICapa)
+admin.site.register(Organizacao)
+admin.site.register(StatusConcurso)

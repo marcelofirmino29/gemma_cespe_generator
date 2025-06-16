@@ -1,69 +1,123 @@
-# --- VIEW PARA O HUB DE JOGOS ---
-from django.shortcuts import render
-from generator.views.views_service_context import _get_base_context_and_service
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.contrib import messages
+
+# A única importação de 'views' necessária é a da função de contexto.
+from .views_service_context import _get_base_context_and_service
+from ..models import Topico, Questao, KahootGame, AreaConhecimento
+from ..exceptions import AIServiceError
 
 @login_required
 def games_hub_view(request):
     """Renderiza a página que lista os jogos disponíveis."""
     context, _, _ = _get_base_context_and_service()
-    available_games = [
-        {
-            'name': 'Arrastar e Soltar: Algoritmos ML',
-            'description': 'Associe algoritmos como SVM, KNN e K-Means às suas categorias.',
-            'url_name': 'generator:drag_drop_ml_game', # Nome da URL definida em urls.py
-            'icon': 'bi-arrows-move' # Classe do ícone Bootstrap Icons
-        },
-        {
-             'name': 'Caça-Palavras: Termos LGPD',
-             'description': 'Encontre termos importantes da Lei Geral de Proteção de Dados.',
-             'url_name': 'generator:word_search_lgpd_game',
-             'icon': 'bi-search'
-        },
-         {
-             'name': 'Aprendendo JS com Blocos',
-             'description': 'Uma introdução interativa à lógica de programação JavaScript.',
-             'url_name': 'generator:scratch_js_game',
-             'icon': 'bi-puzzle-fill'
-         },
-        # Adicione mais jogos aqui conforme são criados
-    ]
-    context['games'] = available_games
-    # Aponta para o template do hub de jogos
     return render(request, 'generator/jogos/games_hub.html', context)
 
+@login_required
+def kahoot_hub_view(request):
+    """Página que oferece as opções de criar ou entrar em um jogo Kahoot."""
+    return render(request, 'generator/jogos/kahoot_hub.html')
 
-# --- VIEW PARA O JOGO DE ARRASTAR E SOLTAR ML ---
+@login_required
+def criar_kahoot_view(request):
+    """
+    Renderiza a página de criação de jogos Kahoot e lida com as 3 lógicas de criação.
+    """
+    # Padrão CORRETO: obtém o contexto, o objeto do serviço e o status de inicialização
+    context, service, service_initialized = _get_base_context_and_service()
+
+    if request.method == 'POST':
+        num_questoes = int(request.POST.get('num_questoes', 10))
+        questoes_ids = []
+        jogo_topico_nome = "Jogo Personalizado"
+        
+        default_area = AreaConhecimento.objects.first()
+        if not default_area:
+            default_area, _ = AreaConhecimento.objects.get_or_create(nome="Geral")
+
+        with transaction.atomic():
+            if 'criar_por_topico' in request.POST:
+                topico = get_object_or_404(Topico, pk=request.POST.get('topico'))
+                jogo_topico_nome = topico.nome
+                questoes = Questao.objects.filter(topico=topico, gerada_por_ia_para_jogo=False, tipo='CE').order_by('?')[:num_questoes]
+                questoes_ids = list(questoes.values_list('id', flat=True))
+
+            elif 'criar_por_area' in request.POST:
+                area = get_object_or_404(AreaConhecimento, pk=request.POST.get('area'))
+                jogo_topico_nome = f"Área: {area.nome}"
+                questoes = Questao.objects.filter(topico__area_conhecimento=area, gerada_por_ia_para_jogo=False, tipo='CE').order_by('?')[:num_questoes]
+                questoes_ids = list(questoes.values_list('id', flat=True))
+
+            elif 'criar_por_ia' in request.POST:
+                # CORRIGIDO: Verifica se o serviço foi inicializado corretamente
+                if not service_initialized:
+                    messages.error(request, "Serviço de IA não está disponível. Verifique as configurações.")
+                    context['areas'] = AreaConhecimento.objects.all()
+                    context['topicos'] = Topico.objects.all().select_related('area_conhecimento')
+                    return render(request, 'generator/jogos/kahoot_criar.html', context)
+
+                tema_ia = request.POST.get('tema_ia')
+                jogo_topico_nome = f"IA: {tema_ia[:30]}..."
+                
+                # CORRIGIDO: Usa a variável 'service' que já é o objeto correto
+                generated_data = service.generate_ce_questions_from_text(text_content=tema_ia, num_questions=num_questoes)
+                
+                novas_questoes = []
+                for item in generated_data:
+                    q = Questao.objects.create(
+                        enunciado=item.get('enunciado', 'Enunciado não gerado.'),
+                        gabarito_ce=item.get('gabarito', 'C'),
+                        tipo='CE',
+                        topico=Topico.objects.filter(area_conhecimento=default_area).first(),
+                        criado_por=request.user,
+                        gerada_por_ia_para_jogo=True
+                    )
+                    novas_questoes.append(q)
+                questoes_ids = [q.id for q in novas_questoes]
+            
+            if not questoes_ids:
+                context['error_message'] = "Não foi possível encontrar ou gerar questões para o tema selecionado."
+                messages.error(request, context['error_message'])
+            else:
+                topico_jogo, _ = Topico.objects.get_or_create(nome=jogo_topico_nome, area_conhecimento=default_area)
+                game = KahootGame.objects.create(host=request.user, topico_descritivo=topico_jogo)
+                game.questoes.set(questoes_ids)
+                return redirect('generator:kahoot_lobby', game_pin=game.pin)
+
+    context['topicos'] = Topico.objects.all().select_related('area_conhecimento')
+    context['areas'] = AreaConhecimento.objects.all()
+    
+    return render(request, 'generator/jogos/kahoot_criar.html', context)
+
+@login_required
+def entrar_kahoot_view(request):
+    return render(request, 'generator/jogos/kahoot_entrar.html')
+
+@login_required
+def kahoot_lobby_view(request, game_pin):
+    game = get_object_or_404(KahootGame, pin=game_pin)
+    is_host = (request.user == game.host)
+    context = {'game': game, 'is_host': is_host}
+    return render(request, 'generator/jogos/kahoot_lobby.html', context)
+
+# Views dos outros jogos
 @login_required
 def drag_drop_ml_game_view(request):
-    """Renderiza a página do jogo de arrastar e soltar sobre algoritmos de ML."""
     context, _, _ = _get_base_context_and_service()
-    # Aponta para o template específico do jogo
     return render(request, 'generator/jogos/game_drag_drop_ml.html', context)
 
-# --- VIEW PARA O JOGO ESTILO SCRATCH JS ---
 @login_required
 def scratch_js_view(request):
-    """Renderiza a página estilo Scratch para aprender JS."""
     context, _, _ = _get_base_context_and_service()
-    # A lógica principal será no frontend (HTML/JS)
     return render(request, 'generator/jogos/scratch_js_learning.html', context)
 
-# --- VIEW PARA O JOGO CAÇA-PALAVRAS LGPD ---
 @login_required
 def word_search_lgpd_view(request):
-    """Renderiza a página do jogo de caça-palavras sobre LGPD."""
     context, _, _ = _get_base_context_and_service()
     return render(request, 'generator/jogos/game_word_search_lgpd.html', context)
 
-
-@login_required # Mantém o requisito de login, remova se o jogo for público
+@login_required
 def aventura_dados_view(request):
-    """
-    Renderiza a página do jogo Aventura de Dados.
-    """
-    # Se precisar de contexto base (usuário, etc.), use a função auxiliar
-    # context, _, _ = _get_base_context_and_service()
-    # Se não precisar de contexto extra, pode usar um dicionário vazio:
     context = {}
     return render(request, 'generator/jogos/aventura_dados.html', context)
