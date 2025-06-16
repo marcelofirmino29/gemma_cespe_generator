@@ -1,0 +1,133 @@
+{% extends 'generator/base.html' %}
+
+{% block content %}
+<style>
+    #kahoot-screen {
+        background-color: #46178f;
+        color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        transition: background-color 0.5s ease;
+    }
+    .leaderboard-item { font-size: 1.5rem; margin: 0.5rem 0; }
+</style>
+
+<div class="container mt-4">
+    <div id="kahoot-screen">
+        <div id="lobby-view">
+            <h2>Pronto para entrar?</h2>
+            <h1>Use o PIN: <span class="display-3">{{ game.pin }}</span></h1>
+            <hr class="my-4">
+            <h4>Jogadores na sala:</h4>
+            <ul id="player-list" class="list-unstyled d-flex flex-wrap justify-content-center"></ul>
+            <button id="start-game-button" class="btn btn-success btn-lg mt-4">Iniciar Jogo</button>
+        </div>
+
+        <div id="question-view" style="display: none;">
+            <h2 id="question-text"></h2>
+            <h1 id="timer" class="display-1"></h1>
+        </div>
+        
+        <div id="result-view" style="display: none;">
+             <h2>A resposta correta era:</h2>
+             <h1 id="correct-answer"></h1>
+         </div>
+
+        <div id="leaderboard-view" style="display: none;">
+            <h2>Placar de Líderes</h2>
+            <ol id="leaderboard-list" class="list-unstyled"></ol>
+        </div>
+
+        <div id="game-over-view" style="display: none;">
+            <h1>Fim de Jogo!</h1>
+            <h2>Pódio</h2>
+            <ol id="final-leaderboard" class="list-unstyled"></ol>
+        </div>
+    </div>
+</div>
+
+<script>
+    const gamePin = "{{ game.pin }}";
+    const hostSocket = new WebSocket(`ws://${window.location.host}/ws/kahoot/${gamePin}/`);
+
+    const lobbyView = document.getElementById('lobby-view');
+    const questionView = document.getElementById('question-view');
+    const resultView = document.getElementById('result-view');
+    const leaderboardView = document.getElementById('leaderboard-view');
+    const gameOverView = document.getElementById('game-over-view');
+
+    const playerList = document.getElementById('player-list');
+    const questionText = document.getElementById('question-text');
+    const timerDisplay = document.getElementById('timer');
+    const correctAnswerDisplay = document.getElementById('correct-answer');
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const finalLeaderboard = document.getElementById('final-leaderboard');
+
+    function showView(view) {
+        [lobbyView, questionView, resultView, leaderboardView, gameOverView].forEach(v => v.style.display = 'none');
+        view.style.display = 'block';
+    }
+
+    hostSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log(data);
+
+        switch (data.type) {
+            case 'lobby.player.update':
+                playerList.innerHTML = '';
+                data.players.forEach(name => {
+                    const li = document.createElement('li');
+                    li.className = 'badge bg-light text-dark fs-5 mx-2 my-1';
+                    li.textContent = name;
+                    playerList.appendChild(li);
+                });
+                break;
+            case 'game.state.question':
+                showView(questionView);
+                questionText.textContent = data.question_text;
+                let timeLeft = data.time_limit;
+                timerDisplay.textContent = timeLeft;
+                const interval = setInterval(() => {
+                    timeLeft--;
+                    timerDisplay.textContent = timeLeft;
+                    if (timeLeft <= 0) clearInterval(interval);
+                }, 1000);
+                break;
+            case 'game.state.result':
+                 showView(resultView);
+                 correctAnswerDisplay.textContent = data.correct_answer;
+                 break;
+            case 'game.state.leaderboard':
+                showView(leaderboardView);
+                leaderboardList.innerHTML = '';
+                data.leaderboard.slice(0, 5).forEach(p => { // Top 5
+                    const li = document.createElement('li');
+                    li.className = 'leaderboard-item';
+                    li.textContent = `${p.nickname} - ${p.score}`;
+                    leaderboardList.appendChild(li);
+                });
+                break;
+            case 'game.state.gameover':
+                showView(gameOverView);
+                finalLeaderboard.innerHTML = '';
+                 data.leaderboard.slice(0, 3).forEach((p, i) => { // Top 3
+                    const li = document.createElement('li');
+                    li.className = 'leaderboard-item';
+                    li.textContent = `${i+1}º: ${p.nickname} - ${p.score}`;
+                    finalLeaderboard.appendChild(li);
+                });
+                break;
+        }
+    };
+
+    document.getElementById('start-game-button').onclick = function() {
+        hostSocket.send(JSON.stringify({'command': 'start_game'}));
+    };
+</script>
+{% endblock %}

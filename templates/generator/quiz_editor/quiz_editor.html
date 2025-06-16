@@ -1,0 +1,49 @@
+{% extends 'generator/base.html' %}
+
+{% block title %}Editando: {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-1">Editando Quiz: <span class="text-primary">{{ quiz.title }}</span></h1>
+    <a href="{% url 'generator:quiz_list' %}" class="btn btn-link ps-0 mb-4"><i class="bi bi-arrow-left"></i> Voltar para Meus Quizzes</a>
+
+    <div class="row g-5">
+        <div class="col-md-7">
+            <h3>Perguntas do Quiz ({{ questions.count }})</h3>
+            <hr>
+            {% if questions %}
+                {% for question in questions %}
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-body">
+                            <p class="fw-bold">{{ forloop.counter }}. {{ question.enunciado }}</p>
+                            <ul class="list-unstyled small">
+                                <li class="{% if question.gabarito_me == 'A' %}text-success fw-bold{% endif %}">A) {{ question.alternativa_a }}</li>
+                                <li class="{% if question.gabarito_me == 'B' %}text-success fw-bold{% endif %}">B) {{ question.alternativa_b }}</li>
+                                <li class="{% if question.gabarito_me == 'C' %}text-success fw-bold{% endif %}">C) {{ question.alternativa_c }}</li>
+                                <li class="{% if question.gabarito_me == 'D' %}text-success fw-bold{% endif %}">D) {{ question.alternativa_d }}</li>
+                            </ul>
+                            <small class="text-muted">Tempo: {{ question.tempo_limite }}s</small>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Nenhuma pergunta adicionada ainda.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-5">
+            <div class="card shadow-sm bg-light">
+                <div class="card-body">
+                    <h3>Adicionar Nova Pergunta</h3>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ question_form.as_p }}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Adicionar Pergunta ao Quiz</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

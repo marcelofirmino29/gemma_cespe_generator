@@ -8,6 +8,11 @@ from .views_service_context import _get_base_context_and_service
 from ..models import Topico, Questao, KahootGame, AreaConhecimento
 from ..exceptions import AIServiceError
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
+from ..models import Topico, Questao, KahootGame, KahootPlayer
+
 @login_required
 def games_hub_view(request):
     """Renderiza a página que lista os jogos disponíveis."""
@@ -15,91 +20,73 @@ def games_hub_view(request):
     return render(request, 'generator/jogos/games_hub.html', context)
 
 @login_required
-def kahoot_hub_view(request):
-    """Página que oferece as opções de criar ou entrar em um jogo Kahoot."""
-    return render(request, 'generator/jogos/kahoot_hub.html')
-
-@login_required
 def criar_kahoot_view(request):
-    """
-    Renderiza a página de criação de jogos Kahoot e lida com as 3 lógicas de criação.
-    """
-    # Padrão CORRETO: obtém o contexto, o objeto do serviço e o status de inicialização
-    context, service, service_initialized = _get_base_context_and_service()
-
     if request.method == 'POST':
-        num_questoes = int(request.POST.get('num_questoes', 10))
-        questoes_ids = []
-        jogo_topico_nome = "Jogo Personalizado"
+        topico_id = request.POST.get('topico')
+        # Garante um valor padrão se num_questoes não for enviado ou for vazio
+        try:
+            num_questoes = int(request.POST.get('num_questoes', 5))
+        except (ValueError, TypeError):
+            num_questoes = 5
+
+        topico = get_object_or_404(Topico, id=topico_id)
         
-        default_area = AreaConhecimento.objects.first()
-        if not default_area:
-            default_area, _ = AreaConhecimento.objects.get_or_create(nome="Geral")
+        # Filtra apenas por questões de Múltipla Escolha ('ME') para o Kahoot
+        questoes = Questao.objects.filter(topico=topico, tipo='ME').order_by('?')[:num_questoes]
+        
+        # Opcional: Adicionar mensagem de erro se não houver questões suficientes
+        if len(questoes) < 1:
+            topicos = Topico.objects.all()
+            return render(request, 'generator/jogos/kahoot_criar.html', {
+                'topicos': topicos,
+                'error': 'Não há questões de múltipla escolha suficientes para este tópico.'
+            })
 
-        with transaction.atomic():
-            if 'criar_por_topico' in request.POST:
-                topico = get_object_or_404(Topico, pk=request.POST.get('topico'))
-                jogo_topico_nome = topico.nome
-                questoes = Questao.objects.filter(topico=topico, gerada_por_ia_para_jogo=False, tipo='CE').order_by('?')[:num_questoes]
-                questoes_ids = list(questoes.values_list('id', flat=True))
+        # Cria o jogo com o host e o tópico
+        game = KahootGame.objects.create(host=request.user, topico_descritivo=topico)
+        game.questoes.set(questoes)
+        
+        # Redireciona para a nova tela de Host
+        return redirect('generator:kahoot_host', game_pin=game.pin)
 
-            elif 'criar_por_area' in request.POST:
-                area = get_object_or_404(AreaConhecimento, pk=request.POST.get('area'))
-                jogo_topico_nome = f"Área: {area.nome}"
-                questoes = Questao.objects.filter(topico__area_conhecimento=area, gerada_por_ia_para_jogo=False, tipo='CE').order_by('?')[:num_questoes]
-                questoes_ids = list(questoes.values_list('id', flat=True))
+    topicos = Topico.objects.all()
+    return render(request, 'generator/jogos/kahoot_criar.html', {'topicos': topicos})
 
-            elif 'criar_por_ia' in request.POST:
-                # CORRIGIDO: Verifica se o serviço foi inicializado corretamente
-                if not service_initialized:
-                    messages.error(request, "Serviço de IA não está disponível. Verifique as configurações.")
-                    context['areas'] = AreaConhecimento.objects.all()
-                    context['topicos'] = Topico.objects.all().select_related('area_conhecimento')
-                    return render(request, 'generator/jogos/kahoot_criar.html', context)
-
-                tema_ia = request.POST.get('tema_ia')
-                jogo_topico_nome = f"IA: {tema_ia[:30]}..."
-                
-                # CORRIGIDO: Usa a variável 'service' que já é o objeto correto
-                generated_data = service.generate_ce_questions_from_text(text_content=tema_ia, num_questions=num_questoes)
-                
-                novas_questoes = []
-                for item in generated_data:
-                    q = Questao.objects.create(
-                        enunciado=item.get('enunciado', 'Enunciado não gerado.'),
-                        gabarito_ce=item.get('gabarito', 'C'),
-                        tipo='CE',
-                        topico=Topico.objects.filter(area_conhecimento=default_area).first(),
-                        criado_por=request.user,
-                        gerada_por_ia_para_jogo=True
-                    )
-                    novas_questoes.append(q)
-                questoes_ids = [q.id for q in novas_questoes]
-            
-            if not questoes_ids:
-                context['error_message'] = "Não foi possível encontrar ou gerar questões para o tema selecionado."
-                messages.error(request, context['error_message'])
-            else:
-                topico_jogo, _ = Topico.objects.get_or_create(nome=jogo_topico_nome, area_conhecimento=default_area)
-                game = KahootGame.objects.create(host=request.user, topico_descritivo=topico_jogo)
-                game.questoes.set(questoes_ids)
-                return redirect('generator:kahoot_lobby', game_pin=game.pin)
-
-    context['topicos'] = Topico.objects.all().select_related('area_conhecimento')
-    context['areas'] = AreaConhecimento.objects.all()
-    
-    return render(request, 'generator/jogos/kahoot_criar.html', context)
-
-@login_required
 def entrar_kahoot_view(request):
+    if request.method == 'POST':
+        pin = request.POST.get('pin', '').strip()
+        nickname = request.POST.get('nickname', '').strip()
+        
+        if not pin or not nickname:
+             return render(request, 'generator/jogos/kahoot_entrar.html', {'error': 'PIN e Apelido são obrigatórios.'})
+
+        # Verifica se o jogo existe e está aguardando jogadores
+        if not KahootGame.objects.filter(pin=pin, status='waiting').exists():
+            return render(request, 'generator/jogos/kahoot_entrar.html', {'error': 'PIN inválido ou o jogo já começou.'})
+        
+        # Redireciona para a nova tela do Jogador
+        return redirect('generator:kahoot_player', game_pin=pin, nickname=nickname)
+        
     return render(request, 'generator/jogos/kahoot_entrar.html')
 
+# NOVA View para a tela do Host (quem projeta o jogo)
 @login_required
-def kahoot_lobby_view(request, game_pin):
+def kahoot_host_view(request, game_pin):
     game = get_object_or_404(KahootGame, pin=game_pin)
-    is_host = (request.user == game.host)
-    context = {'game': game, 'is_host': is_host}
-    return render(request, 'generator/jogos/kahoot_lobby.html', context)
+    # Garante que apenas o criador do jogo possa acessar a tela de host
+    if game.host != request.user:
+        return HttpResponseForbidden("Acesso negado. Você não é o host deste jogo.")
+    
+    # Renderiza o template da tela do host. Toda a lógica do jogo será via WebSocket.
+    return render(request, 'generator/jogos/kahoot_host.html', {'game': game})
+
+# NOVA View para a tela do Jogador (onde ele responde)
+def kahoot_player_view(request, game_pin, nickname):
+    # Apenas renderiza a página. A lógica de entrada e jogo é via WebSocket.
+    return render(request, 'generator/jogos/kahoot_player.html', {
+        'game_pin': game_pin, 
+        'nickname': nickname
+    })
 
 # Views dos outros jogos
 @login_required

@@ -1,0 +1,50 @@
+{% extends 'generator/base.html' %}
+
+{% block title %}Meus Quizzes{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Meus Quizzes</h1>
+        <a href="{% url 'generator:quiz_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Criar Novo Quiz
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if quizzes %}
+                <ul class="list-group list-group-flush">
+                    {% for quiz in quizzes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">{{ quiz.title }}</h5>
+                                <small class="text-muted">{{ quiz.questoes.count }} pergunta(s) &middot; Criado em {{ quiz.created_at|date:"d/m/Y" }}</small>
+                            </div>
+                            <div>
+                                <a href="{% url 'generator:quiz_launch' pk=quiz.pk %}" class="btn btn-success btn-sm">
+                                    <i class="bi bi-rocket-launch"></i> Lançar Jogo
+                                </a>
+                                <a href="{% url 'generator:quiz_edit' pk=quiz.pk %}" class="btn btn-secondary btn-sm">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                                <a href="{% url 'generator:quiz_delete' pk=quiz.pk %}" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-center p-4">Você ainda não criou nenhum quiz. <a href="{% url 'generator:quiz_create' %}">Crie o seu primeiro agora!</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

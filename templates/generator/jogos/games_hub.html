@@ -109,22 +109,22 @@
     {% endif %}
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 justify-content-center">
-
+        
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
-                <i class="bi bi-person-video3 game-icon"></i>
-                <h2 class="h6 mb-2 fw-bold">Kahoot: Criar Jogo</h2>
+                <i class="bi bi-pencil-square game-icon"></i>
+                <h2 class="h6 mb-2 fw-bold">Editor de Quiz Kahoot</h2>
                 <p class="game-description">
-                    Seja o anfitrião! Crie um quiz a partir dos tópicos do sistema e desafie outros jogadores em tempo real.
+                    Crie e gerencie seus próprios quizzes de múltipla escolha para jogar com outras pessoas.
                 </p>
-                <a href="{% url 'generator:criar_kahoot' %}" class="btn btn-primary btn-sm">Criar como Host</a>
+                <a href="{% url 'generator:quiz_list' %}" class="btn btn-info btn-sm">Acessar Meus Quizzes</a>
             </div>
         </div>
 
         <div class="col d-flex align-items-stretch">
             <div class="game-item w-100">
                 <i class="bi bi-joystick game-icon"></i>
-                <h2 class="h6 mb-2 fw-bold">Kahoot: Entrar no Jogo</h2>
+                <h2 class="h6 mb-2 fw-bold">Entrar em um Jogo</h2>
                 <p class="game-description">
                     Tem um PIN de jogo? Insira-o aqui para se juntar à diversão e testar seus conhecimentos.
                 </p>

@@ -1,0 +1,15 @@
+{% extends 'generator/base.html' %}
+
+{% block title %}Criar Quiz{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 600px;">
+    <h1 class="mb-4">Criar Novo Quiz</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Salvar e Adicionar Perguntas</button>
+        <a href="{% url 'generator:quiz_list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'generator/base.html' %}
+{% block content %}
+<style>
+    .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; height: 80vh; }
+    .answer-btn { font-size: 3rem; border: none; color: white; transition: transform 0.1s ease; }
+    .answer-btn:active { transform: scale(0.95); }
+    .bg-red { background-color: #e21b3c; }
+    .bg-blue { background-color: #1368ce; }
+    .bg-yellow { background-color: #d89e00; }
+    .bg-green { background-color: #26890c; }
+    .bg-purple { background-color: #46178f; }
+    #feedback-view { height: 80vh; display: flex; justify-content: center; align-items: center; text-align: center; }
+</style>
+
+<div class="container">
+    <div id="answer-view" class="answer-grid" style="display: none;">
+        <button class="answer-btn bg-red" data-answer="A">▲</button>
+        <button class="answer-btn bg-blue" data-answer="B">◆</button>
+        <button class="answer-btn bg-yellow" data-answer="C">●</button>
+        <button class="answer-btn bg-green" data-answer="D">■</button>
+    </div>
+    <div id="feedback-view" class="bg-purple text-white">
+        <h2>Você entrou! Aguarde o início do jogo.</h2>
+        <h3 id="score-display">Pontos: 0</h3>
+    </div>
+</div>
+
+<script>
+    const gamePin = "{{ game_pin }}";
+    const nickname = "{{ nickname }}";
+    const playerSocket = new WebSocket(`ws://${window.location.host}/ws/kahoot/${gamePin}/`);
+
+    const answerView = document.getElementById('answer-view');
+    const feedbackView = document.getElementById('feedback-view');
+    const feedbackText = feedbackView.querySelector('h2');
+    const scoreDisplay = document.getElementById('score-display');
+    let currentQuestionIndex = -1;
+
+    playerSocket.onopen = function() {
+        playerSocket.send(JSON.stringify({
+            'command': 'join_game',
+            'nickname': nickname
+        }));
+    };
+
+    playerSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log(data);
+        
+        switch(data.type) {
+            case 'game.state.question':
+                currentQuestionIndex = data.index;
+                feedbackView.style.display = 'none';
+                answerView.style.display = 'grid';
+                break;
+            case 'game.state.result':
+            case 'game.state.leaderboard':
+                answerView.style.display = 'none';
+                feedbackView.style.display = 'flex';
+                feedbackText.textContent = "Aguardando próxima pergunta...";
+                break;
+            case 'player.feedback':
+                answerView.style.display = 'none';
+                feedbackView.style.display = 'flex';
+                if (data.is_correct) {
+                    feedbackText.textContent = `Correto! +${data.points_awarded} pontos`;
+                    feedbackView.style.backgroundColor = '#26890c';
+                } else {
+                    feedbackText.textContent = "Incorreto!";
+                    feedbackView.style.backgroundColor = '#e21b3c';
+                }
+                break;
+             case 'game.state.gameover':
+                answerView.style.display = 'none';
+                feedbackView.style.display = 'flex';
+                feedbackText.textContent = "O jogo terminou! Verifique o pódio na tela principal.";
+                feedbackView.style.backgroundColor = '#46178f';
+                break;
+        }
+    };
+    
+    document.querySelectorAll('.answer-btn').forEach(button => {
+        button.onclick = function() {
+            playerSocket.send(JSON.stringify({
+                'command': 'submit_answer',
+                'answer': this.dataset.answer,
+                'question_index': currentQuestionIndex
+            }));
+            answerView.style.display = 'none';
+            feedbackView.style.display = 'flex';
+            feedbackText.textContent = 'Resposta enviada!';
+            feedbackView.style.backgroundColor = '#46178f';
+        };
+    });
+</script>
+{% endblock %}
