@@ -17,8 +17,9 @@ load_dotenv(dotenv_path=dotenv_path)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-fallback-key-change-me')
 
-DEBUG = False
-
+DEBUG = True
+STATIC_URL = "/static/"
+#STATICFILES_DIRS = [BASE_DIR / "static"]  # ou o caminho correto
 #ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 ALLOWED_HOSTS = ['192.168.55.94','http://35.209.77.3/','https://generator-v1-2-754311810435.us-central1.run.app','.vercel.app','*'] # Mantenha como estava ou ajuste conforme necessário para produção
@@ -27,7 +28,8 @@ CSRF_TRUSTED_ORIGINS = ['https://generator-v1-2-754311810435.us-central1.run.app
 
 # --- Configurações da IA ---
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-AI_MODEL_NAME = 'gemini-1.5-pro-latest'
+AI_MODEL_NAME = 'gemini-2.5-flash'
+
 AI_GENERATION_TEMPERATURE = 1.0
 AI_MAX_QUESTIONS_PER_REQUEST = 50
 
@@ -140,7 +142,7 @@ USE_TZ = True
 
 1
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 #STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 

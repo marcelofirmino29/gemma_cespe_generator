@@ -139,7 +139,6 @@ class QuestionGenerationService:
             f"---\n"
             f"(Continue APENAS com Item/Gabarito/Justificativa para os {num_questions} itens totais)"
         )
-        # <<< FIM DO PROMPT >>>
 
         if self.safety_settings: logger.info(f"SERVICE CALL (C/E Balanceado v2): Usando {len(self.safety_settings)} regras.")
         else: logger.info("SERVICE CALL (C/E Balanceado v2): Usando safety padrão.")
@@ -148,40 +147,38 @@ class QuestionGenerationService:
             logger.info(f"Enviando req (C/E Balanceado v2) API (Modelo: {model_name_info}, Tópico: {topic[:50]}...)")
 
             response = self.model.generate_content(prompt, generation_config=self.generation_config, safety_settings=self.safety_settings)
-            # ... (Verificação de Bloqueio como antes) ...
+            
             first_candidate = response.candidates[0] if response.candidates else None
-            if first_candidate and first_candidate.finish_reason.name == 'SAFETY': logger.warning(f"Resp IA bloqueada (C/E Balanceado v2)."); raise AIResponseError(f"Geração bloqueada API.")
-            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts: finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"; logger.warning(f"Resp IA vazia (C/E Balanceado v2). Finish: {finish_reason}."); raise AIResponseError(f"IA retornou resp vazia (Finish: {finish_reason}).")
+            if first_candidate and first_candidate.finish_reason.name == 'SAFETY': 
+                logger.warning(f"Resp IA bloqueada (C/E Balanceado v2).")
+                raise AIResponseError(f"Geração bloqueada API.")
+            elif not first_candidate or not hasattr(first_candidate.content, 'parts') or not first_candidate.content.parts: 
+                finish_reason = first_candidate.finish_reason.name if first_candidate else "N/A"
+                logger.warning(f"Resp IA vazia (C/E Balanceado v2). Finish: {finish_reason}.")
+                raise AIResponseError(f"IA retornou resp vazia (Finish: {finish_reason}).")
 
             generated_text = first_candidate.content.parts[0].text
             logger.info("Texto C/E (Balanceado v2) recebido da IA. Chamando parser...")
-            parsed_data = self._parse_questions(generated_text) # Chama _parse_questions (que chama utils)
+            parsed_data = self._parse_questions(generated_text) 
             return parsed_data
         except AIResponseError as e: raise e
         except ParsingError as e: logger.error(f"Erro PARSING (C/E Balanceado v2): {e}", exc_info=True); raise ParsingError(f"Erro processar resposta IA (C/E): {e}")
         except Exception as e: logger.error(f"Erro GERAL API (C/E Balanceado v2): {e}", exc_info=True); raise AIServiceError(f"Erro comunicação API (C/E): {e}")
 
-    # --- Método _parse_questions (Chama utils.py) ---
     def _parse_questions(self, text: str):
         """Delega o parsing C/E para a função especializada em utils.py."""
         logger.debug("Service: _parse_questions iniciando chamada a utils.parse_ai_response_to_questions")
         try:
-            # Chama a função importada de utils.py
-            # Espera-se que ela retorne a tupla (motivador, lista_questoes) ou levante ParsingError
             parsed_result = parse_ai_response_to_questions(text)
             logger.debug("Service: _parse_questions retornou de utils.parse_ai_response_to_questions com sucesso.")
             return parsed_result
         except ParsingError as e:
-            # Loga o erro específico de parsing e o repassa
             logger.error(f"Erro retornado pelo parser C/E (utils.parse_ai_response_to_questions): {e}")
-            raise e # Repassa a exceção ParsingError
+            raise e 
         except Exception as e:
-            # Captura qualquer outro erro inesperado durante a chamada do parser
             logger.error(f"Erro inesperado ao chamar o parser C/E (utils.parse_ai_response_to_questions): {e}", exc_info=True)
-            # Encapsula como ParsingError para sinalizar que o problema ocorreu nesta fase
             raise ParsingError(f"Erro inesperado durante o processamento da resposta C/E: {e}")
 
-    # --- MÉTODO generate_discursive_exam_question (Mantido como estava) ---
     def generate_discursive_exam_question(self, base_topic_or_context, num_aspects=3, area=None, complexity='Intermediária', language='pt-br'):
         """Gera uma questão discursiva completa (Motivador, Comando, Aspectos)."""
         if not self.model:
@@ -242,7 +239,6 @@ class QuestionGenerationService:
             logger.error(f"Erro GERAL durante chamada à API (Disc. Q Gen): {e}", exc_info=True)
             raise AIServiceError(f"Erro na comunicação com a API ao gerar questão discursiva: {e}")
 
-    # --- MÉTODO generate_discursive_answer (Mantido como estava) ---
     def generate_discursive_answer(self, essay_prompt, key_points=None, limit=None, area=None):
         """Gera uma resposta discursiva para um dado prompt."""
         if not self.model:
@@ -302,14 +298,12 @@ class QuestionGenerationService:
             logger.error(f"Erro GERAL durante chamada à API (Disc. Ans Gen): {e}", exc_info=True)
             raise AIServiceError(f"Erro na comunicação com a API ao gerar resposta discursiva: {e}")
 
-    # --- MÉTODO evaluate_discursive_answer (Mantido como estava, com prompt RÍGIDO) ---
     def evaluate_discursive_answer(self, exam_context, user_answer, line_count=None):
         """Avalia resposta discursiva com regras RÍGIDAS (retorna texto bruto para parser externo)."""
         if not self.model:
             raise ConfigurationError("Serviço de IA não inicializado corretamente.")
 
         char_count = len(user_answer)
-        # TODO: Considerar tornar min_chars e Max NC configuráveis via settings.py
         min_chars = 1400
         max_nc_value = 30.00
 
@@ -323,7 +317,7 @@ class QuestionGenerationService:
             "- Se um aspecto do Comando NÃO foi respondido OU a resposta sobre ele é totalmente irrelevante/incorreta, a pontuação para ESSE aspecto é ZERO.",
             "\n**Regra 3: Nota Conteúdo (NC) Proporcional (Aplicável SOMENTE SE Regra 1 OK):**",
             f"- A Nota Máxima de Conteúdo (Max NC) possível é {max_nc_value}, distribuída igualmente entre os aspectos identificados no Comando.",
-            "- Calcule a NC final proporcionalmente aos aspectos que foram BEM respondidos (com profundidade e correção adequadas). Exemplo: Se são 3 aspectos (valendo {max_nc_value/3:.2f} cada) e 2 foram BEM respondidos, a NC máxima alcançável seria {max_nc_value*2/3:.2f}. A NC final será um valor ATÉ esse máximo, dependendo da qualidade.",
+            f"- Calcule a NC final proporcionalmente aos aspectos que foram BEM respondidos (com profundidade e correção adequadas). Exemplo: Se são 3 aspectos (valendo {max_nc_value/3:.2f} cada) e 2 foram BEM respondidos, a NC máxima alcançável seria {max_nc_value*2/3:.2f}. A NC final será um valor ATÉ esse máximo, dependendo da qualidade.",
             "- Na 'Justificativa NC', explique DETALHADAMENTE o cálculo: liste os aspectos do comando, indique quais foram respondidos (OK/Parcial/Não OK), como a proporcionalidade foi aplicada e justifique a nota final atribuída.",
             "\n**Regra 4: Nota Erros (NE) (Aplicável SOMENTE SE Regra 1 OK):**",
             "- Conte o número total de erros gramaticais e de norma culta (ortografia, concordância, regência, etc.) na 'Resposta do Usuário'.",
@@ -379,9 +373,6 @@ class QuestionGenerationService:
 
             generated_text = first_candidate.content.parts[0].text
             logger.info("Texto da avaliação (Rigor) recebido da IA.")
-            logger.debug(f"Texto Recebido Completo (Eval Rigor):\n{generated_text}") # Debug opcional
-
-            # Retorna o texto bruto para ser parseado externamente
             return generated_text
 
         except AIResponseError as e:
@@ -390,21 +381,16 @@ class QuestionGenerationService:
             logger.error(f"Erro GERAL durante chamada à API (Disc. Eval Rigor): {e}", exc_info=True)
             raise AIServiceError(f"Erro na comunicação com a API (Disc. Eval Rigor): {e}")
 
-# --- FIM DA CLASSE --- # Note: The class definition ends here, but there's a method outside.
-    # --- NOVO MÉTODO get_ai_response (Geral) ---
     def get_ai_response(self, user_prompt: str) -> str:
         """
         Envia um prompt genérico do usuário para a IA e retorna a resposta textual.
-        Aplica filtros de segurança e palavras proibidas.
         """
         if not self.model:
             raise ConfigurationError("Serviço de IA não inicializado corretamente.")
         if not user_prompt:
             raise ValueError("O prompt do usuário não pode ser vazio.")
 
-        # Pode adicionar um prefixo/contexto se desejar, ou usar o prompt direto
-        # Ex: prompt = f"Responda à seguinte pergunta de forma clara e concisa:\n\n{user_prompt}"
-        prompt = user_prompt # Usando o prompt direto por enquanto
+        prompt = user_prompt 
 
         if self.safety_settings: logger.info(f"SERVICE CALL (Ask AI): Usando {len(self.safety_settings)} regras.")
         else: logger.info("SERVICE CALL (Ask AI): Usando safety padrão.")
@@ -418,7 +404,6 @@ class QuestionGenerationService:
                 safety_settings=self.safety_settings
             )
 
-            # Verificação de Bloqueio SAFETY
             first_candidate = response.candidates[0] if response.candidates else None
             if first_candidate and hasattr(first_candidate, 'finish_reason') and first_candidate.finish_reason.name == 'SAFETY':
                 logger.warning(f"Resposta IA bloqueada por SAFETY (Ask AI).")
@@ -432,19 +417,11 @@ class QuestionGenerationService:
                 raise AIResponseError(f"IA retornou resposta vazia ou inválida (Finish Reason: {finish_reason}).")
 
             generated_text = first_candidate.content.parts[0].text
-            logger.info("Texto (Ask AI) recebido da IA. Verificando filtro...")
-
-            # # CHAMA O FILTRO PERSONALIZADO
-            # self._check_forbidden_words(generated_text, "Pergunte à IA") # Commented out in original
-
-            logger.info("Texto passou no filtro.")
+            logger.info("Texto (Ask AI) recebido da IA.")
             return generated_text
 
-        except AIResponseError as e: # Repassa erros específicos da IA ou do filtro
+        except AIResponseError as e:
             raise e
-        except Exception as e: # Captura outros erros
+        except Exception as e:
             logger.error(f"Erro GERAL durante chamada à API (Ask AI): {e}", exc_info=True)
             raise AIServiceError(f"Erro na comunicação com a API (Ask AI): {e}")
-    # --- <<< FIM NOVO MÉTODO >>> ---
-
-# --- FIM DA CLASSE --- # This comment seems misplaced as the class ended earlier.
