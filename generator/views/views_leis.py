@@ -1,19 +1,20 @@
-# generator/views/views_leis.py (ou onde você colocar)
+import logging
+import requests
+import markdown  # Biblioteca Python-Markdown
+from bs4 import BeautifulSoup
 from urllib import request
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import JsonResponse
-import markdownify  # Import JsonResponse
-from ..models import LeiPlanalto, TipoNormaPlanalto # Ajuste o import se necessário
-import requests
-from bs4 import BeautifulSoup
-from markdownify import markdownify
-md_converter = markdownify
-import markdown # Biblioteca Python-Markdown
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_GET
-import logging
+
+# CORREÇÃO CRÍTICA: Importamos a função com alias para não conflitar com o módulo
+from markdownify import markdownify as md_converter
+
+from ..models import LeiPlanalto, TipoNormaPlanalto
+
+logger = logging.getLogger(__name__)
 
 def listar_leis_coletadas_planalto(request):
     query = request.GET.get('q', '').strip()
@@ -43,11 +44,11 @@ def listar_leis_coletadas_planalto(request):
 
     tipos_norma = TipoNormaPlanalto.objects.all().order_by('nome')
 
-    # AJUSTE AQUI: Linha .exclude(ano_norma__exact='') removida
+    # Mantendo sua lógica de anos disponíveis exatamente como enviada
     anos_norma_disponiveis = LeiPlanalto.objects.filter(ano_norma__isnull=False)\
-                                          .values_list('ano_norma', flat=True)\
-                                          .distinct()\
-                                          .order_by('-ano_norma') # Anos mais recentes primeiro
+                                           .values_list('ano_norma', flat=True)\
+                                           .distinct()\
+                                           .order_by('-ano_norma') 
 
     context = {
         'page_obj': page_obj,
@@ -60,10 +61,8 @@ def listar_leis_coletadas_planalto(request):
     }
     return render(request, 'generator/leis_planalto/listar_leis.html', context)
 
-logger = logging.getLogger(__name__)
-
 @require_GET
-def extract_and_markdownify_view(request): # <--- CORREÇÃO AQUI! Adicione 'request'
+def extract_and_markdownify_view(request):
     url = request.GET.get('url')
     if not url:
         return HttpResponseBadRequest("URL não fornecida.")
@@ -81,6 +80,8 @@ def extract_and_markdownify_view(request): # <--- CORREÇÃO AQUI! Adicione 'req
     try:
         soup = BeautifulSoup(response.content, 'html.parser')
         content_element = None
+        
+        # Mantendo todos os seus seletores originais
         selectors_to_try = [
             'div#textoimpressao',
             'div.textoNorma',
@@ -90,6 +91,7 @@ def extract_and_markdownify_view(request): # <--- CORREÇÃO AQUI! Adicione 'req
             'div.main-content',
             'div[role="main"]'
         ]
+        
         for selector in selectors_to_try:
             content_element = soup.select_one(selector)
             if content_element:
@@ -100,6 +102,7 @@ def extract_and_markdownify_view(request): # <--- CORREÇÃO AQUI! Adicione 'req
             logger.warning(f"Nenhum seletor específico encontrado para '{url}'. Usando o body e limpando.")
             content_element = soup.body
             if content_element:
+                # Mantendo sua lista completa de tags para remover
                 tags_to_remove = ['script', 'style', 'nav', 'header', 'footer', 'aside', 'form', '.noprint', '#menu', '#cabecalho', '#rodape']
                 for tag_selector in tags_to_remove:
                     for unwanted_tag in content_element.select(tag_selector):
@@ -113,7 +116,11 @@ def extract_and_markdownify_view(request): # <--- CORREÇÃO AQUI! Adicione 'req
              return JsonResponse({'error': 'Não foi possível isolar o conteúdo principal da página.'}, status=500)
 
         html_para_converter = str(content_element)
+        
+        # Usando o alias md_converter para evitar o ImportError
         markdown_text = md_converter(html_para_converter)
+        
+        # Converte de volta para HTML limpo usando o python-markdown
         html_output = markdown.markdown(markdown_text, extensions=['extra', 'nl2br', 'sane_lists'])
 
         return JsonResponse({'html_content': html_output, 'title': soup.title.string if soup.title else url})

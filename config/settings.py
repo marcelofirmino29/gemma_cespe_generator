@@ -1,5 +1,6 @@
 # config/settings.py
 import os
+import dj_database_url  # no topo do arquivo, junto com os outros imports
 from pathlib import Path
 from dotenv import load_dotenv # Importar load_dotenv
 from django.core.exceptions import ImproperlyConfigured # Para erros de config
@@ -97,13 +98,31 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # settings.py
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': BASE_DIR / 'db.sqlite3',
+#        'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
+#    }
+#}
+
+import dj_database_url  # no topo do arquivo, junto com os outros imports
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'TIMEOUT': 20000,
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'TIMEOUT': 20000,  # Timeout in milliseconds (e.g., 20 seconds)
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600
+    )
 }
+
 
 # DATABASES = {
 #     'default': {
