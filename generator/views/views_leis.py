@@ -8,8 +8,8 @@ import markdownify  # Import JsonResponse
 from ..models import LeiPlanalto, TipoNormaPlanalto # Ajuste o import se necessário
 import requests
 from bs4 import BeautifulSoup
-from markdownify import markdownify as md_converter
-#from markdownify import markdownify as md_converter # Renomeado para evitar conflito
+from markdownify import markdownify
+md_converter = markdownify
 import markdown # Biblioteca Python-Markdown
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_GET
