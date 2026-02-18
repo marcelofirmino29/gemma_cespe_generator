@@ -1,4 +1,6 @@
 import logging
+
+from django.http import HttpResponse
 logger = logging.getLogger(__name__)  # ✅ CORRIGIDO
 import PyPDF2
 from django.contrib.auth.decorators import login_required
@@ -359,3 +361,7 @@ def pdf_summary_view(request):
 
     context.update({'form': form, 'resumo_gerado': resumo_gerado})
     return render(request, 'generator/pdf_summary.html', context)
+
+def health_check(request):
+    """Endpoint simples para o Cron-job.org manter a app acordada"""
+    return HttpResponse("OK")

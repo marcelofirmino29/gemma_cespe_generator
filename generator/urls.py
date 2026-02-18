@@ -1,5 +1,8 @@
 # generator/urls.py
+from django.http import HttpResponse
 from django.urls import path
+
+from generator.views import views_functions
 from . import views
 from .views import views_quiz_editor # Importa as novas views do editor
 
@@ -67,4 +70,6 @@ urlpatterns = [
     path('consulta-leis/', views.listar_leis_coletadas_planalto, name='consulta_leis_planalto'),
 
     path('extrair-markdown/', views.extract_and_markdownify_view, name='visualizar_lei_markdown'),
+
+    path('health/', views_functions.health_check, name='health_check'),
 ]
