@@ -81,10 +81,10 @@
                 {% for questao in page_obj %}
                     <div class="card card-body"id="question-item-{{ questao.id }}">
                         <div class="d-flex w-100 justify-content-between mb-1 flex-wrap">
-                            <h5 class="mb-1 h6 me-2">Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão ID {{ questao.id }}) {% if questao.area %}<span class="badge bg-light text-dark border ms-2">{{ questao.area.nome }}</span>{% endif %}</h5>
+                            <h5 class="mb-1 h6 me-2">Item {{ page_obj.start_index|add:forloop.counter0 }}: (Questão ID {{ questao.id }}) {% if questao.topico %}<span class="badge bg-light text-dark border ms-2">{{ questao.topico.area_conhecimento.nome }}</span>{% endif %}</h5>
                             <small class="question-meta text-nowrap">{{ questao.criado_em|naturaltime }}</small>
                         </div>
-                        <p class="mb-2" style="white-space: pre-wrap;">{{ questao.texto_comando }}</p>
+                        <p class="mb-2" style="white-space: pre-wrap;">{{ questao.enunciado }}</p>
 
                         {# Gabarito individual foi REMOVIDO daqui #}
 

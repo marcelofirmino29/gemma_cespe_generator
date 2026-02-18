@@ -1,4 +1,6 @@
-/* Estilos gerais base */
+/* ==========================================================================
+   SISTEMA QUESTÕES DE IA - CSS MASTER INTEGRAL
+   ========================================================================== */
 
 /* --- Reset/Base --- */
 html, body {
@@ -10,8 +12,19 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-top: 56px; /* Ajuste se a altura da navbar fixa for diferente. */
-                       /* Nota: Um JS (base_layout_scripts.js) pode estar ajustando isso dinamicamente. */
+    
+    /* FIX: Preenchimento responsivo para evitar encavalamento sob a Navbar fixa */
+    padding-top: 65px; 
+    /* FIX: Rodapé fixo exige padding inferior no body para o conteúdo não sumir atrás dele */
+    padding-bottom: 60px; 
+}
+
+/* Ajuste específico para mobile: evita que o conteúdo (como data/hora) encavale na Navbar */
+@media (max-width: 576px) {
+    body {
+        padding-top: 90px;
+        padding-bottom: 80px;
+    }
 }
 
 /* --- Layout Principal --- */
@@ -21,7 +34,19 @@ main.app-main-content {
     padding-bottom: 2rem;
 }
 
+/* FIX: Rodapé Fixo na base da tela */
 footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 45px;
+    background-color: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color-translucent);
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
@@ -55,13 +80,12 @@ footer {
 .content-block-frame {
     background-color: var(--bs-tertiary-bg);
     border: 1px solid var(--bs-border-color);
-    padding: 1.25rem; /* Preenchimento padrão, pode ser sobrescrito por classes mais específicas */
+    padding: 1.25rem; 
     border-radius: var(--bs-card-border-radius, 0.375rem);
-    margin-bottom: 1.5rem; /* Margem comum */
+    margin-bottom: 1.5rem;
     box-shadow: var(--bs-box-shadow-sm);
 }
 
-/* Sobrescritas de preenchimento específicas, se necessário, ou use utilitários de preenchimento do Bootstrap (ex: p-4) */
 .content-block-frame.p-lg { padding: 2rem; }
 .content-block-frame.p-md { padding: 1.5rem; }
 .content-block-frame.p-sm { padding: 1rem; }
@@ -118,7 +142,7 @@ footer {
     border: 0;
     border-top: 1px solid var(--bs-border-color-translucent);
 }
-.markdown-content-viewer code { /* Código inline */
+.markdown-content-viewer code {
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
@@ -127,7 +151,7 @@ footer {
     border-radius: 3px;
     font-family: var(--bs-font-monospace);
 }
-.markdown-content-viewer pre { /* Contêiner de bloco de código dentro do markdown */
+.markdown-content-viewer pre {
     padding: 1em;
     margin: 0 0 1em;
     overflow: auto;
@@ -138,7 +162,7 @@ footer {
     border: 1px solid var(--bs-border-color);
     font-family: var(--bs-font-monospace);
 }
-.markdown-content-viewer pre code { /* Código dentro de pre no markdown */
+.markdown-content-viewer pre code {
     padding: 0;
     margin: 0;
     font-size: 100%;
@@ -155,18 +179,22 @@ footer {
     color: var(--bs-link-hover-color);
 }
 
-/* --- Navbar --- */
+/* --- Navbar (FIX: Fontes Responsivas e Fixas) --- */
 nav#main-navbar.fixed-top {
-    z-index: 1030;
+    z-index: 1040;
 }
 nav#main-navbar {
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
+    background-color: #ffc107 !important; /* Cor amarela conforme imagem */
 }
 nav#main-navbar .navbar-brand {
-    font-size: 0.95rem;
+    /* FIX: Fonte Responsiva fluida com Clamp */
+    font-size: clamp(0.75rem, 2vw, 0.95rem); 
     padding-top: 0.2rem;
     padding-bottom: 0.2rem;
+    color: #000 !important;
+    font-weight: 700;
 }
 nav#main-navbar .navbar-brand .bi-robot {
     font-size: 1.1rem;
@@ -177,8 +205,11 @@ nav#main-navbar .navbar-nav:not(.offcanvas-body .navbar-nav) .nav-link {
     padding-bottom: 0.25rem;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
-    font-size: 0.85rem;
+    /* FIX: Fonte Responsiva fluida */
+    font-size: clamp(0.7rem, 1.5vw, 0.85rem);
     line-height: 1.2;
+    color: #000 !important;
+    font-weight: 600;
 }
 nav#main-navbar .navbar-nav:not(.offcanvas-body .navbar-nav) .nav-link i.bi {
     font-size: 1rem;
@@ -190,13 +221,13 @@ nav#main-navbar .navbar-nav:not(.offcanvas-body .navbar-nav) .nav-link span.ms-2
 nav#main-navbar .navbar-toggler {
     padding: 0.15rem 0.4rem;
     font-size: 0.8rem;
+    background-color: #000;
 }
 
 /* Largura Customizada para Menu Navbar Recolhido */
 #main-navbar #navbarPrincipal.collapse.show,
 #main-navbar #navbarPrincipal.collapse.collapsing {
     width: 280px;
-    /* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); */
 }
 
 /* Menu Navbar Recolhido (Dropdown) */
@@ -224,12 +255,6 @@ nav#main-navbar .navbar-collapse {
     color: #0056b3 !important;
     background-color: #e9ecef !important;
 }
-[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:hover .bi,
-[data-bs-theme="light"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:focus .bi,
-[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:hover .bi,
-[data-bs-theme="light"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus .bi {
-    color: #0056b3 !important;
-}
 
 [data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show,
 [data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing {
@@ -247,12 +272,6 @@ nav#main-navbar .navbar-collapse {
 [data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus {
     color: var(--bs-white, #fff) !important;
     background-color: rgba(255, 255, 255, 0.05) !important;
-}
-[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:hover .bi,
-[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.show .navbar-nav .nav-link:focus .bi,
-[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:hover .bi,
-[data-bs-theme="dark"] nav#main-navbar .navbar-collapse.collapsing .navbar-nav .nav-link:focus .bi {
-    color: var(--bs-white, #fff) !important;
 }
 
 /* Itens gerais da Navbar */
@@ -275,7 +294,7 @@ nav#main-navbar .navbar-collapse {
 }
 
 /* --- Estilos Comuns de Elementos de Formulário --- */
-label, .form-label { /* Rótulo genérico mesclado com form-label */
+label, .form-label {
     display: block;
     font-size: 0.85rem;
     margin-bottom: 0.3rem;
@@ -286,38 +305,38 @@ label, .form-label { /* Rótulo genérico mesclado com form-label */
 .form-control-sm, .form-select-sm {
     font-size: 0.85rem;
 }
-.form-label-sm { /* De question_bank_ce_styles.css */
+.form-label-sm {
     font-size: 0.8rem !important;
     margin-bottom: 0.2rem !important;
 }
-.form-text, small.form-text { /* small.form-text mesclado aqui */
+.form-text, small.form-text {
     font-size: 0.75rem;
     color: var(--bs-secondary-color);
 }
 
 /* --- Estilos Comuns de Elementos de Estatística --- */
 .stat-icon {
-    font-size: 2.5rem; /* De dashboard.html */
-    margin-bottom: 0.5rem; /* De dashboard.html */
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
     display: block;
 }
 .stat-value {
-    font-size: 1.75rem; /* Máximo visto */
-    font-weight: 600; /* Máximo visto (negrito) */
+    font-size: 1.75rem;
+    font-weight: 600;
     line-height: 1.2;
 }
 .stat-label {
-    font-size: 0.85rem; /* Média (0.8, 0.9 anteriormente) */
+    font-size: 0.85rem;
 }
 .chart-container {
     position: relative;
     margin: auto;
-    height: 280px; /* Máximo visto */
+    height: 280px;
     width: 100%;
-    max-width: 400px; /* Máximo visto */
+    max-width: 400px;
 }
 
-/* --- Estilização Comum de bloco `pre` (uso geral) --- */
+/* --- Estilização Comum de bloco pre --- */
 pre.general-pre-box {
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -341,49 +360,34 @@ pre.general-pre-box {
     color: var(--bs-primary);
 }
 
-/* --- Adições Comuns a .alert (se houver) --- */
+/* --- Adições Comuns a .alert --- */
 .alert {
-    margin-top: 1rem; /* Este era um estilo repetido */
+    margin-top: 1rem;
 }
 
 /* --- Estilos para Template Configurar Simulado --- */
-.content-container { /* Pode usar .content-block-frame e .p-md */
-    /* padding: 1.5rem; /* Fornecido por .p-md se .content-block-frame for usado */
-    /* border, background-color, border-radius, margin-bottom de .content-block-frame */
-}
-/* #{{ form.topico.id_for_label|default:'id_topico_simulado' }} */
-#id_topico_simulado { /* Assumindo que este é o ID padrão ou um ID estático é usado */
+#id_topico_simulado {
     min-height: 80px;
 }
-.action-buttons .btn { font-size: 0.9rem; } /* Estilo comum de botão de ação */
+.action-buttons .btn { font-size: 0.9rem; }
 
-/* --- Estilos para .generated-exam-markdown (simulado, discursiva, etc.) --- */
-/* Usa .content-block-frame para a caixa e .markdown-content-viewer para estilos de texto */
-.generated-exam-markdown {
-    /* Propriedades do frame de .content-block-frame */
-    /* Propriedades de texto e formatação de .markdown-content-viewer */
-}
-
-/* --- Estilos para Dashboard --- */
-.filters-container { /* Pode usar .content-block-frame e .p-md */
-    /* padding: 1.5rem; /* Fornecido por .p-md se .content-block-frame for usado */
-}
-.filter-form { /* Estilização específica para a caixa do formulário de filtro */
+/* --- Dashboard --- */
+.filter-form {
     padding: 1rem 1.5rem;
     background-color: var(--bs-tertiary-bg);
     border-radius: 0.5rem;
     border: 1px solid var(--bs-border-color);
-    margin-bottom: 1.5rem; /* Padrão de Bootstrap mb-4 */
+    margin-bottom: 1.5rem;
 }
 [data-bs-theme="dark"] .filter-form {
     box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
 }
-.card-body.p-0 .table { /* Ajuste para tabela não colar no card */
+.card-body.p-0 .table {
     margin-bottom: 0 !important;
 }
 
 /* --- Paginação --- */
-.pagination { margin-bottom: 1rem; } /* De question_bank_ce_styles.css, bom posicionamento geral */
+.pagination { margin-bottom: 1rem; }
 .pagination .page-link {
     color: var(--bs-primary);
 }
@@ -397,48 +401,32 @@ pre.general-pre-box {
 }
 
 /* --- Estilos para página de Resultado da Avaliação --- */
-.results-section { /* Pode usar .content-block-frame e .p-md */
-    /* padding: 1.5rem; /* Fornecido por .p-md */
-    /* background-color, border-radius, border de .content-block-frame */
-}
 [data-bs-theme="dark"] .results-section {
-    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); /* Sombra específica */
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
 }
-.evaluation-box { /* Semelhante a card, mas distinto */
+.evaluation-box {
     background-color: var(--bs-secondary-bg);
     border: 1px solid var(--bs-border-color-translucent);
-    padding: 1rem; /* Preenchimento de exemplo, ajuste conforme necessário */
+    padding: 1rem;
     border-radius: var(--bs-card-border-radius);
     margin-bottom: 1rem;
 }
 [data-bs-theme="dark"] .evaluation-box {
     background-color: var(--bs-tertiary-bg);
 }
-.evaluation-section { /* Similar a .results-section, poderia usar .content-block-frame e .p-md */
-    /* padding: 1.5rem; */
-    /* border, border-radius, background-color, margin-bottom de .content-block-frame */
-}
 
-/* Estilo para texto submetido e feedback */
 .submitted-text-markdown,
 .feedback-markdown {
-    /* Frame - Pode usar .content-block-frame com sobrescrita de preenchimento ou estilos específicos abaixo */
     background-color: var(--bs-secondary-bg);
     padding: 1rem;
     border-radius: 0.375rem;
     border: 1px solid var(--bs-border-color-translucent);
     margin-bottom: 1rem;
-    /* Estilos de texto de .markdown-content-viewer, aplique ambas as classes ou duplique estilos de texto */
-    font-size: 0.9em; /* Sobrescreve de .markdown-content-viewer se necessário */
+    font-size: 0.9em;
     line-height: 1.6;
 }
-/* Se usando .markdown-content-viewer, estes p, strong, ol, ul são herdados */
-/* .submitted-text-markdown p, .feedback-markdown p { margin-bottom: 0.5rem; } */
-/* .submitted-text-markdown strong, .feedback-markdown strong { font-weight: 600; } */
-/* .submitted-text-markdown ol, .submitted-text-markdown ul, */
-/* .feedback-markdown ol, .feedback-markdown ul { padding-left: 2rem; margin-bottom: 0.5rem;} */
 
-.raw-feedback-pre pre { /* Estilo pre específico para feedback bruto */
+.raw-feedback-pre pre {
      white-space: pre-wrap;
      word-wrap: break-word;
      font-size: 0.85em;
@@ -450,24 +438,15 @@ pre.general-pre-box {
 }
 
 /* --- Estilos para Gerador de Questão Discursiva --- */
-.form-container,
-.results-container,
-.answer-input-section { /* Estes podem usar .content-block-frame e .p-lg */
-    /* background-color, padding: 2rem, border-radius, box-shadow, margin-bottom, border */
-    /* de .content-block-frame e .p-lg */
-}
 [data-bs-theme="dark"] .form-container,
 [data-bs-theme="dark"] .results-container,
 [data-bs-theme="dark"] .answer-input-section {
-    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075); /* Mantém sombra escura específica se a de .content-block-frame for diferente */
-}
-.generated-exam-card { /* Este é um .content-block-frame */
-    /* background-color, border, padding, border-radius, margin-bottom, box-shadow de .content-block-frame */
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
 }
 [data-bs-theme="dark"] .generated-exam-card {
-    background-color: var(--bs-secondary-bg); /* Fundo escuro específico para este card */
+    background-color: var(--bs-secondary-bg);
 }
-pre#markdown-content { /* Para exibição direta de markdown sem estilização extra */
+pre#markdown-content {
     white-space: pre-wrap;
     word-wrap: break-word;
     font-family: inherit;
@@ -479,8 +458,7 @@ pre#markdown-content { /* Para exibição direta de markdown sem estilização e
     max-height: none;
     overflow-y: visible;
 }
-/* #{{ form.base_topic_or_context.id_for_label|default:'id_base_topic_discursive' }} */
-#id_base_topic_discursive { /* Assumindo ID estático */
+#id_base_topic_discursive {
     min-height: 80px;
 }
 .parameter-section h5 {
@@ -491,21 +469,15 @@ pre#markdown-content { /* Para exibição direta de markdown sem estilização e
 .pdf-upload-section { margin-top: 1rem; margin-bottom: 1rem; }
 
 
-/* --- Estilos para Gerador de Questões C/E (question_generator.html) & Resultados Validação --- */
-.question-item { /* Usa .content-block-frame */
-    /* background-color, border, padding, margin-bottom, border-radius, box-shadow de .content-block-frame */
-}
+/* --- Estilos para Gerador de Questões C/E --- */
 .question-item p {
    margin-bottom: 0.75rem;
 }
 .form-check-inline {
    margin-right: 1rem;
 }
-.spinner-border { /* Esconder spinner por padrão - JS controla exibição */
+.spinner-border {
    display: none;
-}
-button:disabled {
-    cursor: not-allowed; /* Bootstrap já trata disso, mas explícito é ok */
 }
 .correct-answer {
     color: var(--bs-success-text-emphasis);
@@ -525,14 +497,14 @@ button:disabled {
     padding-top: 0.5rem;
     border-top: 1px solid var(--bs-border-color-translucent);
 }
-.results-validation { /* Contêiner para resultados de validação */
+.results-validation {
     margin-top: 2rem;
 }
-.performance-summary { /* Caixa para resumo de desempenho */
+.performance-summary {
     border: 1px solid var(--bs-border-color);
     background-color: var(--bs-secondary-bg);
     border-radius: .375rem;
-    padding: 1rem; /* Preenchimento de exemplo */
+    padding: 1rem;
     margin-bottom: 1.5rem;
 }
 .performance-summary h4 {
@@ -544,23 +516,15 @@ button:disabled {
 .performance-summary .alert {
     font-size: 0.95em;
 }
-[data-bs-theme="dark"] .results-validation .question-item, /* Se .question-item precisar de sombra escura específica */
-[data-bs-theme="dark"] .form-container.dark-shadow-override { /* Exemplo se um form-container precisar também */
+[data-bs-theme="dark"] .results-validation .question-item,
+[data-bs-theme="dark"] .form-container.dark-shadow-override {
     box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
 }
 [data-bs-theme="dark"] .performance-summary {
-   border-color: var(--bs-gray-700); /* Variável Bootstrap poderia ser --bs-border-color */
+   border-color: var(--bs-gray-700);
 }
 
-/* --- Estilos para Banco de Questões C/E (question_bank_ce_styles.css) --- */
-.search-filters { /* Pode usar .content-block-frame e .p-sm */
-    /* padding: 1rem; /* Fornecido por .p-sm */
-    /* background-color, border-radius, margin-bottom, border de .content-block-frame */
-    border-color: var(--bs-border-color-translucent); /* Cor de borda específica */
-}
-.question-list-item { /* Usa .content-block-frame */
-    /* padding, border, border-radius, margin-bottom, background-color, box-shadow de .content-block-frame */
-}
+/* --- Estilos para Banco de Questões C/E --- */
 .question-meta {
     font-size: 0.85em;
     color: var(--bs-secondary-color);
@@ -568,7 +532,7 @@ button:disabled {
     border-top: 1px solid var(--bs-border-color-translucent);
     margin-top: 0.75rem;
 }
-.motivador-text { /* Componente específico */
+.motivador-text {
     background-color: var(--bs-secondary-bg);
     border-left: 5px solid var(--bs-info);
     padding: 1rem;
@@ -616,10 +580,10 @@ button:disabled {
     pointer-events: none;
 }
 .multi-select-btn {
-    min-height: calc(1.5em + .5rem + 2px); /* Corresponde à altura de .form-select-sm */
+    min-height: calc(1.5em + .5rem + 2px);
     height: calc(1.5em + .5rem + 2px);
-    padding: .25rem .5rem; /* Corresponde ao padding de .form-select-sm */
-    font-size: .875rem; /* Corresponde ao font-size de .form-select-sm */
+    padding: .25rem .5rem;
+    font-size: .875rem;
     line-height: 1.5;
     text-align: left;
     background-color: var(--bs-body-bg);
@@ -629,1194 +593,148 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-radius: var(--bs-border-radius-sm); /* Combina com form-select-sm */
+    border-radius: var(--bs-border-radius-sm);
 }
 .multi-select-btn .btn-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     display: inline-block;
-    max-width: calc(100% - 25px); /* Espaço para o ícone de dropdown (caret) */
+    max-width: calc(100% - 25px);
 }
-.form-check-input:checked { /* Sobrescrita geral do BS */
+.form-check-input:checked {
     background-color: var(--bs-primary);
     border-color: var(--bs-primary);
 }
 [data-bs-theme="dark"] .form-check-input {
-    background-color: var(--bs-gray-700); /* ou var(--bs-tertiary-bg) */
-    border-color: var(--bs-gray-600); /* ou var(--bs-border-color) */
-}
-[data-bs-theme="dark"] .form-check-input:focus {
-    border-color: var(--bs-primary-text-emphasis); /* ou var(--bs-primary) */
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    background-color: var(--bs-gray-700);
+    border-color: var(--bs-gray-600);
 }
 [data-bs-theme="dark"] .multi-select-dropdown .dropdown-item-text label {
     color: var(--bs-emphasis-color);
 }
-[data-bs-theme="dark"] .multi-select-dropdown .dropdown-item-text:hover {
-     background-color: var(--bs-gray-700); /* ou var(--bs-dropdown-link-hover-bg) */
-     color: var(--bs-light); /* ou var(--bs-dropdown-link-hover-color) */
-}
 
 /* --- Estilos para "Pergunta a IA" --- */
-.ask-ai-container { /* Container principal da página "Pergunte à IA" */
+.ask-ai-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem 1rem; /* Adicionado padding horizontal para telas menores */
+    padding: 2rem 1rem;
     margin: 2rem auto;
-    max-width: 960px; /* Max-width comum para containers de página */
-    background-color: var(--bs-body-bg); /* Mantém o fundo do corpo da página */
-    /* Removido: border-radius e box-shadow específicos para um visual mais integrado */
+    max-width: 960px;
+    background-color: var(--bs-body-bg);
 }
-
 .ask-ai-title {
-    font-size: 2.25rem; /* Ajustado para ser similar a outros títulos h1/h2 */
+    font-size: 2.25rem;
     font-weight: 500;
     color: var(--bs-heading-color);
     margin-bottom: 1.5rem;
     text-align: center;
 }
-
 .ask-ai-description {
     color: var(--bs-body-secondary);
     margin-bottom: 2rem;
     text-align: center;
     font-size: 1rem;
-    max-width: 700px; /* Para melhor legibilidade da descrição */
+    max-width: 700px;
 }
-
-.ask-ai-form {
-    width: 100%;
-    max-width: 700px; /* Largura máxima para o formulário */
-    margin-bottom: 2rem;
-    /* Opcional: Se quiser colocar o formulário dentro de um bloco, adicione a classe .content-block-frame aqui ou no HTML */
-    /* padding: 1.5rem; background-color: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); box-shadow: var(--bs-box-shadow-sm); */
-}
-
-.ask-ai-input-group { /* Mantém o grupo para o ícone, se usado */
-    position: relative;
-    display: flex;
-    align-items: center; /* Alinha o botão com o textarea se estiverem na mesma linha */
-    width: 100%;
-}
-
-/* Estilização do textarea para se assemelhar a um input padrão do Bootstrap */
 #id_user_question {
     flex-grow: 1;
-    /* Usa variáveis do Bootstrap para padding, font-size, line-height, border-radius, border-color */
     padding: var(--bs-form-control-padding-y) var(--bs-form-control-padding-x);
     font-size: var(--bs-form-control-font-size);
     line-height: var(--bs-form-control-line-height);
     color: var(--bs-body-color);
-    background-color: var(--bs-body-bg); /* Ou var(--bs-form-control-bg) */
-    border: 1px solid var(--bs-border-color); /* Ou var(--bs-form-control-border-color) */
-    border-radius: var(--bs-border-radius); /* Raio de borda padrão do Bootstrap */
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
     outline: none;
     transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-    min-height: calc(1.5em + var(--bs-form-control-padding-y) * 2 + 2px); /* Altura mínima similar a um input */
-    resize: vertical; /* Permite redimensionamento vertical */
+    min-height: calc(1.5em + var(--bs-form-control-padding-y) * 2 + 2px);
+    resize: vertical;
 }
-
-/* Adiciona espaço para o ícone se ele for mantido */
-#id_user_question.has-icon {
-    padding-left: 2.5rem; /* Ajuste conforme o tamanho e posição do ícone */
-}
-
 #id_user_question:focus {
-    border-color: var(--bs-primary); /* Cor primária no foco, como nos inputs do Bootstrap */
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25); /* Sombra de foco padrão do Bootstrap */
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
-
-#id_user_question::placeholder {
-    color: var(--bs-secondary-color); /* Cor de placeholder mais sutil e padronizada */
-}
-
-.ask-ai-search-icon { /* Se o ícone de busca for mantido */
-    position: absolute;
-    left: 0.8rem;
-    top: calc(var(--bs-form-control-padding-y) + 0.5em); /* Ajusta a posição vertical do ícone */
-    transform: translateY(-50%);
-    color: var(--bs-secondary-color);
-    z-index: 3; /* Para garantir que fique sobre o input */
-}
-
-/* Oculta o label padrão do Django, se não for usado visualmente */
-label[for='id_user_question'] {
-    display: none;
-}
-
-/* Botão de Envio - Recomenda-se usar classes Bootstrap no HTML: <button class="btn btn-primary ms-2"> */
-.ask-ai-submit-button {
-    /* Estilos específicos de cor, fundo e borda são removidos para herdar de .btn.btn-primary */
-    /* Mantém o espaçamento se necessário */
-    margin-left: 0.5rem; /* Reduzido um pouco, ou use 'ms-2' do Bootstrap */
-    /* Se não usar classes Bootstrap no HTML, descomente e ajuste abaixo: */
-    /*
-    background-color: var(--bs-primary);
-    color: var(--bs-btn-color); // Cor do texto para botões primários
-    border: 1px solid var(--bs-primary);
-    border-radius: var(--bs-btn-border-radius);
-    padding: var(--bs-btn-padding-y) var(--bs-btn-padding-x);
-    font-size: var(--bs-btn-font-size);
-    cursor: pointer;
-    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    */
-}
-/*
-.ask-ai-submit-button:hover {
-    background-color: var(--bs-btn-hover-bg); // Cor de fundo do hover para botões primários
-    border-color: var(--bs-btn-hover-border-color);
-}
-*/
-
-/* Contêiner para a resposta da IA - agora usa .content-block-frame diretamente ou seus estilos */
 .ai-response-container {
-    /* Aplique a classe .content-block-frame diretamente no HTML:
-       <div class="ai-response-container content-block-frame">
-       Ou, se não for possível, replique os estilos do .content-block-frame aqui:
-    */
     background-color: var(--bs-tertiary-bg);
     border: 1px solid var(--bs-border-color);
-    padding: 1.25rem; /* ou var(--bs-card-spacer-y) var(--bs-card-spacer-x) se assemelhando a um card */
-    border-radius: var(--bs-border-radius); /* ou var(--bs-card-border-radius) */
+    padding: 1.25rem;
+    border-radius: var(--bs-border-radius);
     margin-bottom: 1.5rem;
     box-shadow: var(--bs-box-shadow-sm);
     width: 100%;
-    max-width: 800px; /* Largura máxima para a resposta, pode ser ajustada */
-    margin-top: 2rem; /* Espaçamento acima do container de resposta */
+    max-width: 800px;
+    margin-top: 2rem;
 }
-
-.ai-response-title {
-    font-size: 1.2rem; /* Mantido, mas pode ser ajustado para h5, h6 do Bootstrap */
-    color: var(--bs-heading-color);
-    margin-bottom: 1rem;
-}
-
-.ai-response-box { /* Conteúdo dentro do container de resposta, usa .markdown-content-viewer */
-    /* Estilos de texto e elementos markdown são fornecidos pela classe .markdown-content-viewer */
-    /* Adicione .markdown-content-viewer a este elemento no HTML */
-    max-height: 70vh; /* Limite de altura para rolagem */
-    overflow-y: auto; /* Rolagem se o conteúdo exceder max-height */
-}
-
-/* --- Estilos para Service Unavailable --- */
-.service-unavailable {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-/* --- Estilos para Question Item Minimal --- */
-.question-item-minimal { /* Usa .content-block-frame */
-    /* padding, margin-bottom (1rem aqui vs 1.5rem padrão), etc. de .content-block-frame */
-    margin-bottom: 1rem; /* Sobrescreve margem padrão se necessário */
-}
-
-/* --- Estilos para Custom Results (Simulação de Resultados) --- */
-.stats-section { /* Usa .content-block-frame e .p-md */
-    /* padding: 1.5rem; background, border etc de .content-block-frame & .p-md */
-}
-.result-item { /* Caixa de item de resultado individual */
-    padding: 1rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.375rem;
-    margin-bottom: 1rem;
-    background-color: var(--bs-body-bg); /* Fundo padrão */
-}
-.result-item.border-success { border-left-width: 5px !important; /* Classe Bootstrap tratará da cor */ }
-.result-item.border-danger  { border-left-width: 5px !important; /* Classe Bootstrap tratará da cor */ }
-
-pre code { /* Isto é muito genérico, pode conflitar ou ser amplo demais.
-             Assumido ser para `pre > code` fora de .markdown-content-viewer */
-    /* Se isto se refere a uma estrutura geral pre > code fora do contexto markdown: */
-    /* white-space: pre-wrap; */ /* pre trata disso */
-    /* word-wrap: break-word; */ /* pre trata disso */
-    /* font-size: 0.9em; */ /* Melhor estilizar o pre ou usar .markdown-content-viewer pre code */
-}
-
 
 /* --- ESTILOS DE IMPRESSÃO --- */
-
-/* Gabarito final (escondido na tela, visível na impressão) */
 .gabarito-final-impressao { display: none; }
-.gabarito-final-hr {
-    display: none;
-    border: 0;
-    height: 1px;
-    background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.4), rgba(0,0,0,0));
-    margin-top: 25px;
-    margin-bottom: 25px;
-}
+.gabarito-final-hr { display: none; border: 0; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.4), rgba(0,0,0,0)); margin-top: 25px; margin-bottom: 25px; }
 .gabarito-final-titulo { text-align: center; font-weight: bold; margin-bottom: 15px; }
 .gabarito-final-lista { list-style-type: none; padding-left: 0; columns: 2; column-gap: 30px; }
 .gabarito-final-lista li { margin-bottom: 6px; page-break-inside: avoid; }
 
 @media print {
-    body {
-        font-family: 'Times New Roman', Times, serif;
-        font-size: 11pt; /* Tamanho de fonte base para impressão */
-        color: #000000 !important;
-        background-color: #ffffff !important;
-        padding-top: 0 !important;
-    }
-
-    main.app-main-content {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-    }
-    .container {
-        max-width: 100% !important;
-        width: 100% !important;
-        padding: 20px !important; /* Preenchimento padrão para área de conteúdo de impressão */
-        margin: 0 !important;
-    }
-
-    /* Elementos a serem escondidos na impressão (comum a várias páginas) */
-    header.fixed-top, footer, .bd-mode-toggle, .btn-close,
-    #decrease-font, #reset-font, #increase-font,
-    .alert:not(.alert-printable) /* Permite alertas imprimíveis seletivamente */
-    {
-        display: none !important;
-    }
-
-    /* --- Impressão para Gerador de Questão Discursiva --- */
-    .filters-container, /* Para Configurar Simulado e Dashboard */
-    .action-buttons, .text-end.mb-4 .btn, /* Para Configurar Simulado */
-    #user-answer-form, #printDiscursiveQuestionBtn, /* Para Gerar Questão Discursiva */
-    .container > .alert.alert-secondary, .container > h1.h4.mb-4.text-center, /* Para Gerar Questão Discursiva */
-    hr.my-4 /* Para Gerar Questão Discursiva */
-    {
-        display: none !important;
-    }
-    .generated-exam-container { /* Para Gerar Questão Discursiva */
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-    .generated-exam-container h2.h5 { /* Para Gerar Questão Discursiva */
-        font-size: 14pt !important; text-align: center;
-        margin-bottom: 15px !important; color: #000000 !important;
-    }
-    .markdown-content-viewer, /* Classe consolidada para conteúdo markdown */
-    .generated-exam-markdown, /* Se usado sem as classes consolidadas */
-    .ai-response-box /* Resposta da IA também usa visualizador markdown */
-    {
-        border: 1px solid #999 !important; padding: 15px !important;
-        font-size: 1em !important; /* Relativo ao body 11pt/12pt */
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        box-shadow: none !important;
-        line-height: 1.5; /* Melhor legibilidade para impressão */
-    }
-    .markdown-content-viewer *, /* Todos os elementos dentro */
-    .generated-exam-markdown * {
-        color: #000000 !important;
-        background-color: transparent !important;
-    }
-    .markdown-content-viewer blockquote,
-    .generated-exam-markdown blockquote {
-        border-left-color: #999 !important;
-    }
-    .markdown-content-viewer a,
-    .generated-exam-markdown a {
-        color: #000000 !important; text-decoration: underline;
-    }
-    .markdown-content-viewer a[href]:after,
-    .generated-exam-markdown a[href]:after {
-        content: " (" attr(href) ")"; font-size: 90%;
-    }
-
-    /* --- Impressão para Banco de Questões C/E --- */
-    .search-filters, .pagination, /* Para Banco de Questões */
-    .verify-ce-btn, .comment-section, #validate-form button[type="submit"], /* Para Banco de Questões */
-    nav[aria-label="Navegação das questões"], /* Para Banco de Questões */
-    .container > .text-muted.small.mb-3.mt-2, /* Para Banco de Questões */
-    #printQuestionsBtn /* Para Banco de Questões */
-    {
-        display: none !important;
-    }
-    .actions-to-hide-on-print .form-check { /* Para Banco de Questões */
-        display: none !important;
-    }
-    .container > h1.mb-4.h2, .container > .d-flex > h1.h2.mb-0 { /* Títulos de página */
-         font-size: 16pt !important;
-         text-align: center;
-         margin-bottom: 20px !important;
-    }
-    .motivador-text { /* Para Banco de Questões */
-        border: 1px solid #ccc !important;
-        border-left: 3px solid #555 !important;
-        background-color: #f9f9f9 !important;
-        padding: 0.8rem !important;
-        margin-bottom: 1rem !important;
-        font-size: 0.9em !important; /* Relativo ao body */
-        color: #000000 !important;
-    }
-    .motivador-text h3, .motivador-text .small { color: #000000 !important; }
-
-    .question-list-item, .question-item { /* Frame de questão C/E */
-        border: 1px solid #bbb !important;
-        padding: 0.8rem 1rem !important;
-        margin-bottom: 0.8rem !important;
-        box-shadow: none !important;
-        background-color: #ffffff !important;
-        page-break-inside: avoid;
-    }
-    .question-list-item *, .question-item * { /* Conteúdo dentro do frame de questão */
-         color: #000000 !important;
-    }
-    .question-list-item p.mb-2, .question-item p.mb-2 { font-size: 1em; margin-bottom: 0.5rem !important; } /* Relativo ao body */
-    .question-list-item h5.mb-1.h6, .question-item h5.mb-1.h6 { font-size: 1.1em; font-weight: bold; } /* Relativo ao body */
-    .question-list-item .badge, .question-item .badge {
-        border: 1px solid #000 !important;
-        color: #000 !important;
-        background-color: #eee !important;
-        padding: 0.2em 0.4em;
-    }
-    .question-meta { /* Meta informação da questão */
-        font-size: 0.8em !important; /* Relativo ao body */
-        border-top: 1px dotted #ccc !important;
-        padding-top: 0.5rem !important;
-        margin-top: 0.75rem !important;
-    }
-    .comment-section hr.my-2, .ce-result-feedback { display: none !important; }
-
-    /* Mostrar e Estilizar a seção de gabarito final para impressão */
-    .gabarito-final-impressao {
-        display: block !important;
-        margin-top: 30px !important;
-        padding-top: 20px !important;
-        color: #000000 !important;
-        page-break-before: auto;
-    }
-    .gabarito-final-hr { display: block !important; }
-    .gabarito-final-titulo { font-size: 14pt !important; color: #000000 !important; }
-    .gabarito-final-lista { font-size: 11pt !important; color: #000000 !important; columns: 2; }
-    .gabarito-final-lista li { color: #000000 !important; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: #000 !important; background-color: #fff !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+    main.app-main-content { padding-top: 0 !important; padding-bottom: 0 !important; }
+    .container { max-width: 100% !important; width: 100% !important; padding: 20px !important; margin: 0 !important; }
+    header.fixed-top, footer, .bd-mode-toggle, .btn-close, #decrease-font, #reset-font, #increase-font, .alert:not(.alert-printable), .filters-container, .action-buttons, .text-end.mb-4 .btn, #user-answer-form, #printDiscursiveQuestionBtn, .search-filters, .pagination, .verify-ce-btn, .comment-section, #validate-form button[type="submit"], nav[aria-label="Navegação das questões"], #printQuestionsBtn, .actions-to-hide-on-print .form-check { display: none !important; }
+    .markdown-content-viewer, .generated-exam-markdown, .ai-response-box { border: 1px solid #999 !important; padding: 15px !important; font-size: 1em !important; background-color: #fff !important; color: #000 !important; box-shadow: none !important; line-height: 1.5; }
+    .motivador-text { border: 1px solid #ccc !important; border-left: 3px solid #555 !important; background-color: #f9f9f9 !important; padding: 0.8rem !important; margin-bottom: 1rem !important; font-size: 0.9em !important; color: #000 !important; }
+    .question-list-item, .question-item { border: 1px solid #bbb !important; padding: 0.8rem 1rem !important; margin-bottom: 0.8rem !important; box-shadow: none !important; background-color: #fff !important; page-break-inside: avoid; }
+    .gabarito-final-impressao { display: block !important; margin-top: 30px !important; padding-top: 20px !important; color: #000 !important; }
 }
 
-/* --- Estilos para a página pdf styles --- */
+/* --- PDF Styles --- */
+.main-content-card { background-color: var(--bs-dark-bg-subtle, #343a40); padding: 2rem; border-radius: 0.5rem; margin-top: 1.5rem; color: var(--bs-light-text-emphasis); }
+.extracted-question-item { background-color: var(--bs-tertiary-bg); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem; border: 1px solid var(--bs-border-color); white-space: pre-wrap; color: var(--bs-body-color); }
+.question-item-display { padding: 1rem 1.25rem; border: 1px solid var(--bs-border-color-translucent); border-radius: 0.375rem; margin-bottom: 1rem; background-color: var(--bs-body-bg); box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); color: var(--bs-body-color); }
 
-/* Estilos Gerais do Card Principal */
-.main-content-card {
-    background-color: var(--bs-dark-bg-subtle, #343a40);
-    padding: 2rem;
-    border-radius: 0.5rem;
-    margin-top: 1.5rem;
-    color: var(--bs-light-text-emphasis);
-}
-.main-content-card .form-label {
-    color: var(--bs-light-text-emphasis);
-}
-.main-content-card .form-label.required::after {
-    content: " *";
-    color: #dc3545; /* Vermelho Bootstrap para perigo */
-    font-weight: bold;
-}
-.main-content-card .form-control,
-.main-content-card .form-select {
-    background-color: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border-color: var(--bs-border-color-translucent);
-}
-.main-content-card .form-control::placeholder {
-    color: var(--bs-secondary-color);
-}
-.main-content-card .form-text {
-    color: var(--bs-light-text-emphasis);
-    opacity: 0.8;
-}
-.main-content-card .btn-primary {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
-}
-.main-content-card h2, .main-content-card h3, .main-content-card h4 {
-    color: var(--bs-light);
-}
-
-/* Estilos para Seções de Resultados */
-.generated-questions-section {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--bs-border-color);
-}
-.extracted-question-item {
-    background-color: var(--bs-tertiary-bg);
-    padding: 1rem;
-    border-radius: 0.375rem;
-    margin-bottom: 1rem;
-    border: 1px solid var(--bs-border-color);
-    white-space: pre-wrap;
-    color: var(--bs-body-color);
-}
-.motivador-text-display {
-    background-color: var(--bs-secondary-bg);
-    border-left: 5px solid var(--bs-info);
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.95em;
-    border-radius: 0.375rem;
-    white-space: pre-wrap;
-    color: var(--bs-body-color);
-}
-.question-item-display { /* Para itens C/E gerados pela IA */
-    padding: 1rem 1.25rem;
-    border: 1px solid var(--bs-border-color-translucent);
-    border-radius: 0.375rem;
-    margin-bottom: 1rem;
-    background-color: var(--bs-body-bg);
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    color: var(--bs-body-color);
-}
-.question-item-display h5 {
-    font-size: 1em;
-    font-weight: 600;
-    color: var(--bs-emphasis-color);
-}
-.question-item-display .item-text {
-    white-space: pre-wrap;
-    margin-bottom: 0.75rem;
-}
-.ce-response-options {
-    margin-top: 0.75rem;
-    margin-bottom: 0.75rem;
-}
-.ce-result-feedback {
-    min-height: 1.5em;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--bs-border-color-translucent);
-    margin-top: 0.75rem;
-    font-size: 0.9em;
-    color: var(--bs-body-color);
-}
-.ce-result-feedback:empty { display: none; }
-.verify-ce-btn {
-    font-size: 0.8rem;
-}
-.discursive-question-display {
-    white-space: pre-wrap;
-    background-color: var(--bs-body-bg);
-    padding: 1rem;
-    border-radius: 0.375rem;
-    border: 1px solid var(--bs-border-color);
-    font-size: 0.95em;
-    color: var(--bs-body-color);
-}
-
-/* Estilos para o Avatar Fixo Global em Miniatura */
+/* --- Avatar & Chat Widget --- */
 .fixed-ai-avatar {
     position: fixed;
-    bottom: 25px;     /* Distância da borda inferior */
-    right: 25px;      /* Distância da borda direita */
-    z-index: 1050;    /* Alto z-index para sobrepor a maioria dos elementos */
-    cursor: pointer;
-}
-
-.fixed-ai-avatar .avatar-image {
-    width: 55px;      /* Largura da miniatura */
-    height: 55px;     /* Altura da miniatura */
-    border-radius: 50%; /* Para manter a forma circular */
-    border: 2px solid #ffffff; /* Borda branca para destacar */
-    background-color: #007bff; /* Cor de fundo caso a imagem tenha transparência ou para preencher */
-    box-shadow: 0 3px 8px rgba(0,0,0,0.3); /* Sombra para dar profundidade */
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    display: block;
-}
-
-.fixed-ai-avatar:hover .avatar-image {
-    transform: scale(1.12); /* Efeito de zoom ao passar o mouse */
-    box-shadow: 0 5px 12px rgba(0,0,0,0.4);
-}
-/* Estilos para o Avatar Fixo Global (você já deve ter algo similar) */
-.fixed-ai-avatar {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    z-index: 1050; 
-    cursor: pointer;
-}
-
-.fixed-ai-avatar .avatar-image {
-    width: 55px; 
-    height: 55px;
-    border-radius: 50%;
-    border: 2px solid #ffffff;
-    background-color: #007bff;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    display: block;
-}
-
-.fixed-ai-avatar:hover .avatar-image {
-    transform: scale(1.12);
-    box-shadow: 0 5px 12px rgba(0,0,0,0.4);
-}
-
-/* Estilos para a Janela de Chat Flutuante (Widget) */
-.chat-widget-container {
-    position: fixed;
-    bottom: 90px; /* Posição acima do avatar */
-    right: 25px;
-    width: 350px; /* Largura do widget */
-    max-height: 450px; /* Altura máxima */
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    z-index: 1040; /* Abaixo do avatar para o avatar poder "controlá-lo" visualmente */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Para o border-radius funcionar bem com o conteúdo interno */
-}
-
-.chat-widget-header {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top-left-radius: 9px; /* Para cantos arredondados */
-    border-top-right-radius: 9px;
-}
-
-.chat-widget-header h5 {
-    margin: 0;
-    font-size: 1rem;
-}
-
-.close-chat-widget {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    line-height: 1;
-    opacity: 0.7;
-    cursor: pointer;
-}
-.close-chat-widget:hover {
-    opacity: 1;
-}
-
-.chat-widget-messages {
-    flex-grow: 1;
-    padding: 15px;
-    overflow-y: auto; /* Scroll para as mensagens */
-    background-color: #f9f9f9;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* Estilos para balões dentro do widget (reutilize ou adapte de ask_ai.html) */
-.chat-widget-messages .message-bubble {
-    padding: 8px 12px;
-    border-radius: 15px;
-    max-width: 80%;
-    word-wrap: break-word;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-.chat-widget-messages .ai-bubble {
-    background-color: #007bff;
-    color: white;
-    align-self: flex-start;
-}
-
-.chat-widget-messages .user-bubble {
-    background-color: #e9e9eb;
-    color: #333;
-    align-self: flex-end;
-}
-
-.chat-widget-input-form {
-    padding: 10px;
-    border-top: 1px solid #eee;
-    background-color: #fff;
-}
-
-.chat-widget-input-form form {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.chat-widget-input-form textarea {
-    flex-grow: 1;
-    border: 1px solid #ccc;
-    border-radius: 18px;
-    padding: 8px 12px;
-    resize: none;
-    font-size: 0.9rem;
-    min-height: 40px; /* Altura mínima */
-    max-height: 80px; /* Altura máxima antes de scrollar dentro do textarea */
-    overflow-y: auto;
-}
-
-.chat-widget-input-form button[type="submit"] {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.chat-widget-input-form button[type="submit"]:hover {
-    background-color: #0056b3;
-}
-
-/* Estilos para o Avatar Fixo Global (mantenha os que já funcionam para você) */
-.fixed-ai-avatar {
-    position: fixed;
-    bottom: 25px;
+    bottom: calc(45px + 15px); /* FIX: Dinâmico acima do footer fixo */
     right: 25px;
     z-index: 1051; 
     cursor: pointer;
-    transition: transform 0.3s ease;
-}
-.fixed-ai-avatar:hover {
-    transform: scale(1.1);
-}
-
-.fixed-ai-avatar .avatar-image {
-    width: 60px;  /* Um pouco maior para mais destaque */
-    height: 60px;
-    border-radius: 50%;
-    border: 3px solid #fff; /* Borda branca mais pronunciada */
-    background-color: #007bff; /* Cor de fundo caso a imagem seja transparente */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25); /* Sombra mais suave e ampla */
-    display: block;
-}
-
-/* --- Estilos Refinados para o Chat Widget --- */
-.chat-widget-container {
-    position: fixed;
-    /* Posição relativa ao avatar - ajuste 'bottom' e 'right' conforme necessário */
-    bottom: 100px; /* Mais espaço acima do avatar */
-    right: 25px;
-    width: 360px; 
-    max-height: 75vh; /* Limita a altura para não ocupar a tela toda */
-    background-color: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.1)); /* Borda sutil */
-    border-radius: 12px; /* Cantos mais arredondados para um visual moderno */
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15); /* Sombra mais pronunciada para efeito "flutuante" */
-    z-index: 1050; 
-    display: none; /* Começa escondido, JS controla para 'flex' */
-    flex-direction: column;
-    overflow: hidden; /* Para border-radius funcionar bem com conteúdo interno */
-    font-family: 'Inter', sans-serif; /* Usando a fonte que você importou */
-    font-size: 0.9rem;
-    transition: opacity 0.3s ease, transform 0.3s ease; /* Transição para abrir/fechar */
-    transform-origin: bottom right; /* Para animação de escala do canto */
-}
-
-/* Para quando o widget estiver visível (o JS mudará display para flex) */
-.chat-widget-container[style*="display: flex"] { /* Seletor um pouco mais robusto para visível */
-    opacity: 1;
-    transform: scale(1);
-}
-.chat-widget-container[style*="display: none"] {
-    opacity: 0;
-    transform: scale(0.95);
-}
-
-
-.chat-widget-header {
-    /* Usando o tema Brite (laranja) - --bs-warning é geralmente laranja */
-    background-color: var(--bs-warning); 
-    color: var(--bs-dark); /* Texto escuro para contraste com laranja */
-    /* Se --bs-warning-text-emphasis estiver definido e for melhor:
-    color: var(--bs-warning-text-emphasis); 
-    */
-    padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.075));
-}
-
-.chat-widget-header h5 {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600; /* Um pouco mais de peso */
-}
-
-.close-chat-widget {
-    background: none;
-    border: none;
-    color: inherit; 
-    font-size: 1.6rem;
-    line-height: 1;
-    opacity: 0.8;
-    cursor: pointer;
-    padding: 0.1rem 0.4rem; /* Ajuste fino no padding */
-}
-.close-chat-widget:hover {
-    opacity: 1;
-    transform: scale(1.1); /* Leve efeito no hover */
-}
-
-.chat-widget-messages {
-    flex-grow: 1;
-    padding: 1rem;
-    overflow-y: auto; 
-    background-color: var(--bs-body-tertiary); 
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* Espaçamento entre balões */
-}
-
-/* Scrollbar mais sutil para a área de mensagens */
-.chat-widget-messages::-webkit-scrollbar {
-    width: 6px;
-}
-.chat-widget-messages::-webkit-scrollbar-track {
-    background: transparent; 
-}
-.chat-widget-messages::-webkit-scrollbar-thumb {
-    background-color: var(--bs-secondary-bg); 
-    border-radius: 10px;
-    border: 1px solid var(--bs-body-tertiary);
-}
-html[data-bs-theme="dark"] .chat-widget-messages::-webkit-scrollbar-thumb {
-    background-color: var(--bs-gray-600, #6c757d); 
-}
-
-
-.chat-widget-messages .message-bubble {
-    padding: 0.6rem 0.9rem;
-    border-radius: 18px; /* Balões bem arredondados */
-    max-width: 85%;
-    word-wrap: break-word;
-    line-height: 1.45;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08); /* Sombra sutil nos balões */
-}
-
-.chat-widget-messages .ai-bubble {
-    /* Usando a cor primária do tema "Brite" (geralmente um azul ou cor de destaque) */
-    background-color: var(--bs-primary); 
-    color: var(--bs-light); /* Ou o que contrastar melhor com --bs-primary */
-    align-self: flex-start;
-    margin-right: auto; 
-    border-bottom-left-radius: 4px; /* "Rabicho" sutil */
-}
-html[data-bs-theme="dark"] .chat-widget-messages .ai-bubble {
-     /* color: var(--bs-dark); Ajuste se --bs-primary for claro no tema escuro */
-}
-
-
-.chat-widget-messages .user-bubble {
-    background-color: var(--bs-tertiary-bg); /* Fundo mais destacado para usuário */
-    color: var(--bs-body-color);
-    align-self: flex-end;
-    margin-left: auto; 
-    border-bottom-right-radius: 4px; /* "Rabicho" sutil */
-}
-html[data-bs-theme="dark"] .chat-widget-messages .user-bubble {
-    background-color: var(--bs-secondary, #6c757d); /* Cor secundária para o usuário no tema escuro */
-    color: var(--bs-light);
-}
-
-/* === ESTILOS PARA O AVATAR R2-D2 E CHAT WIDGET === */
-
-/* Estilos para o Avatar Fixo Global */
-.fixed-ai-avatar {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    z-index: 1051; /* Um pouco acima do widget para garantir clicabilidade */
-    cursor: pointer;
     transition: transform 0.2s ease-in-out;
 }
+.fixed-ai-avatar .avatar-image { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #fff; background-color: #007bff; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: block; }
 
-.fixed-ai-avatar:hover {
-    transform: scale(1.1);
-}
-
-.fixed-ai-avatar .avatar-image {
-    width: 60px;   /* Ajuste o tamanho conforme desejar */
-    height: 60px;
-    border-radius: 50%;
-    border: 3px solid #fff; /* Borda branca para destacar */
-    /* background-color: #007bff;  Cor de fundo se a imagem for transparente */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    display: block;
-}
-
-/* Estilos Refinados para a Janela de Chat Flutuante (Widget) */
 .chat-widget-container {
     position: fixed;
-    bottom: 95px; /* Posição acima do avatar + pequena margem */
+    bottom: 105px; /* FIX: Acima do avatar fixo */
     right: 25px;
     width: 350px; 
-    max-height: 70vh; /* Altura máxima para não cobrir a tela toda em mobile */
-    background-color: var(--bs-body-bg); /* Usa variável Bootstrap para tema claro/escuro */
+    max-height: 70vh;
+    background-color: var(--bs-body-bg);
     border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.1));
-    border-radius: 12px; /* Cantos mais arredondados */
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra mais pronunciada */
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     z-index: 1050; 
-    display: none; /* Começa escondido, JS controla para 'flex' */
+    display: none;
     flex-direction: column;
-    overflow: hidden; 
-    font-family: 'Inter', sans-serif; /* Fonte que você usa no site */
-    font-size: 0.875rem; /* Tamanho de fonte base para o widget */
-    opacity: 0; /* Para transição suave */
-    transform: translateY(10px) scale(0.95); /* Posição inicial para animação */
-    transform-origin: bottom right;
+    overflow: hidden;
+    font-size: 0.875rem;
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
     transition: opacity 0.25s ease-out, transform 0.25s ease-out;
 }
+.chat-widget-container[style*="display: flex"] { opacity: 1; transform: translateY(0) scale(1); }
 
-/* Quando o widget é tornado visível pelo JavaScript */
-.chat-widget-container[style*="display: flex"] {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-}
+.chat-widget-header { background-color: var(--bs-warning); color: #000; padding: 0.65rem 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bs-border-color-translucent); }
+.chat-widget-messages { flex-grow: 1; padding: 0.75rem 1rem; overflow-y: auto; background-color: var(--bs-body-tertiary); display: flex; flex-direction: column; gap: 0.65rem; }
+.chat-widget-messages .message-bubble { padding: 0.5rem 0.8rem; border-radius: 16px; max-width: 85%; line-height: 1.4; box-shadow: 0 1px 1.5px rgba(0,0,0,0.07); }
+.chat-widget-messages .ai-bubble { background-color: var(--bs-primary); color: #fff; align-self: flex-start; border-bottom-left-radius: 5px; }
+.chat-widget-messages .user-bubble { background-color: var(--bs-secondary-bg); color: var(--bs-body-color); align-self: flex-end; border-bottom-right-radius: 5px; }
 
-
-.chat-widget-header {
-    /* Usando --bs-warning que é laranja no tema Brite */
-    background-color: var(--bs-warning); 
-    color: var(--bs-black); /* Texto preto para bom contraste com laranja */
-    /* Se tiver uma variável específica para texto sobre o warning, use-a:
-       color: var(--bs-warning-text-emphasis); 
-    */
-    padding: 0.65rem 1rem; /* Padding ajustado */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.05));
-}
-
-.chat-widget-header h5 {
-    margin: 0;
-    font-size: 0.95rem; /* Tamanho do título ajustado */
-    font-weight: 600;
-}
-
-.close-chat-widget {
-    background: none;
-    border: none;
-    color: inherit; 
-    font-size: 1.5rem;
-    line-height: 1;
-    opacity: 0.7;
-    cursor: pointer;
-    padding: 0.1rem 0.3rem;
-}
-.close-chat-widget:hover {
-    opacity: 1;
-}
-
-.chat-widget-messages {
-    flex-grow: 1;
-    padding: 0.75rem 1rem; /* Padding ajustado */
-    overflow-y: auto; 
-    background-color: var(--bs-body-tertiary); 
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem; /* Espaçamento entre balões ajustado */
-}
-
-/* Scrollbar mais sutil para a área de mensagens */
-.chat-widget-messages::-webkit-scrollbar {
-    width: 5px;
-}
-.chat-widget-messages::-webkit-scrollbar-track {
-    background: transparent; 
-}
-.chat-widget-messages::-webkit-scrollbar-thumb {
-    background-color: var(--bs-secondary-bg); 
-    border-radius: 10px;
-}
-html[data-bs-theme="dark"] .chat-widget-messages::-webkit-scrollbar-thumb {
-    background-color: var(--bs-gray-700, #495057); 
-}
-
-
-.chat-widget-messages .message-bubble {
-    padding: 0.5rem 0.8rem; /* Padding interno dos balões */
-    border-radius: 16px; /* Balões bem arredondados */
-    max-width: 85%;
-    word-wrap: break-word;
-    line-height: 1.4;
-    box-shadow: 0 1px 1.5px rgba(0,0,0,0.07); /* Sombra sutil nos balões */
-}
-
-.chat-widget-messages .ai-bubble {
-    /* Usando --bs-primary (que é azul escuro no tema Brite) */
-    background-color: var(--bs-primary); 
-    color: var(--bs-light); /* Texto claro para contraste */
-    align-self: flex-start;
-    margin-right: auto; 
-    border-bottom-left-radius: 5px; /* "Rabicho" sutil */
-}
-html[data-bs-theme="dark"] .chat-widget-messages .ai-bubble {
-    /* Ajuste se o primário no tema escuro tiver cor de texto diferente */
-}
-
-
-.chat-widget-messages .user-bubble {
-    background-color: var(--bs-secondary-bg); 
-    color: var(--bs-body-color);
-    align-self: flex-end;
-    margin-left: auto; 
-    border-bottom-right-radius: 5px; /* "Rabicho" sutil */
-}
-html[data-bs-theme="dark"] .chat-widget-messages .user-bubble {
-    background-color: var(--bs-gray-600, #6c757d); 
-    color: var(--bs-light);
-}
-
-
-.chat-widget-messages .message-bubble p {
-    margin-bottom: 0;
-}
-
-.chat-widget-input-form {
-    padding: 0.65rem 1rem; /* Padding ajustado */
-    border-top: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,0.05));
-    background-color: var(--bs-body-bg);
-    display: flex;
-}
-
-.chat-widget-input-form form {
-    display: flex;
-    align-items: center; 
-    gap: 0.5rem;
-    width: 100%;
-}
-
-.chat-widget-input-form textarea {
-    flex-grow: 1;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 18px; /* Input arredondado */
-    padding: 0.5rem 0.9rem; 
-    resize: none;
-    min-height: 40px; 
-    max-height: 90px; 
-    overflow-y: auto;
-    background-color: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    font-family: inherit;
-    font-size: 0.875rem; /* Fonte do input igual ao widget */
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-.chat-widget-input-form textarea::placeholder {
-    color: var(--bs-secondary-color);
-    opacity: 0.7;
-}
-.chat-widget-input-form textarea:focus {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25); 
-    outline: none;
-}
-
-
-.chat-widget-input-form button[type="submit"] {
-    background-color: var(--bs-primary);
-    color: var(--bs-light); 
-    border: none;
-    border-radius: 50%;
-    width: 38px; /* Tamanho do botão de enviar */
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 1rem; /* Tamanho do ícone */
-    padding: 0;
-    flex-shrink: 0; 
-    transition: background-color 0.15s ease, transform 0.1s ease;
-}
-
-.chat-widget-input-form button[type="submit"]:hover {
-    /* Para o tema "Brite", primário é azul escuro. Um tom mais claro/escuro no hover. */
-    /* Se var(--bs-primary-darken) não existir, defina manualmente ou use filter */
-    background-color: #0a58ca; /* Azul um pouco mais escuro para o tema Brite (original #0d6efd) */
-    /* Se o primário fosse laranja, como #ff8800, um hover poderia ser #e67300 */
-}
-.chat-widget-input-form button[type="submit"]:active {
-    transform: scale(0.92);
-}
-
-/* Indicador de "digitando" */
-.chat-widget-messages .ai-bubble#typing-indicator {
-    background-color: var(--bs-body-tertiary);
-    border: 1px dashed var(--bs-border-color);
-    box-shadow: none;
-}
-.chat-widget-messages .ai-bubble#typing-indicator p {
-    font-style: italic;
-    color: var(--bs-secondary-color);
-    animation: typing-pulse 1.5s infinite ease-in-out;
-}
-
-@keyframes typing-pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
-}
-
-/* Em seu arquivo CSS customizado, ex: static/css/custom_markdown_styles.css */
-
-#extractedModalBody {
-    font-size: 1rem; /* Tamanho de fonte base */
-    line-height: 1.6; /* Espaçamento entre linhas */
-    color: #333; /* Cor de texto principal */
-}
-
-#extractedModalBody h1,
-#extractedModalBody h2,
-#extractedModalBody h3,
-#extractedModalBody h4,
-#extractedModalBody h5,
-#extractedModalBody h6 {
-    margin-top: 1.5em;
-    margin-bottom: 0.75em;
-    color: #111; /* Cor mais escura para cabeçalhos */
-    font-weight: 600;
-}
-
-#extractedModalBody h1 { font-size: 2em; }
-#extractedModalBody h2 { font-size: 1.75em; }
-#extractedModalBody h3 { font-size: 1.5em; }
-/* ... e assim por diante para h4, h5, h6 */
-
-#extractedModalBody p {
-    margin-bottom: 1em;
-}
-
-#extractedModalBody ul,
-#extractedModalBody ol {
-    margin-bottom: 1em;
-    padding-left: 2em; /* Adiciona indentação padrão para listas */
-}
-
-#extractedModalBody li {
-    margin-bottom: 0.25em;
-}
-
-#extractedModalBody blockquote {
-    border-left: 4px solid #ccc;
-    padding-left: 1em;
-    margin-left: 0;
-    margin-bottom: 1em;
-    font-style: italic;
-    color: #555;
-}
-
-#extractedModalBody pre {
-    background-color: #f8f9fa; /* Um cinza claro, padrão do Bootstrap */
-    border: 1px solid #dee2e6; /* Borda padrão do Bootstrap */
-    padding: 1em;
-    border-radius: 0.25rem; /* Bordas arredondadas */
-    overflow-x: auto; /* Rolagem horizontal para blocos de código grandes */
-    font-size: 0.9em;
-}
-
-#extractedModalBody code {
-    font-family: 'Courier New', Courier, monospace; /* Fonte monoespaçada para código */
-    background-color: #e9ecef; /* Fundo sutil para código inline */
-    padding: 0.2em 0.4em;
-    border-radius: 0.2rem;
-    font-size: 0.9em;
-}
-
-#extractedModalBody pre code {
-    background-color: transparent; /* Remove fundo duplo para código dentro de pre */
-    padding: 0;
-    border-radius: 0;
-    font-size: inherit; /* Herda o tamanho da fonte do <pre> */
-}
-
-#extractedModalBody table {
-    width: 100%;
-    margin-bottom: 1rem;
-    border-collapse: collapse; /* Remove espaços duplos entre bordas */
-}
-
-#extractedModalBody th,
-#extractedModalBody td {
-    padding: 0.75rem;
-    vertical-align: top;
-    border: 1px solid #dee2e6; /* Borda para células */
-}
-
-#extractedModalBody th {
-    background-color: #f8f9fa; /* Fundo para cabeçalhos de tabela */
-    font-weight: bold;
-}
-
-#extractedModalBody hr {
-    margin-top: 2em;
-    margin-bottom: 2em;
-}
-
-/* Customizações para o tema Dark Mode */
+/* --- Dark Mode Overrides (INTEGRAL) --- */
 [data-bs-theme="dark"] {
-    --bs-body-color: #dee2e6; /* Cor do texto principal */
-    --bs-body-bg: #212529; /* Cor de fundo principal */
-
-    /* Cores das bordas - Tornando as linhas mais visíveis */
-    --bs-border-color: #495057; /* Uma cor de borda mais escura mas visível */
-    --bs-border-color-translucent: rgba(73, 80, 87, 0.5); /* Bordas semitransparentes */
-
-    /* Cores de fundo para componentes com bordas */
-    --bs-secondary-bg: #343a40; /* Fundo secundário mais distinto */
-    --bs-tertiary-bg: #2b3035; /* Fundo terciário */
-
-    /* Exemplo para tabelas, cards ou divisores */
-    .table {
-        --bs-table-bg: #2b3035; /* Fundo da tabela */
-        --bs-table-border-color: #495057; /* Bordas da tabela mais visíveis */
-        color: var(--bs-body-color); /* Cor do texto da tabela */
-    }
-
-    .card {
-        background-color: var(--bs-secondary-bg);
-        border-color: var(--bs-border-color); /* Borda do card */
-    }
-
-    hr { /* Linhas divisórias (horizontal rule) */
-        border-color: var(--bs-border-color);
-        opacity: 0.7; /* Garante que a linha não seja muito fraca */
-    }
-
-    /* Adicione mais estilos conforme necessário para outros componentes */
-    .list-group-item {
-        background-color: var(--bs-secondary-bg);
-        border-color: var(--bs-border-color);
-        color: var(--bs-body-color);
-    }
-
-    .modal-content {
-        background-color: var(--bs-secondary-bg);
-        border-color: var(--bs-border-color);
-    }
+    --bs-body-color: #dee2e6; --bs-body-bg: #212529; --bs-border-color: #495057;
+    .table { --bs-table-bg: #2b3035; --bs-table-border-color: #495057; }
+    .card, .modal-content, .list-group-item { background-color: #343a40; border-color: #495057; }
+    .form-control, .form-select { background-color: #343a40; color: #dee2e6; border-color: #495057; }
 }
 
-/* Garanta que as bordas dos inputs e outros elementos de formulário sejam visíveis */
-[data-bs-theme="dark"] .form-control,
-[data-bs-theme="dark"] .form-select {
-    background-color: #343a40;
-    color: var(--bs-body-color);
-    border-color: var(--bs-border-color); /* Torna a borda do input mais visível */
-}
-
-[data-bs-theme="dark"] .form-control:focus,
-[data-bs-theme="dark"] .form-select:focus {
-    border-color: #66afe9; /* Uma cor de foco que contraste bem */
-    box-shadow: 0 0 0 0.25rem rgba(102, 175, 233, 0.25);
-}
-
-/* Se você tiver divisores ou elementos específicos que são linhas */
-.divisor {
-    border-bottom: 1px solid var(--bs-border-color);
-    /* ou border-right para divisores verticais */
-}
+.divisor { border-bottom: 1px solid var(--bs-border-color); }

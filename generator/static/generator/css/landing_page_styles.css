@@ -1,156 +1,169 @@
 /* static/generator/css/landing_page_styles.css */
 
-/* --- Estilos para o Letreiro de Concursos --- */
-.section-title-marquee { /* Estilo para o título da seção do marquee */
+/* --- 1. LETREIRO DE CONCURSOS (MARQUEE) --- */
+.section-title-marquee {
     text-align: center;
-    font-weight: 600; /* Um pouco mais de destaque */
-    color: var(--bs-emphasis-color); /* Usa a cor de ênfase do Bootstrap */
-    margin-top: 2.5rem; /* Espaçamento acima */
-    margin-bottom: 1rem; /* Espaçamento abaixo, antes do marquee */
+    /* Fonte responsiva para o título da seção */
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-weight: 700;
+    color: var(--bs-emphasis-color);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
 }
+
 .marquee-container {
     width: 100%;
-    background-color: var(--bs-tertiary-bg); /* Usa cor de fundo terciária do Bootstrap */
-    color: var(--bs-body-color); /* Usa cor de texto do corpo do Bootstrap */
-    padding: 12px 0; /* Aumenta um pouco o padding vertical */
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    padding: 14px 0;
     border-top: 1px solid var(--bs-border-color-translucent);
     border-bottom: 1px solid var(--bs-border-color-translucent);
-    box-shadow: var(--bs-box-shadow-sm); /* Sombra suave */
+    box-shadow: var(--bs-box-shadow-sm);
     overflow: hidden;
-    margin-bottom: 2.5rem; /* Aumenta o espaçamento abaixo do marquee */
+    margin-bottom: 3rem;
+    /* Garante que o marquee não "empurre" o layout lateralmente */
+    position: relative;
 }
-.marquee-content span.marquee-item { /* Adicionada classe para cada item */
+
+.marquee-content {
+    display: flex;
+    white-space: nowrap;
+}
+
+.marquee-content span.marquee-item {
     display: inline-block;
-    margin-right: 40px; /* Espaçamento entre os itens do marquee */
-    font-size: 0.95em; /* Levemente maior para melhor leitura */
-    white-space: nowrap; /* Garante que cada item não quebre linha */
+    margin-right: 50px;
+    /* Fonte responsiva para os itens do marquee */
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
+
 .marquee-content a {
-    color: var(--bs-link-color); /* Usa cor de link padrão do Bootstrap */
+    color: var(--bs-link-color);
     text-decoration: none;
-    font-weight: 500; /* Peso da fonte para o link */
+    font-weight: 600;
+    transition: color 0.2s ease;
 }
+
 .marquee-content a:hover {
     text-decoration: underline;
     color: var(--bs-link-hover-color);
 }
-.marquee-status-aberto {
-    color: var(--bs-success); /* Cor de sucesso do Bootstrap */
-    font-weight: 500;
-}
-.marquee-status-previsto {
-    color: var(--bs-warning-text-emphasis); /* Cor de aviso do Bootstrap (para texto) */
-    font-weight: 500;
-}
-.marquee-vagas {
-    font-weight: normal;
-    color: var(--bs-secondary-color); /* Cor secundária do Bootstrap */
-}
-.marquee-separator {
-    color: var(--bs-border-color); /* Cor da borda para o separador */
-    margin: 0 15px;
-}
 
-/* --- Estilos Gerais dos Cards (Ícone e Legenda) --- */
+.marquee-status-aberto { color: var(--bs-success); font-weight: 700; }
+.marquee-status-previsto { color: var(--bs-warning-text-emphasis); font-weight: 700; }
+.marquee-vagas { color: var(--bs-secondary-color); font-weight: normal; }
+
+/* --- 2. CARDS DA LANDING PAGE (INTERATIVIDADE) --- */
 .card.landing-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
     height: 100%;
     border: 1px solid var(--bs-border-color-translucent);
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     position: relative;
     text-decoration: none;
+    background-color: var(--bs-body-bg);
+    overflow: hidden;
 }
+
 .card.landing-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
     box-shadow: var(--bs-box-shadow-lg);
 }
+
 .card.landing-card .card-body {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 1.5rem 1rem;
-    height: 100%;
+    padding: 2rem 1rem;
 }
+
 .card-icon-main {
-    font-size: 2.75rem;
-    margin-bottom: 0.75rem;
+    /* Ícone diminui proporcionalmente em telas pequenas */
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    margin-bottom: 1rem;
     line-height: 1;
+    transition: color 0.3s ease;
 }
+
 .card-icon-caption {
-    font-size: 0.9rem;
-    font-weight: 500;
-    line-height: 1.3;
+    /* Legenda responsiva para evitar quebra feia no mobile */
+    font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+    font-weight: 600;
+    line-height: 1.4;
     display: block;
+    padding: 0 0.5rem;
 }
-.card.landing-card.text-white .card-icon-main,
-.card.landing-card.text-white .card-icon-caption {
-    color: white;
-}
+
+/* Ajuste de Contraste Automático */
 .card.landing-card.bg-light .card-icon-main,
 .card.landing-card.bg-light .card-icon-caption,
 .card.landing-card.bg-warning .card-icon-main,
 .card.landing-card.bg-warning .card-icon-caption,
-.card.landing-card.bg-secondary .card-icon-main, /* Adicionado para bg-secondary */
-.card.landing-card.bg-secondary .card-icon-caption { /* Adicionado para bg-secondary */
-    color: var(--bs-dark) !important; /* Força o texto a ser escuro */
+.card.landing-card.bg-secondary .card-icon-main,
+.card.landing-card.bg-secondary .card-icon-caption {
+    color: #212529 !important;
 }
 
-.card.landing-card .stretched-link::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1;
-    background-color: transparent;
-}
-
-/* --- Estilos para a Nuvem de Palavras --- */
+/* --- 3. NUVEM DE PALAVRAS (WORD CLOUD) --- */
 #wordCloudContainer {
     width: 100%;
     min-height: 250px;
     border: 1px solid var(--bs-border-color-translucent);
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 0.8rem;
-    padding: 1.5rem;
+    gap: clamp(0.4rem, 1vw, 1rem);
+    padding: 2rem;
     margin: 3rem 0;
     background-color: var(--bs-tertiary-bg);
     box-shadow: var(--bs-box-shadow-sm);
     overflow: hidden;
-    perspective: 1000px;
+    /* Evita que a nuvem encavale no rodapé fixo */
+    margin-bottom: 5rem; 
 }
+
 @keyframes float-scale {
-    0% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.9; }
-    50% { transform: translateY(-5px) rotate(2deg) scale(1.03); opacity: 1; }
-    100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.9; }
+    0% { transform: translateY(0px) scale(1); opacity: 0.8; }
+    50% { transform: translateY(-8px) scale(1.05); opacity: 1; }
+    100% { transform: translateY(0px) scale(1); opacity: 0.8; }
 }
+
 .word-cloud-item {
     cursor: pointer;
-    transition: transform 0.3s ease-in-out, color 0.2s ease-in-out, opacity 0.3s ease;
+    transition: all 0.3s ease;
     display: inline-block;
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.25rem;
-    line-height: 1.2;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.5rem;
+    line-height: 1.1;
     text-decoration: none;
-    animation: float-scale 7s ease-in-out infinite;
+    animation: float-scale 6s ease-in-out infinite;
+    /* Impede que as palavras fiquem borradas na animação */
     backface-visibility: hidden;
 }
+
+/* Variação de atraso na animação para não moverem todas juntas */
+.word-cloud-item:nth-child(odd) { animation-delay: 1s; animation-duration: 7s; }
+.word-cloud-item:nth-child(3n) { animation-delay: 2s; animation-duration: 5s; }
+
 .word-cloud-item:hover {
-    transform: scale(1.2) rotate(0deg);
-    text-decoration: underline;
+    transform: scale(1.25);
+    background-color: var(--bs-primary);
+    color: white !important;
     animation-play-state: paused;
-    opacity: 1;
+    z-index: 10;
 }
-.wc-size-1 { font-size: 0.8rem; }
-.wc-size-2 { font-size: 1rem; }
-.wc-size-3 { font-size: 1.25rem; }
-.wc-size-4 { font-size: 1.5rem; }
-.wc-size-5 { font-size: 1.75rem; }
-.wc-size-6 { font-size: 2rem; }
+
+/* Tamanhos de Fonte Dinâmicos */
+.wc-size-1 { font-size: clamp(0.7rem, 1.5vw, 0.85rem); font-weight: 400; opacity: 0.7; }
+.wc-size-2 { font-size: clamp(0.85rem, 2vw, 1rem); font-weight: 500; }
+.wc-size-3 { font-size: clamp(1rem, 2.5vw, 1.2rem); font-weight: 600; }
+.wc-size-4 { font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 700; }
+.wc-size-5 { font-size: clamp(1.4rem, 3.5vw, 1.8rem); font-weight: 800; }
+.wc-size-6 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 900; }

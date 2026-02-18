@@ -111,8 +111,8 @@
                             <tr>
                                 <td class="text-nowrap">{{ tentativa.data_resposta|date:"d/m/Y H:i" }}</td>
                                 <td><span class="badge {% if tentativa.questao.tipo == 'CE' %}bg-primary-subtle text-primary-emphasis{% else %}bg-info-subtle text-info-emphasis{% endif %}">{{ tentativa.questao.get_tipo_display }}</span></td>
-                                <td>{{ tentativa.questao.area.nome|default:"-" }}</td>
-                                <td>{{ tentativa.questao.texto_comando|truncatewords:12 }}</td>
+                                <td>{{ tentativa.questao.topico.area_conhecimento.nome|default:"-" }}</td>
+                                <td>{{ tentativa.questao.enunciado|truncatewords:12 }}</td>
                                 <td class="text-center">
                                     {% if tentativa.resposta_ce %}
                                         <span class="fw-bold">{{ tentativa.resposta_ce }}</span>
