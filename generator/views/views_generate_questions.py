@@ -1,6 +1,5 @@
 import logging
 from django.contrib import messages
-# from venv import logger # Removido import duplicado e incorreto
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,12 +11,11 @@ from generator.forms import AreaConhecimentoForm, DiscursiveExamForm, QuestionGe
 from generator.models import AreaConhecimento, Avaliacao, Questao, TentativaResposta, Topico
 from django.utils import timezone
 import json
-# from venv import logger # Removido import duplicado e incorreto
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-# from generator.models import Avaliacao, Questao, TentativaResposta # Removido import duplicado
-from generator.utils import parse_evaluation_scores
+# IMPORTAÇÃO MODIFICADA: Adicionado parse_discursive_question
+from generator.utils import parse_evaluation_scores, parse_discursive_question
 from generator.views.views_functions import extrair_texto_completo_pdf
 from generator.views.views_service_context import _get_base_context_and_service
 
@@ -207,6 +205,137 @@ def generate_questions_view(request):
     
     return render(request, 'generator/question_generator.html', context)
 
+# @login_required
+# def generate_discursive_exam_view(request):
+#     base_context, service, service_initialized = _get_base_context_and_service()
+#     context = base_context.copy()
+#     context['service_initialized'] = service_initialized
+#     discursive_exam_text = None
+#     questao_id = None
+
+#     if request.method == 'POST':
+#         form = DiscursiveExamForm(request.POST, request.FILES or None)
+#         if form.is_valid():
+#             if not service_initialized or not service:
+#                 messages.error(request, context.get('error_message', "Serviço de IA indisponível para processar."))
+#                 context['form'] = form
+#                 return render(request, 'generator/discursive_exam_generator.html', context)
+
+#             base_topic_or_context_manual = form.cleaned_data.get('base_topic_or_context')
+#             pdf_file_uploaded = form.cleaned_data.get('pdf_file')
+#             final_context_for_ia = base_topic_or_context_manual
+
+#             if pdf_file_uploaded:
+#                 try:
+#                     logger.info(f"Processando PDF '{pdf_file_uploaded.name}' para NOVA questão discursiva.")
+#                     texto_do_pdf = extrair_texto_completo_pdf(pdf_file_uploaded)
+#                     if texto_do_pdf and texto_do_pdf.strip():
+#                         final_context_for_ia = texto_do_pdf
+#                         if base_topic_or_context_manual and base_topic_or_context_manual.strip():
+#                             final_context_for_ia += "\n\n--- Tópico adicional fornecido manualmente ---\n" + base_topic_or_context_manual
+#                             messages.info(request, "Conteúdo do PDF combinado com texto manual para nova questão.")
+#                         logger.info(f"Texto extraído do PDF para nova questão: {len(final_context_for_ia)} caracteres.")
+#                     elif not (base_topic_or_context_manual and base_topic_or_context_manual.strip()):
+#                         messages.error(request, f"PDF '{pdf_file_uploaded.name}' não contém texto extraível e nenhum tópico manual foi fornecido.")
+#                         context['form'] = form
+#                         context['error_message'] = "Fonte de contexto insuficiente."
+#                         return render(request, 'generator/discursive_exam_generator.html', context)
+#                 except ValueError as e_pdf:
+#                     logger.error(f"Erro ao processar PDF para nova questão: {e_pdf}", exc_info=True)
+#                     messages.error(request, f"Erro ao processar o arquivo PDF: {e_pdf}")
+#                     if not (base_topic_or_context_manual and base_topic_or_context_manual.strip()):
+#                         context['form'] = form
+#                         context['error_message'] = "Erro no PDF e nenhum tópico manual fornecido."
+#                         return render(request, 'generator/discursive_exam_generator.html', context)
+            
+#             if not final_context_for_ia or not final_context_for_ia.strip():
+#                 messages.error(request, "É necessário fornecer um tópico/contexto textual ou um PDF com conteúdo para gerar a questão.")
+#                 context['form'] = form
+#                 return render(request, 'generator/discursive_exam_generator.html', context)
+
+#             num_aspects = form.cleaned_data.get('num_aspects', 3)
+#             area_obj = form.cleaned_data.get('area')
+#             difficulty = form.cleaned_data.get('complexity', 'Intermediária')
+#             complexity_for_service = difficulty
+#             language = form.cleaned_data.get('language', 'pt-br')
+#             current_user = request.user if request.user.is_authenticated else None
+            
+#             logger.info(f"POST Gerador Discursiva: Contexto_len={len(final_context_for_ia)}, Aspectos={num_aspects}, Área={area_obj}, Dificuldade={complexity_for_service}")
+
+#             try:
+#                 generated_text = service.generate_discursive_exam_question(
+#                     base_topic_or_context=final_context_for_ia, 
+#                     num_aspects=num_aspects, 
+#                     area=area_obj.nome if area_obj else None, 
+#                     complexity=complexity_for_service, 
+#                     language=language
+#                 )
+                
+#                 if generated_text and isinstance(generated_text, str) and generated_text.strip():
+#                     dificuldade_db = 'medio'
+#                     if complexity_for_service:
+#                         comp_lower = complexity_for_service.lower()
+#                         if comp_lower in ['fácil', 'facil', 'simples']: dificuldade_db = 'facil'
+#                         elif comp_lower in ['difícil', 'dificil', 'complexa']: dificuldade_db = 'dificil'
+
+#                     # CORRIGIDO: 'texto_comando' -> 'enunciado', 'area' -> 'topico'
+#                     generic_topic, _ = Topico.objects.get_or_create(
+#                         nome=f"Tópico Discursivo de {area_obj.nome}",
+#                         defaults={'area_conhecimento': area_obj}
+#                     )
+#                     q = Questao(
+#                         tipo='DISC',
+#                         enunciado=generated_text,
+#                         aspectos_discursiva=f"Avaliar {num_aspects} aspecto(s) solicitado(s).",
+#                         dificuldade=dificuldade_db,
+#                         topico=generic_topic,
+#                         criado_por=current_user
+#                     )
+#                     q.save()
+#                     questao_id = q.id
+#                     discursive_exam_text = generated_text
+#                     logger.info(f"Questão Discursiva ID {questao_id} salva com sucesso.")
+#                     messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso! Você pode respondê-la abaixo ou buscar por ela mais tarde.")
+#                     form = DiscursiveExamForm()
+#                 else:
+#                     messages.warning(request, "A IA não retornou um texto válido para a questão discursiva.")
+#             except Exception as e:
+#                 logger.error(f"Erro ao gerar ou salvar questão discursiva: {e}", exc_info=True)
+#                 messages.error(request, f"Falha durante a geração/salvamento da questão: {e}")
+#         else:
+#             logger.warning(f"Formulário Gerador Discursiva INVÁLIDO: {form.errors.as_json()}")
+#             messages.error(request, "Por favor, corrija os erros indicados no formulário.")
+        
+#         context['form'] = form
+
+#     else: # GET
+#         form = DiscursiveExamForm()
+#         questao_id_from_url = request.GET.get('questao_id')
+#         logger.debug(f"GET generate_discursive_exam por {request.user.username}. questao_id_from_url: {questao_id_from_url}")
+
+#         if questao_id_from_url and questao_id_from_url.isdigit():
+#             qid = int(questao_id_from_url)
+#             logger.info(f"Tentando carregar Questão Discursiva ID={qid} via GET.")
+#             try:
+#                 questao_para_exibir = get_object_or_404(Questao, id=qid, tipo='DISC')
+#                 # CORRIGIDO: 'texto_comando' -> 'enunciado'
+#                 discursive_exam_text = questao_para_exibir.enunciado
+#                 questao_id = questao_para_exibir.id
+#                 logger.info(f"Questão Discursiva ID {questao_id} carregada para exibição e resolução.")
+#                 messages.info(request, f"Modo Resolução: Questão ID {questao_id} carregada. Responda abaixo.")
+#             except Questao.DoesNotExist:
+#                 logger.warning(f"Questão discursiva ID {qid} não encontrada.", exc_info=False)
+#                 messages.warning(request, f"A questão discursiva com ID {qid} não foi encontrada.")
+#             except Exception as e:
+#                 logger.error(f"Erro ao buscar questão discursiva ID {qid} via GET: {e}", exc_info=True)
+#                 messages.error(request, f"Erro ao tentar carregar a questão discursiva com ID {qid}.")
+        
+#         context['form'] = form
+
+#     context['discursive_exam_text'] = discursive_exam_text
+#     context['questao_id'] = questao_id
+#     return render(request, 'generator/discursive_exam_generator.html', context)
+
 @login_required
 def generate_discursive_exam_view(request):
     base_context, service, service_initialized = _get_base_context_and_service()
@@ -214,6 +343,7 @@ def generate_discursive_exam_view(request):
     context['service_initialized'] = service_initialized
     discursive_exam_text = None
     questao_id = None
+    questao_data = None  # Variável para os dados estruturados
 
     if request.method == 'POST':
         form = DiscursiveExamForm(request.POST, request.FILES or None)
@@ -236,55 +366,46 @@ def generate_discursive_exam_view(request):
                         if base_topic_or_context_manual and base_topic_or_context_manual.strip():
                             final_context_for_ia += "\n\n--- Tópico adicional fornecido manualmente ---\n" + base_topic_or_context_manual
                             messages.info(request, "Conteúdo do PDF combinado com texto manual para nova questão.")
-                        logger.info(f"Texto extraído do PDF para nova questão: {len(final_context_for_ia)} caracteres.")
                     elif not (base_topic_or_context_manual and base_topic_or_context_manual.strip()):
                         messages.error(request, f"PDF '{pdf_file_uploaded.name}' não contém texto extraível e nenhum tópico manual foi fornecido.")
                         context['form'] = form
-                        context['error_message'] = "Fonte de contexto insuficiente."
                         return render(request, 'generator/discursive_exam_generator.html', context)
                 except ValueError as e_pdf:
-                    logger.error(f"Erro ao processar PDF para nova questão: {e_pdf}", exc_info=True)
+                    logger.error(f"Erro ao processar PDF: {e_pdf}")
                     messages.error(request, f"Erro ao processar o arquivo PDF: {e_pdf}")
-                    if not (base_topic_or_context_manual and base_topic_or_context_manual.strip()):
-                        context['form'] = form
-                        context['error_message'] = "Erro no PDF e nenhum tópico manual fornecido."
-                        return render(request, 'generator/discursive_exam_generator.html', context)
             
             if not final_context_for_ia or not final_context_for_ia.strip():
-                messages.error(request, "É necessário fornecer um tópico/contexto textual ou um PDF com conteúdo para gerar a questão.")
+                messages.error(request, "É necessário fornecer um tópico/contexto textual ou um PDF para gerar a questão.")
                 context['form'] = form
                 return render(request, 'generator/discursive_exam_generator.html', context)
 
             num_aspects = form.cleaned_data.get('num_aspects', 3)
             area_obj = form.cleaned_data.get('area')
             difficulty = form.cleaned_data.get('complexity', 'Intermediária')
-            complexity_for_service = difficulty
             language = form.cleaned_data.get('language', 'pt-br')
             current_user = request.user if request.user.is_authenticated else None
             
-            logger.info(f"POST Gerador Discursiva: Contexto_len={len(final_context_for_ia)}, Aspectos={num_aspects}, Área={area_obj}, Dificuldade={complexity_for_service}")
-
             try:
                 generated_text = service.generate_discursive_exam_question(
                     base_topic_or_context=final_context_for_ia, 
                     num_aspects=num_aspects, 
                     area=area_obj.nome if area_obj else None, 
-                    complexity=complexity_for_service, 
+                    complexity=difficulty, 
                     language=language
                 )
                 
                 if generated_text and isinstance(generated_text, str) and generated_text.strip():
+                    # Lógica de dificuldade para o banco
                     dificuldade_db = 'medio'
-                    if complexity_for_service:
-                        comp_lower = complexity_for_service.lower()
-                        if comp_lower in ['fácil', 'facil', 'simples']: dificuldade_db = 'facil'
-                        elif comp_lower in ['difícil', 'dificil', 'complexa']: dificuldade_db = 'dificil'
+                    comp_lower = difficulty.lower()
+                    if comp_lower in ['fácil', 'facil', 'simples']: dificuldade_db = 'facil'
+                    elif comp_lower in ['difícil', 'dificil', 'complexa']: dificuldade_db = 'dificil'
 
-                    # CORRIGIDO: 'texto_comando' -> 'enunciado', 'area' -> 'topico'
                     generic_topic, _ = Topico.objects.get_or_create(
                         nome=f"Tópico Discursivo de {area_obj.nome}",
                         defaults={'area_conhecimento': area_obj}
                     )
+                    
                     q = Questao(
                         tipo='DISC',
                         enunciado=generated_text,
@@ -294,184 +415,159 @@ def generate_discursive_exam_view(request):
                         criado_por=current_user
                     )
                     q.save()
+                    
                     questao_id = q.id
                     discursive_exam_text = generated_text
-                    logger.info(f"Questão Discursiva ID {questao_id} salva com sucesso.")
-                    messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso! Você pode respondê-la abaixo ou buscar por ela mais tarde.")
+                    
+                    # MODIFICAÇÃO: Processando o texto gerado para evitar o "blocão"
+                    questao_data = parse_discursive_question(generated_text)
+                    
+                    messages.success(request, f"Questão discursiva (ID: {questao_id}) gerada com sucesso!")
                     form = DiscursiveExamForm()
                 else:
-                    messages.warning(request, "A IA não retornou um texto válido para a questão discursiva.")
+                    messages.warning(request, "A IA não retornou um texto válido.")
             except Exception as e:
-                logger.error(f"Erro ao gerar ou salvar questão discursiva: {e}", exc_info=True)
-                messages.error(request, f"Falha durante a geração/salvamento da questão: {e}")
+                logger.error(f"Erro ao gerar ou salvar discursiva: {e}", exc_info=True)
+                messages.error(request, f"Falha na geração: {e}")
         else:
-            logger.warning(f"Formulário Gerador Discursiva INVÁLIDO: {form.errors.as_json()}")
-            messages.error(request, "Por favor, corrija os erros indicados no formulário.")
-        
-        context['form'] = form
+            context['form'] = form
 
     else: # GET
         form = DiscursiveExamForm()
         questao_id_from_url = request.GET.get('questao_id')
-        logger.debug(f"GET generate_discursive_exam por {request.user.username}. questao_id_from_url: {questao_id_from_url}")
 
         if questao_id_from_url and questao_id_from_url.isdigit():
-            qid = int(questao_id_from_url)
-            logger.info(f"Tentando carregar Questão Discursiva ID={qid} via GET.")
             try:
-                questao_para_exibir = get_object_or_404(Questao, id=qid, tipo='DISC')
-                # CORRIGIDO: 'texto_comando' -> 'enunciado'
+                questao_para_exibir = get_object_or_404(Questao, id=int(questao_id_from_url), tipo='DISC')
                 discursive_exam_text = questao_para_exibir.enunciado
                 questao_id = questao_para_exibir.id
-                logger.info(f"Questão Discursiva ID {questao_id} carregada para exibição e resolução.")
-                messages.info(request, f"Modo Resolução: Questão ID {questao_id} carregada. Responda abaixo.")
-            except Questao.DoesNotExist:
-                logger.warning(f"Questão discursiva ID {qid} não encontrada.", exc_info=False)
-                messages.warning(request, f"A questão discursiva com ID {qid} não foi encontrada.")
+                
+                # MODIFICAÇÃO: Parsing da questão carregada para exibir formatado no GET
+                questao_data = parse_discursive_question(discursive_exam_text)
+                
+                messages.info(request, f"Modo Resolução: Questão ID {questao_id} carregada.")
             except Exception as e:
-                logger.error(f"Erro ao buscar questão discursiva ID {qid} via GET: {e}", exc_info=True)
-                messages.error(request, f"Erro ao tentar carregar a questão discursiva com ID {qid}.")
+                logger.error(f"Erro ao carregar questão ID {questao_id_from_url}: {e}")
         
         context['form'] = form
 
+    # MODIFICAÇÃO: Passando questao_data para o template
     context['discursive_exam_text'] = discursive_exam_text
     context['questao_id'] = questao_id
+    context['questao_data'] = questao_data 
+    
     return render(request, 'generator/discursive_exam_generator.html', context)
-
 
 @login_required
 def evaluate_discursive_answer_view(request):
+    """
+    View responsável por processar a resposta do usuário, solicitar a avaliação
+    pela IA (escala 100 e fórmula Cebraspe) e exibir o resultado estruturado.
+    """
+    # Inicializa o contexto base e o serviço de IA
     context, service, service_initialized = _get_base_context_and_service()
+    
+    # Variáveis de controle para o template
     evaluation_result_text = None
     evaluation_error = None
     submitted_exam_context = None
     submitted_user_answer = None
+    questao_original_data = None
     parsed_scores = None
     tentativa = None
     questao_obj = None
-    context['error_message'] = context.get('error_message')
 
     if request.method == 'POST':
-        logger.info(f"POST evaluate_discursive_answer_view por {request.user.username}")
+        logger.info(f"Iniciando avaliação discursiva para o usuário: {request.user.username}")
+        
         user_answer = request.POST.get('user_answer', '').strip()
         line_count_str = request.POST.get('line_count', '0').strip()
         questao_id = request.POST.get('questao_id')
         submitted_user_answer = user_answer
 
+        # Validações iniciais
         if not service_initialized or not service:
-            evaluation_error = context.get('error_message', "Serviço de IA indisponível no momento.")
+            evaluation_error = "O serviço de IA não pôde ser inicializado. Verifique as configurações."
         elif not user_answer:
-            evaluation_error = "A resposta do usuário não pode estar vazia."
+            evaluation_error = "A resposta enviada está vazia. Por favor, escreva sua resposta antes de submeter."
         elif not questao_id:
-            evaluation_error = "Erro: ID da questão original não foi encontrado no envio."
+            evaluation_error = "O identificador da questão original não foi encontrado."
         else:
             try:
-                questao_obj = Questao.objects.get(id=questao_id, tipo='DISC')
-                logger.info(f"Questão Discursiva ID {questao_id} encontrada para avaliação.")
-                # CORRIGIDO: 'texto_comando' -> 'enunciado'
+                # 1. Recupera a questão original
+                questao_obj = get_object_or_404(Questao, id=questao_id, tipo='DISC')
                 submitted_exam_context = questao_obj.enunciado
-
-                tentativa, created_tentativa = TentativaResposta.objects.update_or_create(
-                    usuario=request.user, questao=questao_obj,
-                    defaults={'resposta_discursiva': user_answer, 'data_resposta': timezone.now()}
-                )
-                logger.info(f"TentativaResposta ID {tentativa.id} {'criada' if created_tentativa else 'atualizada'} para Questao ID {questao_id}.")
                 
+                # 2. Processa o enunciado para evitar "blocão" na tela de resultado
+                # Isso separa Contexto, Comando e Alíneas para o loop no HTML
+                questao_original_data = parse_discursive_question(submitted_exam_context)
+
+                # 3. Salva ou atualiza a tentativa do usuário no banco de dados
+                tentativa, _ = TentativaResposta.objects.update_or_create(
+                    usuario=request.user, 
+                    questao=questao_obj,
+                    defaults={
+                        'resposta_discursiva': user_answer, 
+                        'data_resposta': timezone.now()
+                    }
+                )
+
+                # 4. Trata a contagem de linhas para a fórmula (NPD = NC - 2*NE/TL)
                 try:
                     line_count_int = int(line_count_str) if line_count_str else 0
                 except ValueError:
-                    logger.warning(f"Valor de line_count inválido ('{line_count_str}'), usando 0.")
                     line_count_int = 0
 
-                logger.info(f"Dados enviados p/ IA avaliar: Contexto={len(submitted_exam_context)}, Resp={len(user_answer)}, Linhas={line_count_int}")
-                try:
-                    logger.info(">>> CHAMANDO service.evaluate_discursive_answer <<<")
-                    evaluation_result_text = service.evaluate_discursive_answer(
-                        exam_context=submitted_exam_context, user_answer=user_answer, line_count=line_count_int
-                    )
-                    logger.info("Avaliação textual recebida do serviço IA.")
-                    context['error_message'] = None
+                # 5. Chama o serviço de IA para gerar a avaliação detalhada
+                logger.info(f"Chamando IA para avaliar QID={questao_id}. Linhas informadas: {line_count_int}")
+                evaluation_result_text = service.evaluate_discursive_answer(
+                    exam_context=submitted_exam_context, 
+                    user_answer=user_answer, 
+                    line_count=line_count_int
+                )
 
-                    if evaluation_result_text and isinstance(evaluation_result_text, str) and evaluation_result_text.strip():
-                        try:
-                            logger.info(">>> Tentando PARSE via utils.parse_evaluation_scores <<<")
-                            parsed_scores = parse_evaluation_scores(evaluation_result_text)
-                            logger.info(f">>> Resultado Parsing: {parsed_scores}")
+                if evaluation_result_text:
+                    # 6. Realiza o parsing do texto bruto retornado pela IA
+                    parsed_scores = parse_evaluation_scores(evaluation_result_text)
+                    
+                    # 7. Registra a avaliação no banco de dados
+                    # CORREÇÃO: Chave 'Justificativa_NC' para bater com o parser no utils.py
+                    Avaliacao.objects.update_or_create(
+                        tentativa=tentativa,
+                        defaults={
+                            'nc': parsed_scores.get('NC'),
+                            'ne': parsed_scores.get('NE'),
+                            'npd': parsed_scores.get('NPD'),
+                            'feedback_ai': evaluation_result_text,
+                            'justificativa_nc_ai': parsed_scores.get('Justificativa_NC'),
+                            'comentarios_ai': parsed_scores.get('Comentários'),
+                        }
+                    )
+                    messages.success(request, "Sua resposta foi avaliada com sucesso pela IA!")
+                else:
+                    evaluation_error = "A IA não retornou um resultado de avaliação válido. Tente novamente em instantes."
 
-                            avaliacao_obj, created_avaliacao = Avaliacao.objects.update_or_create(
-                                tentativa=tentativa,
-                                defaults={
-                                    'nc': parsed_scores.get('NC'),
-                                    'ne': parsed_scores.get('NE'),
-                                    'npd': parsed_scores.get('NPD'),
-                                    'feedback_ai': evaluation_result_text,
-                                    'justificativa_nc_ai': parsed_scores.get('Justificativa'),
-                                    'comentarios_ai': parsed_scores.get('Comentários'),
-                                }
-                            )
-                            logger.info(f"Avaliacao {'criada' if created_avaliacao else 'atualizada'} no DB para Tentativa ID {tentativa.id}.")
-                            messages.success(request, "Sua resposta foi avaliada pela IA e salva!")
-                        except NameError:
-                            logger.error("!!! FUNÇÃO 'parse_evaluation_scores' NÃO ENCONTRADA !!! Verifique imports em utils.py ou views.py.")
-                            evaluation_error = "Erro interno crítico: Função de parsing de notas não encontrada."
-                            parsed_scores = None
-                        except (ParsingError, ValueError, TypeError) as parse_error:
-                            logger.error(f"Erro PARSE/SAVE Avaliação Discursiva: {parse_error}", exc_info=True)
-                            evaluation_error = f"Erro ao processar ou salvar o resultado da avaliação: {parse_error}."
-                            parsed_scores = None
-                            Avaliacao.objects.update_or_create(
-                                tentativa=tentativa, defaults={'feedback_ai': evaluation_result_text}
-                            )
-                        except Exception as db_save_error:
-                            logger.error(f"Erro DB ao salvar Avaliacao Discursiva: {db_save_error}", exc_info=True)
-                            evaluation_error = "Erro ao salvar os detalhes da avaliação no banco de dados."
-                            parsed_scores = None
-                            Avaliacao.objects.update_or_create(
-                                tentativa=tentativa, defaults={'feedback_ai': evaluation_result_text}
-                            )
-                    else:
-                        logger.warning("Serviço IA retornou texto de avaliação vazio ou inválido.")
-                        evaluation_error = "A IA não retornou uma avaliação válida para esta resposta."
-                        parsed_scores = None
-                        Avaliacao.objects.update_or_create(
-                            tentativa=tentativa, defaults={'feedback_ai': 'IA não retornou avaliação válida.'}
-                        )
-                except (AIResponseError, AIServiceError, GeneratorError, ConfigurationError) as service_error:
-                    logger.error(f"Erro ao chamar serviço de avaliação discursiva: {service_error}", exc_info=True)
-                    evaluation_error = f"Erro na comunicação com o serviço de IA: {service_error}"
-                    evaluation_result_text = None; parsed_scores = None
-                    Avaliacao.objects.update_or_create(
-                        tentativa=tentativa, defaults={'feedback_ai': f'Erro ao chamar IA: {service_error}'}
-                    )
-                except Exception as call_error:
-                    logger.error(f"Erro inesperado ao chamar serviço de avaliação: {call_error}", exc_info=True)
-                    evaluation_error = f"Ocorreu um erro inesperado ao solicitar a avaliação: {call_error}"
-                    evaluation_result_text = None; parsed_scores = None
-                    Avaliacao.objects.update_or_create(
-                        tentativa=tentativa, defaults={'feedback_ai': f'Erro inesperado ao chamar IA: {call_error}'}
-                    )
-            except Questao.DoesNotExist:
-                logger.error(f"Questão DISC ID {questao_id} não encontrada no DB para avaliação por {request.user.username}.")
-                evaluation_error = "Erro: A questão original para esta avaliação não foi encontrada ou é inválida."
-            except Exception as general_error:
-                logger.error(f"Erro inesperado geral em evaluate_discursive_answer_view: {general_error}", exc_info=True)
-                evaluation_error = "Ocorreu um erro inesperado no servidor ao processar sua solicitação."
+            except Exception as e:
+                logger.error(f"Erro crítico em evaluate_discursive_answer_view: {str(e)}", exc_info=True)
+                evaluation_error = f"Ocorreu um erro ao processar sua avaliação: {str(e)}"
 
     elif request.method == 'GET':
-        logger.warning(f"Tentativa de acesso GET a evaluate_discursive_answer_view por {request.user.username or 'Anônimo'}")
-        messages.info(request, "Para avaliar uma resposta discursiva, primeiro gere ou selecione uma questão.")
+        # Se tentar acessar via GET, redireciona para a página de geração
         return redirect('generator:generate_discursive_exam')
 
-    context['evaluation_result_text'] = evaluation_result_text
-    context['evaluation_error'] = evaluation_error
-    context['submitted_exam_context'] = submitted_exam_context
-    context['submitted_user_answer'] = submitted_user_answer
-    context['parsed_scores'] = parsed_scores
-    context['tentativa'] = tentativa
-    context['questao'] = questao_obj
-    logger.debug(f"Contexto final (evaluate_discursive_answer_view): User={request.user.username}, TentativaID={tentativa.id if tentativa else None}, QuestaoID={questao_obj.id if questao_obj else None}, Error='{evaluation_error}', Parsed={parsed_scores is not None}")
+    # Atualiza o contexto final para o render
+    context.update({
+        'evaluation_result_text': evaluation_result_text,
+        'evaluation_error': evaluation_error,
+        'submitted_exam_context': submitted_exam_context,
+        'submitted_user_answer': submitted_user_answer,
+        'questao_original_data': questao_original_data, # Passa os dados estruturados (Alíneas)
+        'parsed_scores': parsed_scores,
+        'tentativa': tentativa,
+        'questao': questao_obj,
+    })
+    
     return render(request, 'generator/discursive_evaluation_result.html', context)
-
 
 @login_required
 def configurar_simulado_view(request):

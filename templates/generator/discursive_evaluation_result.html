@@ -6,107 +6,87 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
+    <style>
+        .text-preservado { white-space: pre-line; word-wrap: break-word; }
+        .alinea-item { display: block; margin-bottom: 0.5rem; padding-left: 1rem; border-left: 3px solid var(--bs-primary); }
+    </style>
 {% endblock extra_head %}
 
-
 {% block content %}
-    {# Removido header principal #}
-    {# {% if local_time %}...{% endif %} #}
-
-    {# Exibição de Erro #}
     {% if evaluation_error %}
         <div class="alert alert-danger"><strong>Erro na Avaliação:</strong> {{ evaluation_error }}</div>
     {% endif %}
 
-    {# Exibição do Contexto e Resposta Submetidos (Layout Simplificado) #}
-    {% if submitted_exam_context or submitted_user_answer %}
-        <div class="mb-4"> {# Container simples com margem #}
-            {% if submitted_exam_context %}
-            <div class="mb-3">
-                <h2 class="h5 fw-normal mb-2">Questão Avaliada (Contexto)</h2>
-                 {# <<< ALTERADO: Usa div com markdownify >>> #}
-                <div class="submitted-text-markdown small">
-                    {{ submitted_exam_context | markdownify }}
+    {# --- QUESTÃO (ESTRUTURADA) --- #}
+    <div class="card mb-4 shadow-sm border-0 bg-body-tertiary">
+        <div class="card-body">
+            <h2 class="h5 fw-bold mb-3 text-primary">Questão Avaliada</h2>
+            {% if questao_original_data %}
+                <div class="mb-3">
+                    <small class="text-uppercase fw-bold text-muted d-block mb-1">Contexto</small>
+                    <div class="text-preservado small text-body">{{ questao_original_data.contexto }}</div>
                 </div>
-            </div>
-            {% endif %}
-            {% if submitted_user_answer %}
-            <div class="mb-3">
-                <h2 class="h5 fw-normal mb-2">Sua Resposta (Submetida)</h2>
-                 {# <<< ALTERADO: Usa div com markdownify >>> #}
-                <div class="submitted-text-markdown small">
-                     {{ submitted_user_answer | markdownify }}
+                <div class="mb-3">
+                    <small class="text-uppercase fw-bold text-muted d-block mb-1">Comando</small>
+                    <div class="text-body mb-3">{{ questao_original_data.comando }}</div>
+                    <div class="alineas-list">
+                        {% for alinea in questao_original_data.alineas %}
+                            <div class="alinea-item"><span class="fw-bold">{{ alinea.id }}</span> {{ alinea.texto }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
+            {% else %}
+                <div class="text-preservado small text-body">{{ submitted_exam_context|markdownify }}</div>
             {% endif %}
         </div>
-    {% elif not evaluation_error %}
-         <div class="alert alert-info small">Dados da questão ou resposta não encontrados para exibição.</div>
-    {% endif %}
+    </div>
 
-    {# --- Exibe os RESULTADOS DA AVALIAÇÃO (SEM CARD) --- #}
+    {# --- RESPOSTA --- #}
+    <div class="mb-4">
+        <h2 class="h5 fw-normal mb-2 text-secondary">Sua Resposta Submetida</h2>
+        <div class="p-3 border rounded bg-body text-preservado small shadow-sm">{{ submitted_user_answer }}</div>
+    </div>
+
+    {# --- RESULTADOS --- #}
     {% if parsed_scores %}
         <hr class="my-4">
-        <div class="evaluation-section"> {# Usa classe para estilo #}
-            <h2 class="h5 fw-normal mb-3 text-primary">Avaliação Detalhada da IA (Estimativa)</h2>
-            <div class="row small"> {# Usa row e texto pequeno #}
-                <div class="col-md-6 mb-3 mb-md-0">
-                    <p class="mb-1"><strong>Nota Conteúdo (NC):</strong> <span class="score-highlight">{{ parsed_scores.NC|default_if_none:"N/A" }}</span> / 30.00</p>
-                    <p class="mb-1"><strong>Erros (NE):</strong> <span class="score-highlight">{{ parsed_scores.NE|default_if_none:"N/A" }}</span></p>
-                    <p class="mb-0"><strong>Nota Final (NPD):</strong> <span class="score-highlight">{{ parsed_scores.NPD|default_if_none:"N/A" }}</span></p>
+        <div class="evaluation-section">
+            <h2 class="h5 fw-bold mb-4 text-primary">Avaliação Detalhada</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="list-group shadow-sm">
+                        <div class="list-group-item d-flex justify-content-between align-items-center bg-body">
+                            <span>Nota Conteúdo (NC)</span>
+                            <span class="badge bg-primary rounded-pill">{{ parsed_scores.NC|default:"0.00" }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center bg-body">
+                            <span>Erros (NE)</span>
+                            <span class="badge bg-danger rounded-pill">{{ parsed_scores.NE|default:"0" }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center bg-primary-subtle fw-bold">
+                            <span>Nota Final (NPD)</span>
+                            <span class="text-primary fs-5">{{ parsed_scores.NPD|default:"0.00" }}</span>
+                        </div>
+                    </div>
                 </div>
-                 <div class="col-md-6">
-                    {% with main_feedback=parsed_scores.Comentários justification_feedback=parsed_scores.Justificativa_NC %}
-                        {% if main_feedback or justification_feedback %}
-                            <p class="mb-1"><strong>Feedback Descritivo:</strong></p>
-                             {# <<< ALTERADO: Aplica markdownify ao feedback >>> #}
-                            <div class="feedback-markdown">
-                                {% if main_feedback %}
-                                    {{ main_feedback | markdownify }}
-                                {% endif %}
-                                {% if justification_feedback and justification_feedback != main_feedback %}
-                                     <p class="mb-1 mt-2"><strong>Justificativa NC:</strong></p> {# Mantém como <p> para separação #}
-                                     {{ justification_feedback | markdownify }}
-                                {% elif not main_feedback and justification_feedback %}
-                                     {{ justification_feedback | markdownify }}
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted mb-0">Nenhum feedback descritivo extraído.</p>
+                <div class="col-md-8">
+                    {% with feedback=parsed_scores.Comentários just=parsed_scores.Justificativa_NC %}
+                    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded shadow-sm">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-chat-left-text me-2"></i>Análise da IA:</h6>
+                        <div class="text-preservado text-body small mb-4">{{ feedback|markdownify }}</div>
+                        {% if just %}
+                            <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-list-check me-2"></i>Justificativa por Aspecto:</h6>
+                            <div class="text-preservado small p-3 rounded bg-body border">{{ just|markdownify }}</div>
                         {% endif %}
+                    </div>
                     {% endwith %}
                 </div>
             </div>
         </div>
     {% endif %}
 
-    {# Exibe o TEXTO BRUTO apenas se o parsing FALHOU #}
-    {% if not parsed_scores and evaluation_result_text and not evaluation_error %}
-         <hr class="my-4">
-         <div class="evaluation-section"> {# Usa mesma classe #}
-             <h2 class="h5 fw-normal mb-3 text-secondary">Resultado Bruto da IA (Falha no Parsing)</h2>
-             <div class="alert alert-warning small">Não foi possível extrair os dados detalhados do texto abaixo. Verifique o formato da resposta da IA ou o parser.</div>
-              {# <<< ALTERADO: Usa div com classe específica para <pre> >>> #}
-             <div class="raw-feedback-pre">
-                 <pre><code>{{ evaluation_result_text }}</code></pre>
-             </div>
-         </div>
-    {% endif %}
-
-
-    {% if not evaluation_error and not parsed_scores and not submitted_exam_context and not submitted_user_answer and not evaluation_result_text %}
-        <div class="alert alert-secondary small">Nenhuma avaliação para exibir.</div>
-    {% endif %}
-
-    {# Botões de Navegação (Simplificados) #}
-     <div class="mt-4 text-center">
-         {# <<< CORRIGIDO: Namespaces adicionados >>> #}
-         <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-secondary btn-sm">Gerar/Avaliar Outra</a>
-         <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">Início</a>
-     </div>
-
+    <div class="mt-5 text-center d-flex justify-content-center gap-2">
+        <a href="{% url 'generator:generate_discursive_exam' %}" class="btn btn-secondary btn-sm">Voltar</a>
+        <a href="{% url 'generator:landing_page' %}" class="btn btn-outline-secondary btn-sm">Início</a>
+    </div>
 {% endblock content %}
-
-{% block extra_js %}
-{# Nenhum JS específico aqui por enquanto #}
-{% endblock extra_js %}

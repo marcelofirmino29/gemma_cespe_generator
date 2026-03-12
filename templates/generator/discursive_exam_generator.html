@@ -6,7 +6,6 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/exam_generator_styles.css' %}">
-    {# Link para o CSS que acabamos de separar #}
     <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
 {% endblock extra_head %}
 
@@ -110,9 +109,34 @@
                      <i class="bi bi-printer-fill me-1"></i> Imprimir Questão
                  </button>
             </div>
+
+            {# --- INÍCIO DA ALTERAÇÃO PARA FORMATAR O CONTEÚDO --- #}
             <div class="generated-exam-markdown mb-3" id="markdown-content">
-                {{ discursive_exam_text | markdownify | safe }} {# Adicionado |safe aqui #}
+                {% if questao_data %}
+                    <div class="context-section mb-4">
+                        <h6 class="fw-bold text-uppercase border-bottom pb-1">Contexto</h6>
+                        <p class="text-justify" style="white-space: pre-line;">{{ questao_data.contexto }}</p>
+                    </div>
+
+                    <div class="command-section mb-4">
+                        <h6 class="fw-bold text-uppercase border-bottom pb-1">Comando</h6>
+                        <p class="mb-2">{{ questao_data.comando }}</p>
+                        
+                        <div class="aspects-list ms-3">
+                            {% for alinea in questao_data.alineas %}
+                                <div class="mb-2">
+                                    <strong>{{ alinea.id }}</strong> {{ alinea.texto|linebreaksbr }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    {# Fallback para o modo antigo caso questao_data não exista no contexto #}
+                    {{ discursive_exam_text | markdownify | safe }}
+                {% endif %}
             </div>
+            {# --- FIM DA ALTERAÇÃO --- #}
+
             <div class="text-end mb-4">
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyRenderedText(event, 'markdown-content')"><i class="bi bi-clipboard-check me-1"></i>Copiar Texto da Questão</button>
             </div>
@@ -149,6 +173,5 @@
 
 {% block extra_js %}
     <script src="{% static 'generator/js/exam_generator_scripts.js' %}" defer></script>
-    {# Link para o JavaScript que acabamos de separar #}
     <script src="{% static 'generator/js/generate_discursive_exam_page_scripts.js' %}" defer></script>
 {% endblock extra_js %}

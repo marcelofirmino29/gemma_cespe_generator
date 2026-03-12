@@ -780,4 +780,14 @@ pre#markdown-content {
     .form-control, .form-select { background-color: #343a40; color: #dee2e6; border-color: #495057; }
 }
 
+.evaluation-section div[style*="white-space: pre-line"] {
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Garante que o markdownify não junte tudo em uma linha */
+.evaluation-section p {
+    margin-bottom: 1rem;
+}
+
 .divisor { border-bottom: 1px solid var(--bs-border-color); }
