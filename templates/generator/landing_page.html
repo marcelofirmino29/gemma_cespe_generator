@@ -1,314 +1,289 @@
 {% extends 'generator/base.html' %}
 {% load static %}
 
-
 {% block title %}Página Inicial - Gerador IA{% endblock title %}
 
-
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
-    <style>
-        /* ============================================== */
-        /* == ESTILOS CONDICIONAIS PARA LIGHT/DARK MODE == */
-        /* ============================================== */
+<link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
+<style>
+    body {
+        background-color: #f4f5f7;
+        color: #212529;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
 
+    .section-title-marquee,
+    .marquee-item a {
+        color: #212529;
+    }
 
-        /* --- Estilos Padrão (Light Mode) --- */
-        body {
-            background-color: #f8f9fa; /* Fundo padrão claro */
-            color: #212529; /* Texto padrão escuro */
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
+    .marquee-container {
+        background-color: rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.5rem;
+    }
 
+    .landing-card {
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.72);
+        color: #2c3e50 !important;
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
 
-        .section-title-marquee, .marquee-item a {
-            color: #212529; /* Texto do letreiro escuro */
-        }
+    .landing-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
+    }
 
+    html[data-bs-theme="dark"] body {
+        background-color: #121212;
+        color: #f8f9fa;
+    }
 
-        .marquee-container {
-            background-color: rgba(0, 0, 0, 0.03); /* Fundo do letreiro sutil */
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 0.5rem;
-        }
+    html[data-bs-theme="dark"] .section-title-marquee,
+    html[data-bs-theme="dark"] .marquee-item a {
+        color: #f8f9fa;
+    }
 
+    html[data-bs-theme="dark"] .marquee-container {
+        background-color: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
-        .landing-card {
-            display: flex; flex-direction: column;
-            
-            /* Efeito de vidro claro */
-            background: rgba(255, 255, 255, 0.6);
-            color: #2c3e50 !important;
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px);
-            border-radius: 0.75rem;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
+    html[data-bs-theme="dark"] .landing-card {
+        background: rgba(24, 24, 24, 0.9);
+        color: #f8f9fa !important;
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: none !important;
+    }
 
+    html[data-bs-theme="dark"] .landing-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 255, 255, 0.16);
+    }
 
-        .landing-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
-        }
+    .landing-card .card-body {
+        flex-grow: 1;
+        padding: 1.5rem;
+    }
 
+    .landing-card .card-icon-main {
+        font-size: 3.2rem;
+    }
 
-        /* --- Sobrescrita para Dark Mode --- */
-        html[data-bs-theme="dark"] body {
-            background-color: #0f172a; /* Fundo azul escuro/ardósia */
-            background-image: 
-                radial-gradient(at 15% 20%, hsla(340, 80%, 60%, 0.15) 0px, transparent 50%),
-                radial-gradient(at 80% 30%, hsla(212, 80%, 55%, 0.2) 0px, transparent 50%),
-                radial-gradient(at 20% 85%, hsla(280, 70%, 50%, 0.25) 0px, transparent 50%),
-                radial-gradient(at 75% 90%, hsla(30, 90%, 60%, 0.2) 0px, transparent 50%);
-            color: #f8f9fa; /* Texto padrão claro */
-        }
-
-
-        html[data-bs-theme="dark"] .section-title-marquee, 
-        html[data-bs-theme="dark"] .marquee-item a {
-            color: #fff; /* Texto do letreiro claro */
-        }
-
-
-        html[data-bs-theme="dark"] .marquee-container {
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        html[data-bs-theme="dark"] .landing-card {
-            /* Efeito de vidro escuro ("fumê") */
-            background: rgba(10, 10, 20, 0.25);
-            color: #f8f9fa !important;
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: none !important;
-        }
-
-
-        html[data-bs-theme="dark"] .landing-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.25);
-        }
-
-
-        /* --- Estilos comuns para o conteúdo dos cards --- */
-        .landing-card .card-body {
-            flex-grow: 1; padding: 1.5rem;
-        }
-        .landing-card .card-icon-main { font-size: 3.5rem; }
-        .landing-card .card-icon-caption {
-            font-size: 1rem; white-space: normal; text-align: center; line-height: 1.3; max-width: 95%;
-        }
-    </style>
+    .landing-card .card-icon-caption {
+        font-size: 1rem;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.3;
+        max-width: 95%;
+    }
+</style>
 {% endblock extra_head %}
 
-
 {% block content %}
-    <div class="container my-4">
-        <div class="text-center mb-5">
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endfor %}
-            {% endif %}
-            {% if error_message %}
-                <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
-                    {{ error_message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endif %}
-        </div>
-
-
-        {% if concursos_destaque_marquee %}
-            <h2 class="section-title-marquee">Concursos em Destaque</h2>
-            <div class="marquee-container mb-5">
-                <marquee behavior="scroll" direction="left" scrollamount="6" scrolldelay="85" onmouseover="this.stop();" onmouseout="this.start();">
-                    <div class="marquee-content">
-                        {% for concurso in concursos_destaque_marquee %}
-                            <span class="marquee-item">
-                                <a href="{{ concurso.link }}" target="_blank" rel="noopener noreferrer">{{ concurso.organizacao }}</a>
-                                <span class="marquee-vagas"> (Vagas: {{ concurso.vagas }})</span> -
-                                <span class="{% if concurso.status|lower == 'aberto' %}marquee-status-aberto{% elif concurso.status|lower == 'previsto' %}marquee-status-previsto{% endif %}">
-                                    Status: {{ concurso.status }}
-                                </span>
-                            </span>
-                            {% if not forloop.last %}<span class="marquee-separator">|</span>{% endif %}
-                        {% endfor %}
-                    </div>
-                </marquee>
+<div class="container my-4">
+    <div class="text-center mb-5">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        {% elif erro_destaques %}
-            <div class="text-center my-4">
-                <p class="text-muted small">{{ erro_destaques }}</p>
+            {% endfor %}
+        {% endif %}
+        {% if error_message %}
+            <div class="alert alert-danger alert-dismissible fade show small mt-3 col-md-8 col-lg-6 mx-auto" role="alert">
+                {{ error_message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endif %}
+    </div>
 
+    {% if concursos_destaque_marquee %}
+        <h2 class="section-title-marquee">Concursos em Destaque</h2>
+        <div class="marquee-container mb-5">
+            <marquee behavior="scroll" direction="left" scrollamount="6" scrolldelay="85" onmouseover="this.stop();" onmouseout="this.start();">
+                <div class="marquee-content">
+                    {% for concurso in concursos_destaque_marquee %}
+                        <span class="marquee-item">
+                            <a href="{{ concurso.link }}" target="_blank" rel="noopener noreferrer">{{ concurso.organizacao }}</a>
+                            <span class="marquee-vagas"> (Vagas: {{ concurso.vagas }})</span> -
+                            <span class="{% if concurso.status|lower == 'aberto' %}marquee-status-aberto{% elif concurso.status|lower == 'previsto' %}marquee-status-previsto{% endif %}">
+                                Status: {{ concurso.status }}
+                            </span>
+                        </span>
+                        {% if not forloop.last %}<span class="marquee-separator">|</span>{% endif %}
+                    {% endfor %}
+                </div>
+            </marquee>
+        </div>
+    {% elif erro_destaques %}
+        <div class="text-center my-4">
+            <p class="text-muted small">{{ erro_destaques }}</p>
+        </div>
+    {% endif %}
 
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-            
-            {% comment %} O conteúdo de cada card permanece o mesmo {% endcomment %}
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:generate_questions' %}?action=clear"
-                       class="stretched-link"
-                       aria-label="Gerador C/E por Tópico"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-check2-square card-icon-main"></i>
-                        <span class="card-icon-caption">Gerador C/E por Tópico</span>
-                    </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:generate_questions' %}?action=clear"
+                   class="stretched-link"
+                   aria-label="Gerador C/E por Tópico"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-check2-square card-icon-main"></i>
+                    <span class="card-icon-caption">Gerador C/E por Tópico</span>
                 </div>
             </div>
+        </div>
 
-            <!-- NOVO CARD: GERADOR MÚLTIPLA ESCOLHA -->
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:generate_me_questions' %}?action=clear"
-                       class="stretched-link"
-                       aria-label="Gerador de Questão Múltipla Escolha"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-list-check card-icon-main"></i>
-                        <span class="card-icon-caption">Gerador ME por Tópico</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:generate_me_questions' %}?action=clear"
+                   class="stretched-link"
+                   aria-label="Gerador de Questão Múltipla Escolha"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-list-check card-icon-main"></i>
+                    <span class="card-icon-caption">Gerador ME por Tópico</span>
                 </div>
             </div>
-            <!-- FIM NOVO CARD -->
+        </div>
 
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:generate_discursive_exam' %}"
-                       class="stretched-link"
-                       aria-label="Gerador de Questão Discursiva"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-pencil-square card-icon-main"></i>
-                        <span class="card-icon-caption">Gerador de Questão Discursiva</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:generate_discursive_exam' %}"
+                   class="stretched-link"
+                   aria-label="Gerador de Questão Discursiva"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-pencil-square card-icon-main"></i>
+                    <span class="card-icon-caption">Gerador de Questão Discursiva</span>
                 </div>
             </div>
-            
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:configurar_simulado' %}"
-                       class="stretched-link"
-                       aria-label="Configurar Simulado"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-sliders card-icon-main"></i>
-                        <span class="card-icon-caption">Configurar Simulado</span>
-                    </div>
+        </div>
+
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:configurar_simulado' %}"
+                   class="stretched-link"
+                   aria-label="Configurar Simulado"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-sliders card-icon-main"></i>
+                    <span class="card-icon-caption">Configurar Simulado</span>
                 </div>
             </div>
+        </div>
 
-
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:dashboard' %}"
-                       class="stretched-link"
-                       aria-label="Dashboard de Desempenho"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-graph-up card-icon-main"></i>
-                        <span class="card-icon-caption">Dashboard de Desempenho</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:dashboard' %}"
+                   class="stretched-link"
+                   aria-label="Dashboard de Desempenho"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-graph-up card-icon-main"></i>
+                    <span class="card-icon-caption">Dashboard de Desempenho</span>
                 </div>
             </div>
+        </div>
 
-
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:games_hub' %}"
-                       class="stretched-link"
-                       aria-label="Hub de Jogos"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-joystick card-icon-main"></i>
-                        <span class="card-icon-caption">Hub de Jogos</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:games_hub' %}"
+                   class="stretched-link"
+                   aria-label="Hub de Jogos"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-joystick card-icon-main"></i>
+                    <span class="card-icon-caption">Hub de Jogos</span>
                 </div>
             </div>
+        </div>
 
-
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:questions_ce' %}"
-                       class="stretched-link"
-                       aria-label="Banco de Questões"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-collection-fill card-icon-main"></i>
-                        <span class="card-icon-caption">Banco de Questões</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:questions_ce' %}"
+                   class="stretched-link"
+                   aria-label="Banco de Questões C E"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-collection-fill card-icon-main"></i>
+                    <span class="card-icon-caption">Banco de Questões C/E</span>
                 </div>
             </div>
+        </div>
 
-
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:pdf_summary' %}"
-                       class="stretched-link"
-                       aria-label="Resumo Rápido de PDF"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
-                        <span class="card-icon-caption">Resumo Rápido de PDF</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:questions_me' %}"
+                   class="stretched-link"
+                   aria-label="Banco de Questões Múltipla Escolha"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-ui-checks card-icon-main"></i>
+                    <span class="card-icon-caption">Banco de Questões ME</span>
                 </div>
             </div>
+        </div>
 
-
-            <div class="col">
-                 <div class="card landing-card h-100">
-                     <a href="{% url 'generator:listar_concursos' %}"
-                        class="stretched-link"
-                        aria-label="Concursos no Brasil"></a>
-                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                         <i class="bi bi-briefcase-fill card-icon-main"></i>
-                         <span class="card-icon-caption">Concursos no Brasil</span>
-                     </div>
-                 </div>
-            </div>
-
-
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:listar_provas_coletadas' %}"
-                       class="stretched-link"
-                       aria-label="Provas Anteriores Coletadas (PCI)"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-search-heart card-icon-main"></i>
-                        <span class="card-icon-caption">Provas Anteriores (PCI)</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:pdf_summary' %}"
+                   class="stretched-link"
+                   aria-label="Resumo Rápido de PDF"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
+                    <span class="card-icon-caption">Resumo Rápido de PDF</span>
                 </div>
             </div>
+        </div>
 
-
-            <div class="col">
-                <div class="card landing-card h-100">
-                    <a href="{% url 'generator:consulta_leis_planalto' %}"
-                       class="stretched-link"
-                       aria-label="Consulta de Leis (Planalto)"></a>
-                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
-                        <i class="bi bi-bank card-icon-main"></i>
-                        <span class="card-icon-caption">Consulta Leis (Planalto)</span>
-                    </div>
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:listar_concursos' %}"
+                   class="stretched-link"
+                   aria-label="Concursos no Brasil"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-briefcase-fill card-icon-main"></i>
+                    <span class="card-icon-caption">Concursos no Brasil</span>
                 </div>
             </div>
+        </div>
 
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:listar_provas_coletadas' %}"
+                   class="stretched-link"
+                   aria-label="Provas Anteriores Coletadas (PCI)"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-search-heart card-icon-main"></i>
+                    <span class="card-icon-caption">Provas Anteriores (PCI)</span>
+                </div>
+            </div>
+        </div>
 
+        <div class="col">
+            <div class="card landing-card h-100">
+                <a href="{% url 'generator:consulta_leis_planalto' %}"
+                   class="stretched-link"
+                   aria-label="Consulta de Leis (Planalto)"></a>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                    <i class="bi bi-bank card-icon-main"></i>
+                    <span class="card-icon-caption">Consulta Leis (Planalto)</span>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 {% endblock content %}
 
-
 {% block extra_js %}
-    {{ block.super }}
-
-
-    <script>
-        const askAiBaseUrl = "{% url 'generator:ask_ai' %}";
-    </script>
-
-
-    <script src="{% static 'generator/js/landing_page_scripts.js' %}" defer></script>
+{{ block.super }}
+<script>
+    const askAiBaseUrl = "{% url 'generator:ask_ai' %}";
+</script>
+<script src="{% static 'generator/js/landing_page_scripts.js' %}" defer></script>
 {% endblock extra_js %}

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("PÁGINA GERADOR ME (JS externo): DOM Carregado.");
+    console.log("PÁGINA GERADOR ME: DOM carregado.");
 
     const generatorForm = document.getElementById('generator-form-me');
     const topicTextarea = document.getElementById('id_topic');
@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateInputRequirements() {
         if (!topicTextarea || !pdfUploadInput || !topicLabel || !helpTextForTopic || !helpTextForPdf) {
-            console.warn("Gerador ME: Elementos para obrigatoriedade condicional (Tópico/PDF) não encontrados.");
             return;
         }
 
@@ -26,13 +25,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const helpPdfOptional = helpTextForPdf.dataset.pdfOptional || "Se preferir, envie um PDF. (O Tópico textual é obrigatório se nenhum PDF for fornecido).";
 
         if (isPdfSelected) {
-            // PDF presente => tópico opcional
             topicTextarea.required = false;
             topicLabel.classList.remove('required');
             helpTextForTopic.textContent = helpTopicOptional;
             helpTextForPdf.textContent = helpPdfSelected;
         } else {
-            // Sem PDF => tópico obrigatório
             topicTextarea.required = true;
             if (isTopicFilled) {
                 topicLabel.classList.remove('required');
@@ -51,23 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (topicTextarea) {
         topicTextarea.addEventListener('input', updateInputRequirements);
     }
-
-    // Estado inicial
-    if (topicLabel && topicTextarea && pdfUploadInput) {
-        if (!(pdfUploadInput.files && pdfUploadInput.files.length > 0) && topicTextarea.value.trim() === '') {
-            topicLabel.classList.add('required');
-            topicTextarea.required = true;
-        } else {
-            topicTextarea.required = !(pdfUploadInput.files && pdfUploadInput.files.length > 0);
-            if (!topicTextarea.required) {
-                topicLabel.classList.remove('required');
-            }
-        }
-    }
-
-    if (topicTextarea && pdfUploadInput && topicLabel && helpTextForTopic && helpTextForPdf) {
-        updateInputRequirements();
-    }
+    updateInputRequirements();
 
     const submitButton = document.getElementById('submit-button-me');
     const loadingSpinner = document.getElementById('loading-spinner-me');
@@ -93,4 +74,115 @@ document.addEventListener('DOMContentLoaded', function() {
             buttonTextSpan.textContent = ' Gerando...';
         });
     }
+
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const c = cookies[i].trim();
+            if (c.startsWith('csrftoken=')) {
+                return c.substring('csrftoken='.length, c.length);
+            }
+        }
+        return null;
+    }
+
+    const csrfToken = getCsrfToken();
+
+    function sendMeAnswerAjax(questaoId, alternativa, btn) {
+        if (!csrfToken) {
+            console.warn("CSRF token não encontrado. AJAX ME não será enviado.");
+            return;
+        }
+
+        const url = window.URL_VALIDATE_ME || '/validate-single-me/';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                questao_id: questaoId,
+                user_answer: alternativa
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.warn("Erro retorno ME:", data.error);
+                if (btn) btn.disabled = false;
+                return;
+            }
+
+            const card = document.getElementById(`question-item-me-${questaoId}`);
+            if (card) {
+                card.classList.remove('border-success', 'border-danger');
+                card.classList.add(data.correct ? 'border-success' : 'border-danger');
+            }
+
+            const feedbackContainer = document.getElementById(`feedback-me-${questaoId}`);
+            const badge = document.getElementById(`badge-me-${questaoId}`);
+            const justificativaP = document.getElementById(`justificativa-me-${questaoId}`);
+
+            if (badge && feedbackContainer) {
+                badge.className = 'badge ' + (data.correct ? 'bg-success' : 'bg-danger');
+                badge.textContent = data.correct
+                    ? `Acertou! Gabarito: ${data.gabarito}`
+                    : `Errou. Gabarito: ${data.gabarito}`;
+                feedbackContainer.classList.remove('d-none');
+            }
+
+            if (justificativaP) {
+                justificativaP.textContent = data.justification || '';
+                justificativaP.classList.remove('d-none');
+            }
+
+            const radios = document.querySelectorAll(`input[name="resposta_q${questaoId}"]`);
+            radios.forEach(r => r.disabled = true);
+            if (btn) btn.disabled = true;
+        })
+        .catch(err => {
+            console.error("Falha AJAX ME:", err);
+            if (btn) btn.disabled = false;
+        });
+    }
+
+    document.addEventListener('change', function(ev) {
+        const target = ev.target;
+        if (!target.classList.contains('form-check-input')) return;
+        if (target.type !== 'radio') return;
+
+        const name = target.name;
+        if (!name || !name.startsWith('resposta_q')) return;
+
+        const questaoId = name.replace('resposta_q', '');
+        const btn = document.getElementById(`btn-responder-${questaoId}`);
+        if (btn) {
+            btn.disabled = false;
+        }
+    });
+
+    document.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('button[id^="btn-responder-"]');
+        if (!btn) return;
+
+        const questaoId = btn.dataset.questaoId;
+        if (!questaoId) return;
+
+        const radios = document.querySelectorAll(`input[name="resposta_q${questaoId}"]`);
+        let alternativa = null;
+        radios.forEach(r => {
+            if (r.checked) alternativa = r.value;
+        });
+
+        if (!alternativa) {
+            alert('Selecione uma alternativa antes de responder.');
+            return;
+        }
+
+        btn.disabled = true;
+        sendMeAnswerAjax(questaoId, alternativa, btn);
+    });
 });

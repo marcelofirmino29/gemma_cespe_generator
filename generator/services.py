@@ -143,19 +143,24 @@ class QuestionGenerationService:
         """
         area_nome = area.nome if area else 'Geral'
 
+
         prompt = (
-            f"Persona: Atue como examinador experiente de concursos públicos brasileiros.\n"
+            f"Persona: Atue como examinador experiente de concursos públicos brasileiros, especializado no estilo da Fundação Carlos Chagas (FCC).\n"
             f"Tarefa: Elabore {num_questions} questões inéditas de MÚLTIPLA ESCOLHA.\n"
             f"Área de Conhecimento: {area_nome}\n"
             f"Tópico Base: {topic}\n"
             f"Nível de Dificuldade: {difficulty_level}\n\n"
             "DIRETRIZES OBRIGATÓRIAS:\n"
-            "1. Cada questão deve ter um enunciado claro e objetivo, exigindo raciocínio.\n"
-            "2. Crie alternativas verossímeis, evitando pegadinhas absurdas.\n"
-            "3. Use pelo menos 4 alternativas (A, B, C, D) e, opcionalmente, a alternativa E.\n"
-            "4. NÃO numere as questões (não use 'Questão 1', apenas 'Enunciado:').\n"
-            "5. Em cada questão, marque EXATAMENTE UMA alternativa correta.\n"
-            "6. Sempre inclua uma justificativa curta para o gabarito.\n\n"
+            "1. Cada questão deve seguir o estilo típico da banca FCC: enunciado técnico, objetivo, claro e sem floreios desnecessários.\n"
+            "2. As questões devem ser monotemáticas, evitando misturar assuntos diferentes em um mesmo item.\n"
+            "3. Crie EXATAMENTE 5 alternativas (A, B, C, D e E), com apenas UMA correta.\n"
+            "4. As alternativas erradas devem ser verossímeis, próximas tecnicamente da correta e sem absurdos.\n"
+            "5. Evite pegadinhas artificiais, ambiguidades desnecessárias e alternativas evidentemente erradas.\n"
+            "6. Priorize cobrança no padrão FCC: letra da lei, conceitos doutrinários básicos e consolidados, entendimento jurisprudencial pacificado quando pertinente, e aplicação prática moderada.\n"
+            "7. O enunciado pode trazer contexto prático curto e funcional, quando isso enriquecer a cobrança, sem transformar a questão em texto excessivamente longo.\n"
+            "8. NÃO numere as questões (não use 'Questão 1', apenas 'Enunciado:').\n"
+            "9. Em cada questão, marque EXATAMENTE UMA alternativa correta.\n"
+            "10. Sempre inclua uma justificativa curta, técnica e objetiva para o gabarito.\n\n"
             "FORMATO ESTRITO DE SAÍDA (SIGA EXATAMENTE ESTE MODELO):\n"
             "Texto Motivador: [Texto contextualizador opcional com 2 a 4 frases. Use 'Não aplicável' se não desejar motivador.]\n"
             "---\n"
@@ -164,7 +169,7 @@ class QuestionGenerationService:
             "B) [Texto da alternativa B]\n"
             "C) [Texto da alternativa C]\n"
             "D) [Texto da alternativa D]\n"
-            "E) [Texto da alternativa E, se desejar]\n"
+            "E) [Texto da alternativa E]\n"
             "Gabarito: [A/B/C/D/E]\n"
             "Justificativa: [Explicação técnica concisa]\n"
             "---\n"
@@ -178,10 +183,11 @@ class QuestionGenerationService:
             "Justificativa: [Explicação técnica concisa]\n"
         )
 
+
         text = self._generate_with_retry(prompt)
         logger.info(f"IA gerou resposta ME para área {area_nome}. Tamanho: {len(text)} caracteres.")
         return parse_ai_response_to_me_questions(text)
-
+    
     def generate_discursive_exam_question(self, base_topic_or_context, num_aspects=3, area=None, complexity='Intermediária', language='pt-br'):
         """Gera questão discursiva estruturada."""
         prompt = (
