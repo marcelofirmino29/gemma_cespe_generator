@@ -1,7 +1,9 @@
 {% extends 'generator/base.html' %}
 {% load static %}
 
+
 {% block title %}Página Inicial - Gerador IA{% endblock title %}
+
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'generator/css/landing_page_styles.css' %}">
@@ -10,6 +12,7 @@
         /* == ESTILOS CONDICIONAIS PARA LIGHT/DARK MODE == */
         /* ============================================== */
 
+
         /* --- Estilos Padrão (Light Mode) --- */
         body {
             background-color: #f8f9fa; /* Fundo padrão claro */
@@ -17,15 +20,18 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
+
         .section-title-marquee, .marquee-item a {
             color: #212529; /* Texto do letreiro escuro */
         }
+
 
         .marquee-container {
             background-color: rgba(0, 0, 0, 0.03); /* Fundo do letreiro sutil */
             border: 1px solid rgba(0, 0, 0, 0.08);
             border-radius: 0.5rem;
         }
+
 
         .landing-card {
             display: flex; flex-direction: column;
@@ -41,10 +47,12 @@
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
+
         .landing-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.07);
         }
+
 
         /* --- Sobrescrita para Dark Mode --- */
         html[data-bs-theme="dark"] body {
@@ -57,10 +65,12 @@
             color: #f8f9fa; /* Texto padrão claro */
         }
 
+
         html[data-bs-theme="dark"] .section-title-marquee, 
         html[data-bs-theme="dark"] .marquee-item a {
             color: #fff; /* Texto do letreiro claro */
         }
+
 
         html[data-bs-theme="dark"] .marquee-container {
             background-color: rgba(255, 255, 255, 0.05);
@@ -77,10 +87,12 @@
             box-shadow: none !important;
         }
 
+
         html[data-bs-theme="dark"] .landing-card:hover {
             transform: translateY(-5px);
             border-color: rgba(255, 255, 255, 0.25);
         }
+
 
         /* --- Estilos comuns para o conteúdo dos cards --- */
         .landing-card .card-body {
@@ -92,6 +104,7 @@
         }
     </style>
 {% endblock extra_head %}
+
 
 {% block content %}
     <div class="container my-4">
@@ -111,6 +124,7 @@
                 </div>
             {% endif %}
         </div>
+
 
         {% if concursos_destaque_marquee %}
             <h2 class="section-title-marquee">Concursos em Destaque</h2>
@@ -136,12 +150,15 @@
             </div>
         {% endif %}
 
+
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
             
             {% comment %} O conteúdo de cada card permanece o mesmo {% endcomment %}
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:generate_questions' %}?action=clear" class="stretched-link" aria-label="Gerador C/E por Tópico"></a>
+                    <a href="{% url 'generator:generate_questions' %}?action=clear"
+                       class="stretched-link"
+                       aria-label="Gerador C/E por Tópico"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-check2-square card-icon-main"></i>
                         <span class="card-icon-caption">Gerador C/E por Tópico</span>
@@ -149,9 +166,25 @@
                 </div>
             </div>
 
+            <!-- NOVO CARD: GERADOR MÚLTIPLA ESCOLHA -->
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:generate_discursive_exam' %}" class="stretched-link" aria-label="Gerador de Questão Discursiva"></a>
+                    <a href="{% url 'generator:generate_me_questions' %}?action=clear"
+                       class="stretched-link"
+                       aria-label="Gerador de Questão Múltipla Escolha"></a>
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
+                        <i class="bi bi-list-check card-icon-main"></i>
+                        <span class="card-icon-caption">Gerador ME por Tópico</span>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM NOVO CARD -->
+
+            <div class="col">
+                <div class="card landing-card h-100">
+                    <a href="{% url 'generator:generate_discursive_exam' %}"
+                       class="stretched-link"
+                       aria-label="Gerador de Questão Discursiva"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-pencil-square card-icon-main"></i>
                         <span class="card-icon-caption">Gerador de Questão Discursiva</span>
@@ -161,7 +194,9 @@
             
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:configurar_simulado' %}" class="stretched-link" aria-label="Configurar Simulado"></a>
+                    <a href="{% url 'generator:configurar_simulado' %}"
+                       class="stretched-link"
+                       aria-label="Configurar Simulado"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-sliders card-icon-main"></i>
                         <span class="card-icon-caption">Configurar Simulado</span>
@@ -169,9 +204,12 @@
                 </div>
             </div>
 
+
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:dashboard' %}" class="stretched-link" aria-label="Dashboard de Desempenho"></a>
+                    <a href="{% url 'generator:dashboard' %}"
+                       class="stretched-link"
+                       aria-label="Dashboard de Desempenho"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-graph-up card-icon-main"></i>
                         <span class="card-icon-caption">Dashboard de Desempenho</span>
@@ -179,9 +217,12 @@
                 </div>
             </div>
 
+
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:games_hub' %}" class="stretched-link" aria-label="Hub de Jogos"></a>
+                    <a href="{% url 'generator:games_hub' %}"
+                       class="stretched-link"
+                       aria-label="Hub de Jogos"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-joystick card-icon-main"></i>
                         <span class="card-icon-caption">Hub de Jogos</span>
@@ -189,9 +230,12 @@
                 </div>
             </div>
 
+
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:questions_ce' %}" class="stretched-link" aria-label="Banco de Questões"></a>
+                    <a href="{% url 'generator:questions_ce' %}"
+                       class="stretched-link"
+                       aria-label="Banco de Questões"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-collection-fill card-icon-main"></i>
                         <span class="card-icon-caption">Banco de Questões</span>
@@ -199,9 +243,12 @@
                 </div>
             </div>
 
+
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:pdf_summary' %}" class="stretched-link" aria-label="Resumo Rápido de PDF"></a>
+                    <a href="{% url 'generator:pdf_summary' %}"
+                       class="stretched-link"
+                       aria-label="Resumo Rápido de PDF"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-file-earmark-text-fill card-icon-main"></i>
                         <span class="card-icon-caption">Resumo Rápido de PDF</span>
@@ -209,9 +256,12 @@
                 </div>
             </div>
 
+
             <div class="col">
                  <div class="card landing-card h-100">
-                     <a href="{% url 'generator:listar_concursos' %}" class="stretched-link" aria-label="Concursos no Brasil"></a>
+                     <a href="{% url 'generator:listar_concursos' %}"
+                        class="stretched-link"
+                        aria-label="Concursos no Brasil"></a>
                      <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                          <i class="bi bi-briefcase-fill card-icon-main"></i>
                          <span class="card-icon-caption">Concursos no Brasil</span>
@@ -219,9 +269,12 @@
                  </div>
             </div>
 
+
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:listar_provas_coletadas' %}" class="stretched-link" aria-label="Provas Anteriores Coletadas (PCI)"></a>
+                    <a href="{% url 'generator:listar_provas_coletadas' %}"
+                       class="stretched-link"
+                       aria-label="Provas Anteriores Coletadas (PCI)"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-search-heart card-icon-main"></i>
                         <span class="card-icon-caption">Provas Anteriores (PCI)</span>
@@ -229,9 +282,12 @@
                 </div>
             </div>
 
+
             <div class="col">
                 <div class="card landing-card h-100">
-                    <a href="{% url 'generator:consulta_leis_planalto' %}" class="stretched-link" aria-label="Consulta de Leis (Planalto)"></a>
+                    <a href="{% url 'generator:consulta_leis_planalto' %}"
+                       class="stretched-link"
+                       aria-label="Consulta de Leis (Planalto)"></a>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center gap-2">
                         <i class="bi bi-bank card-icon-main"></i>
                         <span class="card-icon-caption">Consulta Leis (Planalto)</span>
@@ -239,16 +295,20 @@
                 </div>
             </div>
 
+
         </div>
     </div>
 {% endblock content %}
 
+
 {% block extra_js %}
     {{ block.super }}
+
 
     <script>
         const askAiBaseUrl = "{% url 'generator:ask_ai' %}";
     </script>
+
 
     <script src="{% static 'generator/js/landing_page_scripts.js' %}" defer></script>
 {% endblock extra_js %}

@@ -334,3 +334,82 @@ def ask_ai_view(request: HttpRequest):
             messages.error(request, "Por favor, corrija os erros no formulário.")
 
     return render(request, 'generator/ask_ai.html', context)
+
+@login_required
+@require_POST
+def validate_single_me_view(request: HttpRequest):
+    """
+    Valida, via AJAX, uma questão de Múltipla Escolha (ME).
+    - Salva/atualiza TentativaResposta.resposta_me.
+    - Cria/atualiza Avaliacao.correto_me / score_me.
+    - Retorna JSON com se acertou, gabarito e justificativa.
+    """
+    try:
+        data = json.loads(request.body)
+        questao_id = data.get('questao_id')
+        user_answer = data.get('user_answer')
+
+        logger.info(
+            f"AJAX validate_single_me por {request.user.username} "
+            f"para Questao ID: {questao_id}, Resposta: {user_answer}"
+        )
+
+        if not questao_id or not isinstance(questao_id, (int, str)) \
+           or user_answer not in ['A', 'B', 'C', 'D', 'E']:
+            logger.warning(f"Dados inválidos AJAX ME: ID={questao_id}, Resposta={user_answer}")
+            return JsonResponse({'error': 'Dados inválidos (ID ou resposta).'}, status=400)
+
+        try:
+            questao_id_int = int(questao_id)
+        except ValueError:
+            logger.warning(f"ID da questão inválido (não numérico) ME: {questao_id}")
+            return JsonResponse({'error': 'ID da questão inválido.'}, status=400)
+
+        try:
+            q_obj = Questao.objects.get(id=questao_id_int, tipo='ME')
+            tent, _ = TentativaResposta.objects.update_or_create(
+                usuario=request.user,
+                questao=q_obj,
+                defaults={
+                    'resposta_me': user_answer,
+                    'data_resposta': timezone.now()
+                }
+            )
+            is_correct = (tent.resposta_me == q_obj.gabarito_me)
+            score = 1 if is_correct else -1
+
+            Avaliacao.objects.update_or_create(
+                tentativa=tent,
+                defaults={
+                    'correto_me': is_correct,
+                    'score_me': score
+                }
+            )
+
+            response_data = {
+                'correct': is_correct,
+                'gabarito': q_obj.gabarito_me,
+                'justification': q_obj.justificativa_gabarito or ""
+            }
+            logger.info(
+                f"AJAX validate_single_me SUCESSO para Questao ID {questao_id_int}. "
+                f"Correto: {is_correct}"
+            )
+            return JsonResponse(response_data)
+
+        except Questao.DoesNotExist:
+            logger.error(f"Questão ME ID {questao_id_int} não encontrada para AJAX.")
+            return JsonResponse({'error': 'Questão não encontrada.'}, status=404)
+        except Exception as e:
+            logger.error(
+                f"Erro DB/processamento AJAX ME para Questao ID {questao_id_int}: {e}",
+                exc_info=True
+            )
+            return JsonResponse({'error': 'Erro interno ao processar.'}, status=500)
+
+    except json.JSONDecodeError:
+        logger.error("Erro ao decodificar JSON em validate_single_me_view.")
+        return JsonResponse({'error': 'Requisição JSON inválida.'}, status=400)
+    except Exception as e:
+        logger.error(f"Erro inesperado em validate_single_me_view: {e}", exc_info=True)
+        return JsonResponse({'error': 'Erro inesperado no servidor.'}, status=500)

@@ -5,10 +5,16 @@ from django.conf import settings
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold, GenerationConfig
 from google.api_core import exceptions
-from .utils import parse_ai_response_to_questions, parse_evaluation_scores
+
+from .utils import (
+    parse_ai_response_to_questions,
+    parse_ai_response_to_me_questions,
+    parse_evaluation_scores,
+)
 from .exceptions import ConfigurationError, AIServiceError, AIResponseError
 
 logger = logging.getLogger('generator')
+
 
 class QuestionGenerationService:
     def __init__(self):
@@ -45,10 +51,9 @@ class QuestionGenerationService:
         for s in raw_settings:
             c = cat_map.get(s.get("category"))
             t = thr_map.get(s.get("threshold"))
-            if c and t: converted.append({"category": c, "threshold": t})
+            if c and t:
+                converted.append({"category": c, "threshold": t})
         self.safety_settings = converted
-
-# generator/services.py
 
     def _generate_with_retry(self, prompt, retries=5, delay=35):
         """
@@ -83,7 +88,9 @@ class QuestionGenerationService:
                     continue
                 else:
                     logger.error("Cota API esgotada após todas as tentativas.")
-                    raise AIServiceError("A cota da API foi excedida. Por favor, aguarde cerca de 1 minuto antes de tentar novamente.")
+                    raise AIServiceError(
+                        "A cota da API foi excedida. Por favor, aguarde cerca de 1 minuto antes de tentar novamente."
+                    )
 
             except exceptions.InvalidArgument as e:
                 # Erro comum quando o prompt é muito grande (ex: PDF gigante)
@@ -125,14 +132,55 @@ class QuestionGenerationService:
             "Justificativa: [Explicação técnica concisa]\n"
         )
         
-        # Chama a função de retry configurada com delay de 25s-35s
         text = self._generate_with_retry(prompt)
-        
-        # Log para depuração de tamanho de resposta
         logger.info(f"IA gerou resposta C/E para área {area_nome}. Tamanho: {len(text)} caracteres.")
-        
-        # Retorna o processamento feito pelo parser no utils.py
         return parse_ai_response_to_questions(text)
+
+    def generate_me_questions(self, topic, num_questions, difficulty_level='medio', area=None):
+        """
+        Gera questões de múltipla escolha (A–E) com motivador opcional.
+        Saída é parseada por parse_ai_response_to_me_questions.
+        """
+        area_nome = area.nome if area else 'Geral'
+
+        prompt = (
+            f"Persona: Atue como examinador experiente de concursos públicos brasileiros.\n"
+            f"Tarefa: Elabore {num_questions} questões inéditas de MÚLTIPLA ESCOLHA.\n"
+            f"Área de Conhecimento: {area_nome}\n"
+            f"Tópico Base: {topic}\n"
+            f"Nível de Dificuldade: {difficulty_level}\n\n"
+            "DIRETRIZES OBRIGATÓRIAS:\n"
+            "1. Cada questão deve ter um enunciado claro e objetivo, exigindo raciocínio.\n"
+            "2. Crie alternativas verossímeis, evitando pegadinhas absurdas.\n"
+            "3. Use pelo menos 4 alternativas (A, B, C, D) e, opcionalmente, a alternativa E.\n"
+            "4. NÃO numere as questões (não use 'Questão 1', apenas 'Enunciado:').\n"
+            "5. Em cada questão, marque EXATAMENTE UMA alternativa correta.\n"
+            "6. Sempre inclua uma justificativa curta para o gabarito.\n\n"
+            "FORMATO ESTRITO DE SAÍDA (SIGA EXATAMENTE ESTE MODELO):\n"
+            "Texto Motivador: [Texto contextualizador opcional com 2 a 4 frases. Use 'Não aplicável' se não desejar motivador.]\n"
+            "---\n"
+            "Enunciado: [Texto do enunciado da questão]\n"
+            "A) [Texto da alternativa A]\n"
+            "B) [Texto da alternativa B]\n"
+            "C) [Texto da alternativa C]\n"
+            "D) [Texto da alternativa D]\n"
+            "E) [Texto da alternativa E, se desejar]\n"
+            "Gabarito: [A/B/C/D/E]\n"
+            "Justificativa: [Explicação técnica concisa]\n"
+            "---\n"
+            "Enunciado: [Próximo enunciado]\n"
+            "A) [...]\n"
+            "B) [...]\n"
+            "C) [...]\n"
+            "D) [...]\n"
+            "E) [...]\n"
+            "Gabarito: [A/B/C/D/E]\n"
+            "Justificativa: [Explicação técnica concisa]\n"
+        )
+
+        text = self._generate_with_retry(prompt)
+        logger.info(f"IA gerou resposta ME para área {area_nome}. Tamanho: {len(text)} caracteres.")
+        return parse_ai_response_to_me_questions(text)
 
     def generate_discursive_exam_question(self, base_topic_or_context, num_aspects=3, area=None, complexity='Intermediária', language='pt-br'):
         """Gera questão discursiva estruturada."""

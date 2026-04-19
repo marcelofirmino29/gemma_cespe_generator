@@ -1,10 +1,10 @@
-# generator/urls.py
 from django.http import HttpResponse
 from django.urls import path
 
 from generator.views import views_functions
 from . import views
-from .views import views_quiz_editor # Importa as novas views do editor
+from .views import views_quiz_editor
+from .views import views_validators   # <- importa as views de validação (CE/ME)
 
 # --- ESSENCIAL: Define o namespace para este aplicativo ---
 app_name = 'generator'
@@ -15,6 +15,13 @@ urlpatterns = [
 
     path('questions_ce/', views.listar_questoes_ce_view, name='questions_ce'),
     path('gerar-questoes-ce/', views.generate_questions_view, name='generate_questions'),
+
+    # ROTA: GERADOR DE QUESTÕES MÚLTIPLA ESCOLHA
+    path(
+        'gerar-questoes-me/',
+        views.generate_me_questions_view,
+        name='generate_me_questions',
+    ),
 
     path('validate/', views.validate_answers_view, name='validate_answers'),
 
@@ -27,7 +34,18 @@ urlpatterns = [
     path('concursos/', views.listar_concursos_view, name='listar_concursos'),
 
     path('dashboard/', views.dashboard_view, name='dashboard'),
-    path('validate-single-ce/', views.validate_single_ce_view, name='validate_single_ce'),
+
+    # === VALIDAÇÃO AJAX ===
+    path(
+        'validate-single-ce/',
+        views_validators.validate_single_ce_view,
+        name='validate_single_ce'
+    ),
+    path(
+        'validate-single-me/',
+        views_validators.validate_single_me_view,
+        name='validate_single_me'
+    ),
 
     # URLs do Módulo Simulado
     path('simulado/configurar/', views.configurar_simulado_view, name='configurar_simulado'),
@@ -66,10 +84,10 @@ urlpatterns = [
     path('add-area-quick-generator/', views.add_area_quick_from_generator_view, name='add_area_quick_from_generator'),
     
     path('provas-coletadas/', views.listar_provas_coletadas, name='listar_provas_coletadas'),
-
     path('consulta-leis/', views.listar_leis_coletadas_planalto, name='consulta_leis_planalto'),
-
     path('extrair-markdown/', views.extract_and_markdownify_view, name='visualizar_lei_markdown'),
 
     path('health/', views_functions.health_check, name='health_check'),
+
+    path('questoes/me/', views.listar_questoes_me_view, name='listar_questoes_me'),
 ]

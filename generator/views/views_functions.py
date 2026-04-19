@@ -1,17 +1,19 @@
 import logging
-
 from django.http import HttpResponse
-logger = logging.getLogger(__name__)  # ✅ CORRIGIDO
+from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
+
 import PyPDF2
 from django.contrib.auth.decorators import login_required
-from datetime import datetime, timedelta
 from django.contrib import messages
 from django.shortcuts import render
 from generator.exceptions import AIServiceError, ConfigurationError, ParsingError
-from generator.forms import PDFSummaryForm, PDFUploadForm
-from generator.models import AreaConhecimento, Questao, TentativaResposta
+from generator.forms import PDFUploadForm, PDFSummaryForm
+from generator.models import AreaConhecimento, Questao, TentativaResposta, Topico
 from generator.services import QuestionGenerationService
 from generator.views.views_service_context import _get_base_context_and_service
+
 
 def extrair_texto_completo_pdf(uploaded_file_obj):
     """Extrai todo o texto de um objeto de arquivo PDF enviado usando PyPDF2."""
@@ -48,6 +50,7 @@ def extrair_texto_completo_pdf(uploaded_file_obj):
         logger.error(f"PyPDF2: Erro inesperado ao extrair texto do PDF '{uploaded_file_obj.name}': {e}", exc_info=True)
         raise ValueError(f"Erro ao processar o conteúdo do PDF com PyPDF2: {e}")
 
+
 @login_required
 def dashboard_view(request):
     context, _, _ = _get_base_context_and_service()
@@ -82,13 +85,16 @@ def dashboard_view(request):
             messages.warning(request, "Área selecionada inválida.")
             area_filter_obj = None
 
-    logger.info(f"Dashboard acessado por {request.user.username}. Filtros: Data=({date_from_str} a {date_to_str}), AreaID={area_filter_id}")
+    logger.info(
+        f"Dashboard acessado por {request.user.username}. "
+        f"Filtros: Data=({date_from_str} a {date_to_str}), AreaID={area_filter_id}"
+    )
 
     try:
         todas_tentativas_qs = (
             TentativaResposta.objects
             .filter(usuario=request.user)
-            .select_related('questao')
+            .select_related('questao', 'questao__topico__area_conhecimento')
             .prefetch_related('avaliacao')
         )
 
@@ -100,15 +106,18 @@ def dashboard_view(request):
             todas_tentativas_qs = todas_tentativas_qs.filter(data_resposta__lt=date_to_inclusive)
 
         if area_filter_obj:
-            todas_tentativas_qs = todas_tentativas_qs.filter(questao__area=area_filter_obj)
+            todas_tentativas_qs = todas_tentativas_qs.filter(
+                questao__topico__area_conhecimento=area_filter_obj
+            )
 
         total_geral_filtrado = todas_tentativas_qs.count()
 
-        # ✅ CORRIGIDO: C/E SEM CELERY
+        # C/E
         ce_qs = todas_tentativas_qs.filter(questao__tipo='CE')
         total_ce_filtrado = ce_qs.count()
         acertos_ce = 0
         erros_ce = 0
+
         for t_ce in ce_qs:
             avaliacao = getattr(t_ce, 'avaliacao', None)
             if avaliacao and avaliacao.correto_ce is not None:
@@ -116,8 +125,26 @@ def dashboard_view(request):
                     acertos_ce += 1
                 else:
                     erros_ce += 1
+
         score_ce = acertos_ce - erros_ce
         percentual_ce = round((acertos_ce / total_ce_filtrado) * 100) if total_ce_filtrado > 0 else 0
+
+        # Múltipla Escolha
+        me_qs = todas_tentativas_qs.filter(questao__tipo='ME')
+        total_me_filtrado = me_qs.count()
+        acertos_me = 0
+        erros_me = 0
+
+        for t_me in me_qs:
+            avaliacao = getattr(t_me, 'avaliacao', None)
+            if avaliacao and avaliacao.correto_me is not None:
+                if avaliacao.correto_me:
+                    acertos_me += 1
+                else:
+                    erros_me += 1
+
+        score_me = acertos_me - erros_me
+        percentual_me = round((acertos_me / total_me_filtrado) * 100) if total_me_filtrado > 0 else 0
 
         # Discursivas
         tentativas_disc_filtradas = todas_tentativas_qs.filter(questao__tipo='DISC')
@@ -129,7 +156,7 @@ def dashboard_view(request):
 
         for t_disc in tentativas_disc_filtradas:
             avaliacao = getattr(t_disc, 'avaliacao', None)
-            if (avaliacao and avaliacao.nc is not None and avaliacao.ne is not None and avaliacao.npd is not None):
+            if avaliacao and avaliacao.nc is not None and avaliacao.ne is not None and avaliacao.npd is not None:
                 nc_total += avaliacao.nc
                 ne_total += avaliacao.ne
                 npd_total += avaliacao.npd
@@ -141,11 +168,19 @@ def dashboard_view(request):
 
         stats = {
             'total_geral': total_geral_filtrado,
+
             'total_ce': total_ce_filtrado,
             'acertos_ce': acertos_ce,
             'erros_ce': erros_ce,
             'score_ce': score_ce,
             'percentual_ce': percentual_ce,
+
+            'total_me': total_me_filtrado,
+            'acertos_me': acertos_me,
+            'erros_me': erros_me,
+            'score_me': score_me,
+            'percentual_me': percentual_me,
+
             'total_disc': total_disc_filtrado,
             'total_disc_avaliadas': count_disc_avaliadas,
             'media_nc': media_nc,
@@ -171,6 +206,7 @@ def dashboard_view(request):
 
     return render(request, 'generator/dashboard.html', context)
 
+
 @login_required
 def upload_pdf_and_generate_questions_view(request):
     form = PDFUploadForm()
@@ -190,7 +226,6 @@ def upload_pdf_and_generate_questions_view(request):
             area_obj = form.cleaned_data.get('area')
             current_user = request.user if request.user.is_authenticated else None
 
-            # ✅ USA FUNÇÃO CENTRALIZADA
             extracted_text = extrair_texto_completo_pdf(pdf_file)
             
             if not extracted_text.strip():
@@ -216,16 +251,34 @@ def upload_pdf_and_generate_questions_view(request):
                             saved_ce_count = 0
                             temp_generated_data_with_ids = []
 
+                            generic_topic, _ = Topico.objects.get_or_create(
+                                nome=f"Tópico Geral de {area_obj.nome}",
+                                defaults={'area_conhecimento': area_obj}
+                            )
+
                             for q_data_from_service in questoes_ce_list_from_service:
                                 try:
+                                    afirmacao = q_data_from_service.get('afirmacao')
+                                    gabarito = q_data_from_service.get('gabarito')
+
+                                    if not afirmacao or not afirmacao.strip():
+                                        continue
+
+                                    if gabarito not in ['C', 'E']:
+                                        continue
+
                                     questao_salva = Questao.objects.create(
-                                        tipo='CE', 
-                                        texto_comando=q_data_from_service.get('afirmacao', 'Afirmação não fornecida'),
-                                        texto_motivador=(motivador_ce_str if motivador_ce_str and motivador_ce_str.strip().lower() != "não aplicável" else None),
-                                        gabarito_ce=q_data_from_service.get('gabarito', 'C'), 
-                                        justificativa_gabarito=q_data_from_service.get('justificativa', ''), 
-                                        dificuldade=difficulty,
-                                        area=area_obj, 
+                                        tipo='CE',
+                                        enunciado=afirmacao.strip(),
+                                        texto_motivador=(
+                                            motivador_ce_str
+                                            if motivador_ce_str and motivador_ce_str.strip().lower() != "não aplicável"
+                                            else None
+                                        ),
+                                        gabarito_ce=gabarito,
+                                        justificativa_gabarito=q_data_from_service.get('justificativa', ''),
+                                        dificuldade=(difficulty or 'medio'),
+                                        topico=generic_topic,
                                         criado_por=current_user
                                     )
                                     saved_ce_count += 1
@@ -236,7 +289,7 @@ def upload_pdf_and_generate_questions_view(request):
                                         'justificativa': q_data_from_service.get('justificativa')
                                     })
                                 except Exception as e_save_ce:
-                                    logger.error(f"Erro ao salvar Questao C/E: {e_save_ce} - Dados: {q_data_from_service}")
+                                    logger.error(f"Erro ao salvar Questao C/E: {e_save_ce} - Dados: {q_data_from_service}", exc_info=True)
                                     messages.error(request, f"Erro ao salvar uma questão C/E: '{q_data_from_service.get('afirmacao', 'ID Desconhecido')[:50]}...'. Detalhes no log.")
                             
                             if saved_ce_count > 0:
@@ -265,19 +318,24 @@ def upload_pdf_and_generate_questions_view(request):
                         
                         if questao_discursiva_texto_completo_str:
                             try:
+                                generic_topic_disc, _ = Topico.objects.get_or_create(
+                                    nome=f"Tópico Geral de {area_obj.nome}",
+                                    defaults={'area_conhecimento': area_obj}
+                                )
+
                                 questao_disc_salva = Questao.objects.create(
                                     tipo='DISC',
-                                    texto_comando=questao_discursiva_texto_completo_str,
+                                    enunciado=questao_discursiva_texto_completo_str,
                                     aspectos_discursiva=f"Questão gerada a partir de PDF com {num_aspects_discursive} aspecto(s) solicitado(s).",
-                                    dificuldade=difficulty,
-                                    area=area_obj, 
+                                    dificuldade=(difficulty or 'medio'),
+                                    topico=generic_topic_disc,
                                     criado_por=current_user
                                 )
                                 logger.info(f"Questao Discursiva ID {questao_disc_salva.id} salva com sucesso.")
                                 messages.success(request, "Questão discursiva gerada e salva com sucesso!")
                                 generated_discursive_question_text = questao_discursiva_texto_completo_str 
                             except Exception as e_save_disc:
-                                logger.error(f"Erro ao salvar Questao Discursiva: {e_save_disc}")
+                                logger.error(f"Erro ao salvar Questao Discursiva: {e_save_disc}", exc_info=True)
                                 messages.error(request, "Erro ao salvar a questão discursiva no banco.")
                                 generated_discursive_question_text = questao_discursiva_texto_completo_str 
                         else:

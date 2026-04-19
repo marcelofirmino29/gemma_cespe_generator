@@ -1,0 +1,377 @@
+{% extends 'generator/base.html' %}
+{% load static %}
+{% load generator_tags %}
+
+{% block title %}Gerador de Questões Múltipla Escolha (Contexto ou PDF){% endblock title %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'generator/css/base_layout_styles.css' %}">
+{% endblock extra_head %}
+
+{% block content %}
+
+    {% if error_message %}
+        <div class="alert alert-danger alert-dismissible fade show">
+            <strong>Erro:</strong> {{ error_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    {% if not service_initialized and not error_message %}
+        <div class="alert alert-warning alert-dismissible fade show">
+            <strong>Atenção:</strong> Serviço de IA indisponível ou com erro na inicialização.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show">
+                {{ message|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="filters-container shadow-sm">
+        <h1 class="h4 mb-4 text-center">Gerador de Questões de Múltipla Escolha</h1>
+
+        <form method="post"
+              id="generator-form-me"
+              action="{% url 'generator:generate_me_questions' %}"
+              {% if not service_initialized %} style="opacity: 0.6; pointer-events: none;" {% endif %}
+              enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="generation_mode" value="me_only_from_generator_page">
+
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="mb-3">
+                        <label for="{{ form.topic.id_for_label|default:'id_topic' }}"
+                               class="form-label fw-medium"
+                               id="label_for_topic_me_page">
+                            {{ form.topic.label|default:"1. Forneça um Tópico ou Contexto Textual" }}
+                        </label>
+                        {{ form.topic }}
+                        <div class="form-text text-muted mt-1"
+                             id="help_text_for_topic_me_page"
+                             data-help-optional="{{ form.topic.help_text|default:"Contexto textual opcional quando um PDF é enviado."|escapejs }}"
+                             data-help-editing="{{ form.topic.help_text|default:"Continue editando seu contexto textual."|escapejs }}"
+                             data-help-required="{{ form.topic.help_text|default:"Digite ou cole o texto base. Obrigatório se nenhum PDF for enviado."|escapejs }}">
+                            {{ form.topic.help_text|default:"Este campo é obrigatório se nenhum PDF for enviado."|safe }}
+                        </div>
+                        {% if form.topic.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.topic.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="or-divider-generator">&mdash; OU &mdash;</div>
+
+                    <div class="pdf-upload-section-generator mb-3">
+                        <label for="id_pdf_contexto_me_page"
+                               class="form-label fw-medium"
+                               id="label_for_pdf_me_page">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                            1. (Alternativa) Envie um PDF para Contexto
+                        </label>
+                        <input class="form-control form-control-sm"
+                               type="file"
+                               id="id_pdf_contexto_me_page"
+                               name="pdf_contexto"
+                               accept=".pdf">
+                        <div class="form-text text-muted mt-1"
+                             id="help_text_for_pdf_me_page"
+                             data-pdf-selected="PDF selecionado. O Tópico textual é opcional."
+                             data-pdf-optional="Se preferir, envie um PDF. (O Tópico textual é obrigatório se nenhum PDF for fornecido).">
+                            Se um PDF for enviado, o campo "Tópico ou Contexto" acima se torna opcional.
+                        </div>
+                        {% if form.pdf_contexto.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.pdf_contexto.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <h4 class="mb-3 small fw-bold text-uppercase text-muted">
+                        2. Defina os Parâmetros de Geração (Múltipla Escolha)
+                    </h4>
+                    <div class="row g-3">
+                        <div class="col-md-12 mb-2">
+                            <label for="{{ form.num_questions.id_for_label|default:'id_num_questions' }}"
+                                   class="form-label fw-medium">
+                                {{ form.num_questions.label|default:"Nº Questões ME" }}
+                            </label>
+                            {{ form.num_questions }}
+                            {% if form.num_questions.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.num_questions.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-2">
+                            <label for="{{ form.difficulty_level.id_for_label|default:'id_difficulty_level' }}"
+                                   class="form-label fw-medium">
+                                {{ form.difficulty_level.label|default:"Dificuldade" }}
+                            </label>
+                            {{ form.difficulty_level }}
+                            {% if form.difficulty_level.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.difficulty_level.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.area.id_for_label|default:'id_area' }}"
+                                   class="form-label fw-medium">
+                                {{ form.area.label|default:"Área de Conhecimento" }}
+                            </label>
+                            {{ form.area }}
+                            {% if form.area.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.area.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="btn-group w-100 mt-4 flex-wrap"
+                         role="group"
+                         aria-label="Grupo de Ações do Gerador ME">
+                        <button type="reset"
+                                form="generator-form-me"
+                                class="btn btn-outline-secondary btn-sm col-6 col-md-3 mb-1 mb-md-0"
+                                title="Limpa os campos do formulário">
+                            <i class="bi bi-x-lg"></i> Limpar
+                        </button>
+                        <a href="{% url 'generator:generate_me_questions' %}?action=clear"
+                           class="btn btn-outline-warning btn-sm col-6 col-md-3 mb-1 mb-md-0"
+                           role="button"
+                           title="Remove o último lote gerado da tela">
+                            <i class="bi bi-eraser"></i> Limpar Res.
+                        </a>
+                        <a href="{% url 'generator:questions_ce' %}"
+                           class="btn btn-outline-success btn-sm col-6 col-md-3 mb-1 mb-md-0"
+                           role="button"
+                           title="Ir ao Banco de Questões (todas as questões)">
+                            <i class="bi bi-search"></i> Banco
+                        </a>
+                        <button type="submit"
+                                form="generator-form-me"
+                                class="btn btn-primary btn-sm col-6 col-md-3 mb-1 mb-md-0"
+                                id="submit-button-me"
+                                {% if not service_initialized %} disabled {% endif %}
+                                title="Gera novas questões de múltipla escolha">
+                            <span id="button-content-wrapper-me">
+                                <span class="spinner-border spinner-border-sm d-none me-1"
+                                      role="status"
+                                      aria-hidden="true"
+                                      id="loading-spinner-me"></span>
+                                <span id="button-text-me">
+                                    <i class="bi bi-robot"></i> Gerar ME
+                                </span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div id="addAreaQuickFormContainer" class="mt-3">
+            <form id="addAreaQuickFormGenerator"
+                  method="post"
+                  action="{% url 'generator:add_area_quick_from_generator' %}">
+                {% csrf_token %}
+                <div class="input-group input-group-sm">
+                    <input type="text"
+                           class="form-control form-control-sm"
+                           name="nome"
+                           placeholder="Não encontrou a área? Adicione-a aqui rapidamente."
+                           required
+                           maxlength="100"
+                           aria-label="Nome da nova área">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-lg"></i> Add Área
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert alert-secondary mt-4 small text-center">
+        Forneça um contexto textual ou envie um PDF, defina os parâmetros e clique em "Gerar ME".
+    </div>
+
+    {% if main_motivador %}
+        <hr class="my-4">
+        <div class="motivador-text">
+            <h2 class="h6 text-muted mb-2 fw-normal">
+                <i class="bi bi-info-circle me-1"></i>Texto Motivador da Última Geração
+            </h2>
+            <div class="small">{{ main_motivador|linebreaksbr }}</div>
+        </div>
+    {% endif %}
+
+    {% if page_obj %}
+        {% if not main_motivador %}<hr class="my-4">{% endif %}
+        <div class="mt-4">
+            <h2 class="h5 mb-3 fw-normal">
+                Questões de Múltipla Escolha Geradas (Página {{ page_obj.number }} de {{ paginator.num_pages }}):
+            </h2>
+
+            <div class="card card-body">
+                {% for item in page_obj %}
+                    <div class="card card-body mb-3" id="question-item-me-{{ item.id }}">
+                        <p class="mb-2">
+                            <strong>Questão {{ page_obj.start_index|add:forloop.counter0 }}:</strong>
+                            (ID: {{ item.id }})
+                        </p>
+
+                        <p class="ms-3">{{ item.enunciado|linebreaksbr }}</p>
+
+                        <div class="ms-3 mt-2">
+                            {% if item.alternativa_a %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="resposta_q{{ item.id }}" id="resp_{{ item.id }}_A" value="A">
+                                    <label class="form-check-label" for="resp_{{ item.id }}_A">
+                                        <strong>A)</strong> {{ item.alternativa_a|linebreaksbr }}
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if item.alternativa_b %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="resposta_q{{ item.id }}" id="resp_{{ item.id }}_B" value="B">
+                                    <label class="form-check-label" for="resp_{{ item.id }}_B">
+                                        <strong>B)</strong> {{ item.alternativa_b|linebreaksbr }}
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if item.alternativa_c %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="resposta_q{{ item.id }}" id="resp_{{ item.id }}_C" value="C">
+                                    <label class="form-check-label" for="resp_{{ item.id }}_C">
+                                        <strong>C)</strong> {{ item.alternativa_c|linebreaksbr }}
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if item.alternativa_d %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="resposta_q{{ item.id }}" id="resp_{{ item.id }}_D" value="D">
+                                    <label class="form-check-label" for="resp_{{ item.id }}_D">
+                                        <strong>D)</strong> {{ item.alternativa_d|linebreaksbr }}
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if item.alternativa_e %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="resposta_q{{ item.id }}" id="resp_{{ item.id }}_E" value="E">
+                                    <label class="form-check-label" for="resp_{{ item.id }}_E">
+                                        <strong>E)</strong> {{ item.alternativa_e|linebreaksbr }}
+                                    </label>
+                                </div>
+                            {% endif %}
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary mt-3"
+                                    id="btn-responder-{{ item.id }}"
+                                    data-questao-id="{{ item.id }}"
+                                    disabled>
+                                Responder
+                            </button>
+                        </div>
+
+                        <div class="mt-2 mb-1 small d-none" id="feedback-me-{{ item.id }}">
+                            <span class="badge" id="badge-me-{{ item.id }}"></span>
+                        </div>
+
+                        <p class="small text-muted mb-0 d-none" id="justificativa-me-{{ item.id }}"></p>
+                    </div>
+                {% empty %}
+                    <div class="alert alert-info" role="alert">
+                        Nenhuma questão de múltipla escolha gerada para exibir neste lote/página.
+                        Tente gerar novas questões.
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if paginator.num_pages > 1 %}
+                <nav aria-label="Navegação das questões ME" class="mt-4 d-flex justify-content-center">
+                    <ul class="pagination flex-wrap">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    &laquo;
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    ‹
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">‹</span></li>
+                        {% endif %}
+
+                        {% for num in paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active" aria-current="page">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    ›
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    &raquo;
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">›</span></li>
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    {% elif request.method == 'POST' and not form.errors %}
+        <div class="alert alert-info mt-4" role="alert">
+            Geração de questões de múltipla escolha solicitada. Os resultados aparecerão aqui ou no
+            <a href="{% url 'generator:questions_ce' %}" class="alert-link">Banco de Questões</a>
+            após o processamento.
+        </div>
+    {% endif %}
+
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        window.URL_VALIDATE_ME = "{% url 'generator:validate_single_me' %}";
+    </script>
+    <script src="{% static 'generator/js/me_page_interactions.js' %}" defer></script>
+{% endblock extra_js %}
