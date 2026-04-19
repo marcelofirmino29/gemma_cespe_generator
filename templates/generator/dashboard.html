@@ -1,7 +1,9 @@
 {% extends 'generator/base.html' %}
 {% load static %}
 
+
 {% block title %}Meu Desempenho - Gerador IA{% endblock title %}
+
 
 {% block extra_head %}
     {# Link para CSS externo (se houver) #}
@@ -9,14 +11,18 @@
 {% endblock extra_head %}
 
 
+
 {% block content %} {# Conteúdo específico da página #}
+
 
     {# Mensagens #}
     {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert"> {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}
     {% if error_message %} <div class="alert alert-danger">{{ error_message }}</div> {% endif %}
 
 
+
     <div class="filters-container shadow-sm"> {# Usando filters-container como o card principal da página #}
+
 
         {# --- Formulário de Filtro por Data e Área --- #}
         <div class="filter-form mb-4">
@@ -48,6 +54,7 @@
         {# --- FIM: Formulário de Filtro --- #}
 
 
+
         {# --- Seção de Estatísticas e Gráfico --- #}
         <div class="row mb-4 g-4">
             {# --- Bloco de Estatísticas (Resumo C/E) --- #}
@@ -73,6 +80,7 @@
                 </div>
             </div>
 
+
             {# --- Bloco do Gráfico --- #}
             <div class="col-lg-5">
                 <h2 class="h5 mb-3 fw-normal">Distribuição Acertos/Erros (C/E)</h2>
@@ -89,6 +97,34 @@
                 </div>
             </div>
         </div> {# --- Fim da row de Stats/Gráfico --- #}
+
+
+
+        {# --- NOVO: Resumo de Múltipla Escolha --- #}
+        <div class="row mb-4 g-4">
+            <div class="col-12">
+                <h2 class="h5 mb-3 fw-normal">Resumo Múltipla Escolha {% if current_date_from or current_date_to or current_area_filter %}(Período/Área Filtrado){% else %}(Geral){% endif %}</h2>
+                <div class="p-3 rounded border bg-body-secondary">
+                    {% if stats %}
+                    <div class="row text-center g-3 w-100">
+                        <div class="col-md-3 col-6"> <i class="bi bi-ui-checks-grid text-info stat-icon"></i> <div class="stat-value">{{ stats.total_me|default_if_none:"0" }}</div> <div class="stat-label text-muted">Tentativas ME</div> </div>
+                        <div class="col-md-3 col-6"> <i class="bi bi-check-circle-fill text-success stat-icon"></i> <div class="stat-value text-success">{{ stats.acertos_me|default_if_none:"0" }}</div> <div class="stat-label text-muted">Acertos</div> </div>
+                        <div class="col-md-3 col-6"> <i class="bi bi-x-octagon-fill text-danger stat-icon"></i> <div class="stat-value text-danger">{{ stats.erros_me|default_if_none:"0" }}</div> <div class="stat-label text-muted">Erros</div> </div>
+                        <div class="col-md-3 col-6"> <i class="bi bi-calculator-fill stat-icon {% if stats.score_me > 0 %}text-success{% elif stats.score_me < 0 %}text-danger{% else %}text-secondary{% endif %}"></i> <div class="stat-value {% if stats.score_me > 0 %}text-success{% elif stats.score_me < 0 %}text-danger{% else %}text-muted{% endif %}"> {% if stats.score_me > 0 %}+{% endif %}{{ stats.score_me|default_if_none:"0" }} </div> <div class="stat-label text-muted">Score Líquido</div> </div>
+                        {% if stats.total_me > 0 %}
+                        <div class="col-12 mt-3">
+                            <div class="progress" role="progressbar" aria-label="Percentual de acerto ME" aria-valuenow="{{ stats.percentual_me }}" aria-valuemin="0" aria-valuemax="100" style="height: 6px;"> <div class="progress-bar bg-info" style="width: {{ stats.percentual_me }}%"></div> </div>
+                            <small class="text-muted">Aproveitamento Bruto: {{ stats.percentual_me|default_if_none:"0" }}%</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                        <div class="alert alert-secondary small w-100 text-center mb-0">Sem dados para o período/área selecionado(a).</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
 
 
         {# --- Seção do Histórico Recente (Tabela) --- #}
@@ -110,15 +146,24 @@
                             {% for tentativa in tentativas_list %}
                             <tr>
                                 <td class="text-nowrap">{{ tentativa.data_resposta|date:"d/m/Y H:i" }}</td>
-                                <td><span class="badge {% if tentativa.questao.tipo == 'CE' %}bg-primary-subtle text-primary-emphasis{% else %}bg-info-subtle text-info-emphasis{% endif %}">{{ tentativa.questao.get_tipo_display }}</span></td>
+                                <td><span class="badge {% if tentativa.questao.tipo == 'CE' %}bg-primary-subtle text-primary-emphasis{% elif tentativa.questao.tipo == 'ME' %}bg-info-subtle text-info-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">{{ tentativa.questao.get_tipo_display }}</span></td>
                                 <td>{{ tentativa.questao.topico.area_conhecimento.nome|default:"-" }}</td>
                                 <td>{{ tentativa.questao.enunciado|truncatewords:12 }}</td>
                                 <td class="text-center">
-                                    {% if tentativa.resposta_ce %}
+                                    {% if tentativa.questao.tipo == 'CE' and tentativa.resposta_ce %}
                                         <span class="fw-bold">{{ tentativa.resposta_ce }}</span>
                                         {% with avaliacao=tentativa.avaliacao %}
                                             {% if avaliacao and avaliacao.correto_ce is not None %}
                                                 {% if avaliacao.correto_ce %}<i class="bi bi-check-circle-fill text-success ms-1" title="Correto"></i>
+                                                {% else %}<i class="bi bi-x-circle-fill text-danger ms-1" title="Errado"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% elif tentativa.questao.tipo == 'ME' and tentativa.resposta_me %}
+                                        <span class="fw-bold">{{ tentativa.resposta_me }}</span>
+                                        {% with avaliacao=tentativa.avaliacao %}
+                                            {% if avaliacao and avaliacao.correto_me is not None %}
+                                                {% if avaliacao.correto_me %}<i class="bi bi-check-circle-fill text-success ms-1" title="Correto"></i>
                                                 {% else %}<i class="bi bi-x-circle-fill text-danger ms-1" title="Errado"></i>
                                                 {% endif %}
                                             {% endif %}
@@ -142,11 +187,14 @@
         {# --- FIM: Histórico --- #}
     </div> {# Fim .filters-container ou .content-container #}
 
+
     <div class="alert alert-secondary mt-4 small text-center">
         Visualize seu desempenho geral ou filtre por período/área.
     </div>
 
+
 {% endblock content %}
+
 
 
 {% block extra_js %}

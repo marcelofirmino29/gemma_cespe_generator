@@ -32,7 +32,7 @@ urlpatterns = [
     path('evaluate-discursive/', views.evaluate_discursive_answer_view, name='evaluate_discursive_answer'),
     path('questions_discursivas/', views.listar_questoes_discursivas_view, name='questions_discursivas'),
     path('concursos/', views.listar_concursos_view, name='listar_concursos'),
-
+    path('questions_me/', views.listar_questoes_me_view, name='questions_me'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
 
     # === VALIDAÇÃO AJAX ===

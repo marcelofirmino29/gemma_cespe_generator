@@ -36,6 +36,7 @@ def generate_questions_view(request):
         logger.info(f"POST generate_questions_view por {request.user.username}")
         request.session.pop('latest_ce_ids', None)
         request.session.pop('latest_ce_motivador', None)
+
         form_instance = QuestionGeneratorForm(request.POST, request.FILES, max_questions=max_q)
 
         pdf_file_uploaded = 'pdf_contexto' in request.FILES and request.FILES.get('pdf_contexto')
@@ -51,7 +52,7 @@ def generate_questions_view(request):
         context['form'] = form_instance
 
         if form_instance.is_valid():
-            logger.info("Formulário de Geração C/E é VÁLIDO.")
+            logger.info("Formulário de Geração é VÁLIDO.")
             if not service_initialized or not service:
                 messages.error(request, context.get('error_message', "Serviço de IA indisponível para processar."))
                 return render(request, 'generator/question_generator.html', context)
@@ -72,10 +73,11 @@ def generate_questions_view(request):
                         messages.error(
                             request,
                             f"Não foi possível extrair conteúdo textual útil do PDF '{pdf_file_cleaned.name}'. "
-                            "O arquivo pode ser uma imagem, estar protegido, ser muito complexo ou estar vazio. "
-                            "Tente o contexto textual."
+                            f"O arquivo pode ser uma imagem, estar protegido, ser muito complexo ou estar vazio. "
+                            f"Tente o contexto textual."
                         )
                         return render(request, 'generator/question_generator.html', context)
+
                     logger.info(
                         f"Contexto para IA obtido do PDF: '{pdf_file_cleaned.name}' "
                         f"({len(contexto_para_ia)} caracteres). Início: '{contexto_para_ia[:250]}...'"
@@ -90,6 +92,7 @@ def generate_questions_view(request):
                     )
                     messages.error(request, "Ocorreu um erro inesperado ao tentar ler o arquivo PDF.")
                     return render(request, 'generator/question_generator.html', context)
+
             elif topic_text_cleaned:
                 contexto_para_ia = topic_text_cleaned
                 fonte_contexto = "Tópico Textual"
@@ -103,88 +106,119 @@ def generate_questions_view(request):
                 return render(request, 'generator/question_generator.html', context)
 
             logger.info(
-                f"Preparando para chamar IA (C/E). Fonte: {fonte_contexto}, "
+                f"Preparando para chamar IA. Fonte: {fonte_contexto}, "
                 f"Num Questões: {num_questions}, Dificuldade: {difficulty}."
             )
+
             try:
                 main_motivador, generated_items_data = service.generate_questions(
                     topic=contexto_para_ia,
                     num_questions=num_questions,
                     difficulty_level=difficulty
                 )
+
                 if not generated_items_data or not isinstance(generated_items_data, list):
                     messages.warning(request, "IA retornou dados inválidos.")
                     generated_items_data = []
 
                 saved_question_ids = []
+                saved_ce_count = 0
+                saved_me_count = 0
+
                 if generated_items_data:
-                    logger.info(f"Salvando {len(generated_items_data)} itens C/E...")
+                    logger.info(f"Salvando {len(generated_items_data)} itens...")
+
                     generic_topic, _ = Topico.objects.get_or_create(
                         nome=f"Tópico Geral de {area_obj.nome}",
                         defaults={'area_conhecimento': area_obj}
                     )
+
                     for item_data in generated_items_data:
                         try:
                             if not isinstance(item_data, dict):
                                 continue
+
                             gabarito = item_data.get('gabarito')
+
+                            # Fluxo C/E
                             afirmacao = item_data.get('afirmacao')
-                            if not gabarito or gabarito not in ['C', 'E'] or not afirmacao or not afirmacao.strip():
+                            if gabarito in ['C', 'E'] and afirmacao and afirmacao.strip():
+                                q = Questao.objects.create(
+                                    tipo='CE',
+                                    texto_motivador=main_motivador,
+                                    enunciado=afirmacao.strip(),
+                                    gabarito_ce=gabarito,
+                                    justificativa_gabarito=item_data.get('justificativa'),
+                                    dificuldade=(difficulty or 'medio'),
+                                    topico=generic_topic,
+                                    criado_por=request.user
+                                )
+                                saved_question_ids.append(q.id)
+                                saved_ce_count += 1
                                 continue
 
-                            q = Questao(
-                                tipo='CE',
-                                texto_motivador=main_motivador,
-                                enunciado=afirmacao,
-                                gabarito_ce=gabarito,
-                                justificativa_gabarito=item_data.get('justificativa'),
-                                dificuldade=(difficulty or 'medio'),
-                                topico=generic_topic,
-                                criado_por=request.user
-                            )
-                            q.save()
-                            saved_question_ids.append(q.id)
+                            # Fluxo ME
+                            enunciado = item_data.get('enunciado')
+                            if gabarito in ['A', 'B', 'C', 'D', 'E'] and enunciado and enunciado.strip():
+                                q = Questao.objects.create(
+                                    tipo='ME',
+                                    texto_motivador=main_motivador,
+                                    enunciado=enunciado.strip(),
+                                    alternativa_a=item_data.get('alternativa_a'),
+                                    alternativa_b=item_data.get('alternativa_b'),
+                                    alternativa_c=item_data.get('alternativa_c'),
+                                    alternativa_d=item_data.get('alternativa_d'),
+                                    alternativa_e=item_data.get('alternativa_e'),
+                                    gabarito_me=gabarito,
+                                    justificativa_gabarito=item_data.get('justificativa'),
+                                    dificuldade=(difficulty or 'medio'),
+                                    topico=generic_topic,
+                                    criado_por=request.user
+                                )
+                                saved_question_ids.append(q.id)
+                                saved_me_count += 1
+                                continue
+
+                            logger.warning(f"Item ignorado por formato inválido: {item_data}")
+
                         except Exception as save_error:
-                            logger.error(f"Erro salvar C/E item: {save_error}", exc_info=True)
+                            logger.error(f"Erro ao salvar item gerado: {save_error}", exc_info=True)
 
                 if saved_question_ids:
-                    messages.success(request, f"{len(saved_question_ids)} questões C/E geradas!")
+                    messages.success(
+                        request,
+                        f"{len(saved_question_ids)} questões geradas e salvas! "
+                        f"(C/E: {saved_ce_count}, ME: {saved_me_count})"
+                    )
                     request.session['latest_ce_ids'] = saved_question_ids
                     request.session['latest_ce_motivador'] = main_motivador if main_motivador else ""
                 else:
                     if generated_items_data:
-                        messages.warning(
-                            request,
-                            "Nenhuma questão válida foi salva (verifique formato/dados da IA)."
-                        )
+                        messages.warning(request, "Nenhuma questão válida foi salva (verifique formato/dados da IA).")
                     else:
-                        messages.warning(
-                            request,
-                            "IA não retornou questões válidas para salvar."
-                        )
+                        messages.warning(request, "IA não retornou questões válidas para salvar.")
+
                 if generated_items_data and len(saved_question_ids) < len(generated_items_data):
-                    messages.warning(
-                        request,
-                        "Alguns itens podem não ter sido salvos (problemas de formato ou dados)."
-                    )
+                    messages.warning(request, "Alguns itens podem não ter sido salvos.")
 
                 return redirect(reverse('generator:generate_questions'))
 
             except Exception as e:
-                logger.error(f"Erro INESPERADO na Geração ou Salvamento C/E: {e}", exc_info=True)
+                logger.error(f"Erro INESPERADO na Geração ou Salvamento: {e}", exc_info=True)
                 context['error_message'] = f"Erro inesperado: {e}"
                 messages.error(request, context['error_message'])
                 return render(request, 'generator/question_generator.html', context)
+
         else:
-            logger.warning(f"Formulário de Geração C/E INVÁLIDO: {form_instance.errors.as_json()}")
+            logger.warning(f"Formulário de Geração INVÁLIDO: {form_instance.errors.as_json()}")
             messages.error(request, "Por favor, corrija os erros indicados no formulário.")
             return render(request, 'generator/question_generator.html', context)
 
-    # --- Lógica GET ---
     else:
         form_instance = QuestionGeneratorForm(max_questions=max_q)
         context['form'] = form_instance
         logger.debug(f"GET generate_questions_view por {request.user.username}")
+
         if request.GET.get('action') == 'clear':
             logger.info("Limpando sessão 'latest_ce' via action=clear.")
             request.session.pop('latest_ce_ids', None)
@@ -198,57 +232,16 @@ def generate_questions_view(request):
         context['paginator'] = None
 
         if latest_ids:
-            logger.info(f"GET: IDs encontrados na sessão para paginação (C/E): {latest_ids}.")
             try:
-                question_list = (
-                    Questao.objects
-                    .filter(id__in=latest_ids)
-                    .select_related('topico__area_conhecimento', 'criado_por')
-                    .order_by('id')
-                )
-                logger.info(f"GET: Número de questões C/E encontradas no DB: {question_list.count()}")
-
-                if question_list.exists():
-                    items_per_page = getattr(settings, 'ITEMS_PER_PAGE_GENERATOR', 20)
-                    paginator_instance = Paginator(question_list, items_per_page)
-                    logger.info(
-                        f"GET: Paginator C/E. Total de itens: {paginator_instance.count}, "
-                        f"Total de páginas: {paginator_instance.num_pages}"
-                    )
-                    page_number = request.GET.get('page')
-                    try:
-                        page_obj = paginator_instance.get_page(page_number)
-                    except PageNotAnInteger:
-                        page_obj = paginator_instance.get_page(1)
-                    except EmptyPage:
-                        page_obj = paginator_instance.get_page(paginator_instance.num_pages)
-
-                    context['page_obj'] = page_obj
-                    context['paginator'] = paginator_instance
-                    logger.info(
-                        f"GET: Paginação C/E configurada. "
-                        f"Página: {page_obj.number} de {paginator_instance.num_pages}."
-                    )
-                else:
-                    logger.warning(
-                        f"GET: IDs {latest_ids} na sessão, mas NENHUMA questão C/E encontrada. "
-                        "Limpando sessão."
-                    )
-                    request.session.pop('latest_ce_ids', None)
-                    request.session.pop('latest_ce_motivador', None)
-                    context['main_motivador'] = None
-            except Exception as e:
-                logger.error(f"GET: Erro ao buscar/paginar questões C/E da sessão: {e}", exc_info=True)
-                messages.error(request, "Erro ao carregar ou paginar as questões C/E da sessão.")
-                request.session.pop('latest_ce_ids', None)
-                request.session.pop('latest_ce_motivador', None)
-                context['main_motivador'] = None
-        else:
-            logger.info("GET: Nenhum 'latest_ce_ids' encontrado na sessão.")
-            pass
+                questoes_list = Questao.objects.filter(id__in=latest_ids).order_by('id')
+                paginator = Paginator(questoes_list, max_q)
+                page_obj = paginator.get_page(1)
+                context['page_obj'] = page_obj
+                context['paginator'] = paginator
+            except Exception as e_list:
+                logger.error(f"Erro carregando últimas questões salvas da sessão: {e_list}", exc_info=True)
 
     return render(request, 'generator/question_generator.html', context)
-
 
 @login_required
 def generate_me_questions_view(request):
@@ -1210,34 +1203,43 @@ def listar_questoes_discursivas_view(request):
 def listar_questoes_me_view(request):
     context = {}
     query_filter_param = request.GET.get('q', '').strip()
-    area_filter_param = request.GET.get('area', '')
+    area_filter_params_str = request.GET.getlist('area')
+    is_filtered_list = False
 
-    questoes_list = Questao.objects.filter(tipo='ME').select_related('topico__area_conhecimento', 'criado_por')
+    base_queryset = Questao.objects.filter(tipo='ME').select_related(
+        'topico__area_conhecimento',
+        'criado_por'
+    )
 
     if query_filter_param:
-        questoes_list = questoes_list.filter(
+        base_queryset = base_queryset.filter(
             Q(enunciado__icontains=query_filter_param) |
             Q(texto_motivador__icontains=query_filter_param) |
             Q(id__icontains=query_filter_param)
         )
+        is_filtered_list = True
 
-    if area_filter_param and area_filter_param.isdigit():
-        try:
-            questoes_list = questoes_list.filter(topico__area_conhecimento_id=int(area_filter_param))
-        except ValueError:
-            messages.warning(request, f"ID Área inválido: {area_filter_param}")
+    valid_area_ids = [int(id_str) for id_str in area_filter_params_str if id_str.strip().isdigit()]
+    if valid_area_ids:
+        base_queryset = base_queryset.filter(topico__area_conhecimento_id__in=valid_area_ids)
+        is_filtered_list = True
 
-    questoes_list = questoes_list.order_by('-criado_em')
-    paginator = Paginator(questoes_list, 20)
+    questoes_list = base_queryset.order_by('-criado_em')
+
+    items_per_page = getattr(settings, 'ITEMS_PER_PAGE_QUESTOES_CE', 20)
+    paginator = Paginator(questoes_list, items_per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     context['page_obj'] = page_obj
     context['paginator'] = paginator
-    context['is_filtered_list'] = bool(query_filter_param or (area_filter_param and area_filter_param.isdigit()))
+    context['is_filtered_list'] = is_filtered_list
     context['query_filter_param'] = query_filter_param
-    context['area_filter_param'] = area_filter_param
+    context['area_filter_param'] = area_filter_params_str
     context['all_areas'] = AreaConhecimento.objects.all().order_by('nome')
 
+    logger.info(
+        f"Renderizando lista ME. Filtrada: {is_filtered_list}. "
+        f"Página: {page_obj.number if page_obj else 'N/A'}"
+    )
     return render(request, 'generator/questions_me.html', context)
-
